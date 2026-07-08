@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>潜意识音频工作室</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=Noto+Sans+SC:wght@300;400&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{
+  font-family:'Noto Sans SC',sans-serif;
+  background:linear-gradient(165deg,#1a1040 0%,#0e0828 55%,#080418 100%);
+  min-height:100vh;color:#e0d5f0;
+  padding:2rem 1.2rem 4rem;
+}
+.wrap{max-width:460px;margin:0 auto;}
+.header{text-align:center;margin-bottom:2rem;}
+.header h1{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:400;color:#d0b8f0;letter-spacing:4px;margin-bottom:6px;}
+.header p{font-size:12px;color:#8a7ab0;letter-spacing:2px;}
+
+.card{
+  background:rgba(40,25,80,0.5);
+  border:1px solid rgba(160,120,220,0.2);
+  border-radius:20px;padding:1.4rem;margin-bottom:1.2rem;
+  backdrop-filter:blur(10px);
+}
+.card-title{font-family:'Noto Serif SC',serif;font-size:15px;color:#c0a8e0;letter-spacing:2px;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+.step-num{background:linear-gradient(135deg,#8a5fc0,#a878d8);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0;}
+
+/* 录音区 */
+.record-area{display:flex;flex-direction:column;align-items:center;gap:14px;}
+.record-btn{
+  width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:1.9rem;
+  background:radial-gradient(circle at 38% 35%,rgba(255,120,120,0.85),rgba(180,30,30,0.75));
+  box-shadow:0 4px 18px rgba(180,30,30,0.4);transition:transform 0.18s;
+}
+.record-btn:hover{transform:scale(1.06);}
+.record-btn.recording{background:radial-gradient(circle at 38% 35%,rgba(255,60,60,0.9),rgba(160,10,10,0.85));animation:recPulse 1.4s infinite;}
+.record-btn.has-recording{background:radial-gradient(circle at 38% 35%,rgba(80,180,120,0.88),rgba(20,100,60,0.78));}
+@keyframes recPulse{0%,100%{box-shadow:0 4px 18px rgba(180,30,30,0.4),0 0 0 0 rgba(220,60,60,0.35);}50%{box-shadow:0 4px 24px rgba(220,30,30,0.6),0 0 0 14px rgba(220,60,60,0);}}
+.record-timer{font-family:'Noto Serif SC',serif;font-size:1.4rem;color:#d0c0f0;letter-spacing:0.1em;}
+.record-status{font-size:12px;color:#9a8ac0;letter-spacing:1px;text-align:center;}
+
+.upload-zone{
+  border:1.5px dashed rgba(160,120,220,0.35);border-radius:14px;
+  padding:14px;text-align:center;cursor:pointer;transition:all 0.2s;
+  margin-top:12px;font-size:12px;color:#9a8ac0;
+}
+.upload-zone:hover{border-color:rgba(180,140,240,0.6);background:rgba(255,255,255,0.04);}
+
+.guide-tip{
+  background:rgba(160,120,220,0.12);border-radius:10px;padding:10px 12px;
+  font-size:11px;color:#b0a0d0;line-height:1.7;margin-bottom:12px;
+}
+
+/* 滑块 */
+.slider-row{margin-bottom:1.2rem;}
+.slider-label{display:flex;justify-content:space-between;font-size:13px;color:#b8a8d8;margin-bottom:8px;}
+.slider-value{color:#d8b8ff;font-family:'Noto Serif SC',serif;}
+input[type=range]{
+  width:100%;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;
+  background:rgba(255,255,255,0.15);outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:linear-gradient(135deg,#c090ff,#9060d0);
+  box-shadow:0 2px 8px rgba(140,80,220,0.5);cursor:pointer;
+}
+
+.btn-row{display:flex;gap:10px;margin-top:8px;}
+.btn{
+  flex:1;padding:12px;border-radius:12px;border:none;cursor:pointer;
+  font-family:'Noto Serif SC',serif;font-size:13px;letter-spacing:1px;
+  transition:opacity 0.2s,transform 0.1s;
+}
+.btn:active{transform:scale(0.98);}
+.btn-play{background:rgba(100,120,220,0.4);color:#d0e0ff;border:1px solid rgba(120,160,255,0.3);}
+.btn-primary{background:linear-gradient(135deg,#8a4fc0,#b070e0);color:#fff;}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+.hint{font-size:11px;color:#7a6a a0;text-align:center;margin-top:10px;line-height:1.6;color:#8070a0;}
+
+.processing{display:none;text-align:center;padding:1rem;color:#b0a0d0;font-size:13px;}
+.processing.show{display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>潜意识音频</h1>
+    <p>SUBLIMINAL STUDIO</p>
+  </div>
+
+  <!-- 步骤1：录制 -->
+  <div class="card">
+    <div class="card-title"><span class="step-num">1</span>录制你的肯定语</div>
+    <div class="guide-tip">💫 用「现在时」和「肯定句」，仿佛已经拥有：<br>"我值得被爱" · "金钱源源不断流向我" · "我是自信而闪耀的"</div>
+    <div class="record-area">
+      <button class="record-btn" id="recordBtn">🎙️</button>
+      <div class="record-timer" id="recordTimer">00:00</div>
+      <div class="record-status" id="recordStatus">点击开始录制</div>
+    </div>
+    <div class="upload-zone" id="uploadZone">
+      或点击上传已有音频文件
+      <input type="file" id="fileInput" accept="audio/*" style="display:none;">
+    </div>
+  </div>
+
+  <!-- 步骤2：处理 -->
+  <div class="card">
+    <div class="card-title"><span class="step-num">2</span>调节潜意识参数</div>
+
+    <div class="slider-row">
+      <div class="slider-label"><span>语速倍数</span><span class="slider-value" id="speedVal">1.0x</span></div>
+      <input type="range" id="speedSlider" min="1" max="10" step="0.5" value="1">
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label"><span>人声音量</span><span class="slider-value" id="voiceVal">100%</span></div>
+      <input type="range" id="voiceSlider" min="0" max="100" step="5" value="100">
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label"><span>背景音量</span><span class="slider-value" id="bgVal">50%</span></div>
+      <input type="range" id="bgSlider" min="0" max="100" step="5" value="50">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-play" id="previewBtn" disabled>▶ 试听效果</button>
+    </div>
+    <div class="hint">变速不变调 · 人声可调至极低融入背景，潜意识仍能接收</div>
+  </div>
+
+  <!-- 步骤3：保存 -->
+  <div class="card">
+    <div class="card-title"><span class="step-num">3</span>合成并保存</div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="exportBtn" disabled>✦ 合成潜意识音频</button>
+    </div>
+    <div class="processing" id="processing">正在合成中…</div>
+    <div class="hint" id="exportHint" style="display:none;">合成完成！可下载或在播放器中循环播放</div>
+  </div>
+</div>
+
+<!-- SoundTouch.js 变速不变调库 -->
+<script src="https://cdn.jsdelivr.net/npm/soundtouchjs@0.1.30/dist/soundtouch.min.js"></script>
+<script>
+let audioCtx = null;
+let recordedBuffer = null;      // 录制/上传的原始音频
+let mediaRecorder = null;
+let recordChunks = [];
+let recordTimerSec = 0;
+let recordInterval = null;
+let previewSource = null;
+let isPreviewPlaying = false;
+
+function getCtx(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+
+// ─── 录音 ───
+const recordBtn = document.getElementById('recordBtn');
+const recordTimer = document.getElementById('recordTimer');
+const recordStatus = document.getElementById('recordStatus');
+
+recordBtn.onclick = async () => {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    recordChunks = [];
+    mediaRecorder.ondataavailable = e => recordChunks.push(e.data);
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      clearInterval(recordInterval);
+      const blob = new Blob(recordChunks, { type: mediaRecorder.mimeType });
+      const arrayBuf = await blob.arrayBuffer();
+      recordedBuffer = await getCtx().decodeAudioData(arrayBuf);
+      recordBtn.classList.remove('recording');
+      recordBtn.classList.add('has-recording');
+      recordBtn.textContent = '✓';
+      recordStatus.textContent = '录制完成！调节下方参数试听';
+      enableControls();
+    };
+    mediaRecorder.start();
+    recordBtn.classList.add('recording');
+    recordBtn.textContent = '⏹';
+    recordStatus.textContent = '正在录制…再次点击停止';
+    recordTimerSec = 0;
+    recordTimer.textContent = '00:00';
+    recordInterval = setInterval(() => {
+      recordTimerSec++;
+      const m = String(Math.floor(recordTimerSec/60)).padStart(2,'0');
+      const s = String(recordTimerSec%60).padStart(2,'0');
+      recordTimer.textContent = `${m}:${s}`;
+    }, 1000);
+  } catch(err) {
+    recordStatus.textContent = '无法访问麦克风：' + err.message;
+  }
+};
+
+// ─── 上传 ───
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+uploadZone.onclick = () => fileInput.click();
+fileInput.onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const arrayBuf = await file.arrayBuffer();
+  recordedBuffer = await getCtx().decodeAudioData(arrayBuf);
+  recordBtn.classList.add('has-recording');
+  recordBtn.textContent = '✓';
+  recordStatus.textContent = '已导入音频！调节下方参数试听';
+  enableControls();
+};
+
+// ─── 滑块 ───
+const speedSlider = document.getElementById('speedSlider');
+const voiceSlider = document.getElementById('voiceSlider');
+const bgSlider = document.getElementById('bgSlider');
+const speedVal = document.getElementById('speedVal');
+const voiceVal = document.getElementById('voiceVal');
+const bgVal = document.getElementById('bgVal');
+
+speedSlider.oninput = () => speedVal.textContent = parseFloat(speedSlider.value).toFixed(1) + 'x';
+voiceSlider.oninput = () => voiceVal.textContent = voiceSlider.value + '%';
+bgSlider.oninput = () => bgVal.textContent = bgSlider.value + '%';
+
+function enableControls(){
+  document.getElementById('previewBtn').disabled = false;
+  document.getElementById('exportBtn').disabled = false;
+}
+
+// ─── 变速不变调处理（SoundTouch）───
+function processAudio(buffer, speed) {
+  const st = new soundtouch.SoundTouch(buffer.sampleRate);
+  st.tempo = speed;  // tempo改变速度但不变调
+  const numFrames = buffer.length;
+  const left = buffer.getChannelData(0);
+  const right = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : left;
+
+  const source = {
+    extract: function(target, numFrames, position) {
+      for (let i = 0; i < numFrames; i++) {
+        target[i*2] = left[position + i] || 0;
+        target[i*2+1] = right[position + i] || 0;
+      }
+      return Math.min(numFrames, buffer.length - position);
+    }
+  };
+
+  const filter = new soundtouch.SimpleFilter(source, st);
+  const outLength = Math.floor(numFrames / speed);
+  const outBuffer = getCtx().createBuffer(2, outLength, buffer.sampleRate);
+  const outL = outBuffer.getChannelData(0);
+  const outR = outBuffer.getChannelData(1);
+
+  const BLOCK = 4096;
+  const samples = new Float32Array(BLOCK * 2);
+  let pos = 0;
+  while (pos < outLength) {
+    const extracted = filter.extract(samples, BLOCK);
+    if (extracted === 0) break;
+    for (let i = 0; i < extracted; i++) {
+      if (pos + i < outLength) {
+        outL[pos + i] = samples[i*2];
+        outR[pos + i] = samples[i*2+1];
+      }
+    }
+    pos += extracted;
+  }
+  return outBuffer;
+}
+
+// ─── 试听 ───
+document.getElementById('previewBtn').onclick = async () => {
+  const btn = document.getElementById('previewBtn');
+  if (isPreviewPlaying) {
+    if (previewSource) previewSource.stop();
+    isPreviewPlaying = false;
+    btn.textContent = '▶ 试听效果';
+    return;
+  }
+  if (!recordedBuffer) return;
+  const ctx = getCtx();
+  await ctx.resume();
+
+  const speed = parseFloat(speedSlider.value);
+  const voiceVol = parseInt(voiceSlider.value) / 100;
+
+  btn.textContent = '⏹ 停止';
+  isPreviewPlaying = true;
+
+  // 处理人声（变速不变调）
+  const processed = speed === 1 ? recordedBuffer : processAudio(recordedBuffer, speed);
+
+  previewSource = ctx.createBufferSource();
+  previewSource.buffer = processed;
+  const gain = ctx.createGain();
+  gain.gain.value = voiceVol;
+  previewSource.connect(gain).connect(ctx.destination);
+  previewSource.loop = true;
+  previewSource.start();
+
+  previewSource.onended = () => {
+    isPreviewPlaying = false;
+    btn.textContent = '▶ 试听效果';
+  };
+};
+
+// ─── 合成导出 ───
+document.getElementById('exportBtn').onclick = async () => {
+  if (!recordedBuffer) return;
+  const proc = document.getElementById('processing');
+  proc.classList.add('show');
+
+  const speed = parseFloat(speedSlider.value);
+  const voiceVol = parseInt(voiceSlider.value) / 100;
+
+  setTimeout(async () => {
+    const processed = speed === 1 ? recordedBuffer : processAudio(recordedBuffer, speed);
+
+    // 用OfflineAudioContext渲染最终音频
+    const offline = new OfflineAudioContext(2, processed.length, processed.sampleRate);
+    const src = offline.createBufferSource();
+    src.buffer = processed;
+    const gain = offline.createGain();
+    gain.gain.value = voiceVol;
+    src.connect(gain).connect(offline.destination);
+    src.start();
+    const rendered = await offline.startRendering();
+
+    // 转成WAV下载
+    const wav = bufferToWav(rendered);
+    const blob = new Blob([wav], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '潜意识音频.wav';
+    a.click();
+
+    proc.classList.remove('show');
+    document.getElementById('exportHint').style.display = 'block';
+  }, 100);
+};
+
+// WAV编码
+function bufferToWav(buffer) {
+  const numCh = buffer.numberOfChannels;
+  const len = buffer.length * numCh * 2 + 44;
+  const arrBuf = new ArrayBuffer(len);
+  const view = new DataView(arrBuf);
+  const channels = [];
+  let offset = 0, pos = 0;
+  function setUint16(d){ view.setUint16(pos, d, true); pos += 2; }
+  function setUint32(d){ view.setUint32(pos, d, true); pos += 4; }
+  setUint32(0x46464952); setUint32(len - 8); setUint32(0x45564157);
+  setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numCh);
+  setUint32(buffer.sampleRate); setUint32(buffer.sampleRate * 2 * numCh);
+  setUint16(numCh * 2); setUint16(16);
+  setUint32(0x61746164); setUint32(len - pos - 4);
+  for (let i = 0; i < numCh; i++) channels.push(buffer.getChannelData(i));
+  while (pos < len) {
+    for (let i = 0; i < numCh; i++) {
+      let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+      sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+      view.setInt16(pos, sample, true); pos += 2;
+    }
+    offset++;
+  }
+  return arrBuf;
+}
+</script>
+</body>
+</html>

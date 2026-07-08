@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>感恩日记</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=Ma+Shan+Zheng&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Serif SC',serif;background:radial-gradient(ellipse at 50% 30%,#2a1a4e 0%,#150d2e 60%,#0a0618 100%);width:100vw;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+
+.bubbles{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden;transition:opacity 1s;}
+.bubbles.dimmed{opacity:0.25;}
+.bubble{position:absolute;border-radius:50%;animation:floatBubble var(--dur) var(--delay) infinite ease-in-out;}
+@keyframes floatBubble{0%{transform:translateY(0) translateX(0);}33%{transform:translateY(var(--fy)) translateX(var(--fx));}66%{transform:translateY(calc(var(--fy)*-0.5)) translateX(calc(var(--fx)*0.4));}100%{transform:translateY(0) translateX(0);}}
+
+.screen{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:1;transition:opacity 0.5s;}
+.screen.hidden{opacity:0;pointer-events:none;visibility:hidden;}
+
+/* 书本SVG直接撑满，居中 */
+.book-svg{
+  width:min(360px, 92vw);
+  height:min(540px, calc(92vw * 1.5));
+  display:block;
+  filter:drop-shadow(0 10px 40px rgba(80,40,160,0.7));
+  cursor:pointer;
+}
+.book-svg.opening{animation:claspFlip 0.8s forwards;}
+@keyframes claspFlip{0%{opacity:1;}100%{opacity:0;transform:scale(1.05);}}
+
+.open-hint{
+  position:absolute;bottom:calc(50% - min(270px, calc(46vw * 1.5)) - 28px);
+  left:50%;transform:translateX(-50%);
+  font-size:12px;color:#a07840;letter-spacing:3px;white-space:nowrap;
+  animation:pulse 2s infinite;font-family:'Noto Serif SC',serif;
+}
+@keyframes pulse{0%,100%{opacity:0.4;}50%{opacity:1;}}
+
+/* 日历和日记：和书一样大 */
+.cal-container,.journal-container{
+  width:min(360px,92vw);
+  height:min(540px,calc(92vw*1.5));
+  background:rgba(245,238,220,0.97);
+  border:1.5px solid #c8a870;
+  border-radius:10px;
+  box-shadow:0 0 40px rgba(120,80,20,0.25);
+  display:flex;flex-direction:column;
+  overflow:hidden;padding:1.2rem;
+}
+
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;flex-shrink:0;}
+.cal-title{font-family:'Ma Shan Zheng',serif;font-size:18px;color:#7a4f1a;letter-spacing:2px;}
+.cal-nav-btn{background:none;border:1px solid #c8a870;border-radius:50%;width:28px;height:28px;color:#7a4f1a;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.cal-nav-btn:hover{background:rgba(180,130,60,0.1);}
+.weekdays{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:0.3rem;flex-shrink:0;}
+.weekdays span{text-align:center;font-size:11px;color:#9a7a4a;padding:3px 0;}
+.days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;position:relative;flex:1;}
+.day-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;font-size:11px;color:#5a3a1a;transition:background 0.2s;aspect-ratio:1;align-self:center;}
+.day-cell.has-entry{background:none !important;border-radius:0;}
+.day-cell:hover:not(.empty){background:rgba(180,130,60,0.15);}
+.day-cell.today{background:rgba(180,130,60,0.2);color:#7a4f1a;font-weight:600;}
+.day-cell.empty{cursor:default;}
+.heart-badge{font-size:18px;line-height:1;}
+.day-num-small{font-size:9px;color:#9a7a4a;}
+.day-cell.has-entry .day-num-small{display:none;}
+.connector-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;}
+
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,6,24,0.8);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+.modal-overlay.active{opacity:1;pointer-events:all;}
+.modal-card{background:linear-gradient(160deg,#1e0f3c,#2a1050);border:1px solid #7a5520;border-radius:24px;padding:1.5rem;width:min(280px,80vw);text-align:center;box-shadow:0 0 60px rgba(120,60,200,0.4);transform:scale(0.9);transition:transform 0.3s;}
+.modal-overlay.active .modal-card{transform:scale(1);}
+.modal-date{font-size:12px;color:#a07840;letter-spacing:2px;margin-bottom:0.8rem;}
+.modal-label{font-size:13px;color:#c8a8e0;margin-bottom:1rem;letter-spacing:1px;}
+.mood-grid{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:1.2rem;}
+.mood-btn{font-size:26px;cursor:pointer;padding:4px;border:none;background:none;transition:transform 0.2s;}
+.mood-btn:hover{transform:scale(1.2);}
+.mood-btn.selected{transform:scale(1.3);}
+.modal-confirm{width:100%;padding:10px;background:linear-gradient(135deg,#7a3fa0,#a060c0);border:none;border-radius:12px;color:#f0e0ff;font-family:'Noto Serif SC',serif;font-size:13px;letter-spacing:2px;cursor:pointer;}
+.modal-confirm:hover{opacity:0.85;}
+
+.journal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;flex-shrink:0;}
+.back-btn{background:none;border:1px solid #c8a870;border-radius:10px;padding:4px 10px;color:#7a5020;font-size:11px;cursor:pointer;letter-spacing:1px;}
+.back-btn:hover{background:rgba(180,130,60,0.1);}
+.journal-date-title{font-family:'Ma Shan Zheng',serif;font-size:14px;color:#7a4f1a;letter-spacing:2px;}
+.selected-mood-display{font-size:20px;}
+.guide{font-size:12px;color:#9a7a4a;font-style:italic;letter-spacing:1px;margin-bottom:0.6rem;flex-shrink:0;}
+textarea{width:100%;flex:1;background:rgba(255,250,235,0.8);border:1px solid rgba(180,140,80,0.4);border-radius:12px;padding:0.8rem;color:#3a2a10;font-family:'Noto Serif SC',serif;font-size:13px;line-height:1.8;resize:none;outline:none;transition:border-color 0.2s;}
+textarea:focus{border-color:rgba(160,110,40,0.6);}
+textarea::placeholder{color:#b8986a;}
+.save-btn{margin-top:0.6rem;width:100%;padding:10px;flex-shrink:0;background:linear-gradient(135deg,#7a3fa0,#a060c0);border:none;border-radius:12px;color:#f0e0ff;font-family:'Noto Serif SC',serif;font-size:13px;letter-spacing:2px;cursor:pointer;}
+.save-btn:hover{opacity:0.9;}
+</style>
+</head>
+<body>
+<div class="bubbles" id="bubbles"></div>
+
+<!-- COVER -->
+<div class="screen" id="coverScreen">
+  <div style="position:relative;">
+    <svg class="book-svg" id="bookSvg" viewBox="0 0 360 480" xmlns="http://www.w3.org/2000/svg" onclick="openBook()">
+      <defs>
+        <linearGradient id="cg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2d1060"/><stop offset="50%" stop-color="#1a0840"/><stop offset="100%" stop-color="#0e0528"/></linearGradient>
+        <linearGradient id="sg" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#3d1880"/><stop offset="100%" stop-color="#1a0840"/></linearGradient>
+        <linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f0d060"/><stop offset="50%" stop-color="#c8901a"/><stop offset="100%" stop-color="#f0d060"/></linearGradient>
+        <linearGradient id="clg" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f0d060"/><stop offset="100%" stop-color="#8a5c10"/></linearGradient>
+        <filter id="gl"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="cgl"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- 封面 -->
+      <rect x="4" y="14" width="352" height="454" rx="6" fill="url(#cg)"/>
+      <rect x="4" y="14" width="352" height="454" rx="6" fill="none" stroke="url(#gg)" stroke-width="2.5"/>
+      <rect x="18" y="26" width="324" height="430" rx="4" fill="none" stroke="#c8901a" stroke-width="1" opacity="0.5"/>
+      <!-- 书脊 -->
+      <rect x="4" y="14" width="22" height="454" rx="4" fill="url(#sg)"/>
+      <line x1="26" y1="14" x2="26" y2="468" stroke="#c8901a" stroke-width="0.8" opacity="0.4"/>
+      <!-- 四角 -->
+      <g fill="none" stroke="#c8901a" stroke-width="1.2" opacity="0.7">
+        <path d="M26 32 L26 52 L46 52"/><path d="M340 32 L340 52 L320 52"/>
+        <path d="M26 450 L26 430 L46 430"/><path d="M340 450 L340 430 L320 430"/>
+        <circle cx="26" cy="32" r="3" fill="#c8901a"/><circle cx="340" cy="32" r="3" fill="#c8901a"/>
+        <circle cx="26" cy="450" r="3" fill="#c8901a"/><circle cx="340" cy="450" r="3" fill="#c8901a"/>
+      </g>
+      <!-- 标题 -->
+      <text x="185" y="205" text-anchor="middle" font-family="'Ma Shan Zheng',serif" font-size="90" fill="#d4a843" filter="url(#gl)">感恩</text>
+      <text x="185" y="328" text-anchor="middle" font-family="'Ma Shan Zheng',serif" font-size="90" fill="#d4a843" filter="url(#gl)">日记</text>
+      <line x1="80" y1="362" x2="290" y2="362" stroke="#c8901a" stroke-width="0.8" opacity="0.5"/>
+      <circle cx="185" cy="362" r="3" fill="#c8901a" opacity="0.7"/>
+      <!-- 搭扣：压在封面右侧，最右=356 -->
+      <rect x="298" y="208" width="22" height="64" rx="3" fill="url(#clg)" stroke="#a07020" stroke-width="1"/>
+      <circle cx="309" cy="218" r="3" fill="#f8e060" stroke="#a07020" stroke-width="0.5"/>
+      <circle cx="309" cy="262" r="3" fill="#f8e060" stroke="#a07020" stroke-width="0.5"/>
+      <rect x="318" y="222" width="30" height="36" rx="4" fill="#f8e88a" stroke="#a07020" stroke-width="1"/>
+      <path d="M346 226 Q356 232 352 240 Q356 248 346 254" fill="none" stroke="#d4a843" stroke-width="5" stroke-linecap="round"/>
+      <path d="M346 226 Q356 232 352 240 Q356 248 346 254" fill="none" stroke="#f8e060" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+      <circle cx="333" cy="240" r="8" fill="#c090ff" stroke="#d4a843" stroke-width="1.5" filter="url(#cgl)" opacity="0.95"/>
+      <circle cx="331" cy="238" r="3.5" fill="#e8d0ff" opacity="0.6"/>
+    </svg>
+    <div class="open-hint">按下搭扣，开启书卷</div>
+  </div>
+</div>
+
+<!-- CALENDAR -->
+<div class="screen hidden" id="calScreen">
+  <div class="cal-container">
+    <div class="cal-header">
+      <button class="cal-nav-btn" id="prevMonth">&#8249;</button>
+      <span class="cal-title" id="monthTitle"></span>
+      <button class="cal-nav-btn" id="nextMonth">&#8250;</button>
+    </div>
+    <div class="weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+    <div class="days-grid" id="daysGrid">
+      <svg class="connector-svg" id="connectorSvg"></svg>
+    </div>
+  </div>
+</div>
+
+<!-- MOOD MODAL -->
+<div class="modal-overlay" id="moodModal">
+  <div class="modal-card">
+    <div class="modal-date" id="modalDate"></div>
+    <div class="modal-label">选择今天的心情</div>
+    <div class="mood-grid" id="moodGrid"></div>
+    <button class="modal-confirm" id="moodConfirm">进入今日页面 ✦</button>
+  </div>
+</div>
+
+<!-- JOURNAL -->
+<div class="screen hidden" id="journalScreen">
+  <div class="journal-container">
+    <div class="journal-top">
+      <button class="back-btn" id="backBtn">← 日历</button>
+      <span class="journal-date-title" id="journalDateTitle"></span>
+      <span class="selected-mood-display" id="moodDisplay"></span>
+    </div>
+    <div class="guide">今天我感恩……</div>
+    <textarea id="journalText" placeholder="写下让你心存感激的事情…"></textarea>
+    <button class="save-btn" id="saveBtn">保存今日感恩 ✦</button>
+  </div>
+</div>
+
+<script>
+const MOODS=[{e:'🩷'},{e:'💜'},{e:'💙'},{e:'🩵'},{e:'💚'},{e:'🧡'},{e:'🤍'}];
+let curY,curM,selDay=null,selMood=0;
+const today=new Date();
+
+const bubblesEl=document.getElementById('bubbles');
+const bubbleColors=['rgba(180,140,255,OP)','rgba(140,200,255,OP)','rgba(200,160,255,OP)','rgba(160,220,200,OP)','rgba(220,180,255,OP)','rgba(255,200,220,OP)'];
+for(let i=0;i<25;i++){
+  const b=document.createElement('div');b.className='bubble';
+  const size=4+Math.random()*18;
+  const op=(0.15+Math.random()*0.3).toFixed(2);
+  const col=bubbleColors[Math.floor(Math.random()*bubbleColors.length)].replace('OP',op);
+  const fy=((-1+Math.random()*2)*12)+'px';
+  const fx=((-1+Math.random()*2)*12)+'px';
+  const dur=7+Math.random()*10;
+  const delay=-(Math.random()*dur);
+  b.style.cssText=`width:${size}px;height:${size}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--dur:${dur}s;--delay:${delay}s;--fy:${fy};--fx:${fx};background:radial-gradient(circle at 35% 35%,rgba(255,255,255,0.6) 0%,${col} 40%,rgba(255,255,255,0.02) 100%);box-shadow:inset -1px -1px 3px rgba(255,255,255,0.2);`;
+  bubblesEl.appendChild(b);
+}
+
+function key(y,m,d){return`gj_${y}_${m}_${d}`;}
+function getEntry(y,m,d){try{return JSON.parse(localStorage.getItem(key(y,m,d))||'null');}catch{return null;}}
+function saveEntry(y,m,d,mood,text){localStorage.setItem(key(y,m,d),JSON.stringify({mood,text}));}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function openBook(){
+  document.getElementById('bookSvg').classList.add('opening');
+  setTimeout(()=>{showScreen('calScreen');renderCalendar();},800);
+}
+
+const months=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+const mLabels=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+function renderCalendar(){
+  const grid=document.getElementById('daysGrid');
+  document.getElementById('monthTitle').textContent=`${curY} · ${months[curM]}`;
+  const firstDay=new Date(curY,curM,1).getDay();
+  const daysInMonth=new Date(curY,curM+1,0).getDate();
+  grid.querySelectorAll('.day-cell').forEach(e=>e.remove());
+  const cells=[];
+  for(let i=0;i<firstDay;i++){const e=document.createElement('div');e.className='day-cell empty';grid.appendChild(e);cells.push(null);}
+  for(let d=1;d<=daysInMonth;d++){
+    const entry=getEntry(curY,curM,d);
+    const cell=document.createElement('div');
+    const isToday=d===today.getDate()&&curM===today.getMonth()&&curY===today.getFullYear();
+    cell.className='day-cell'+(entry?' has-entry':'')+(isToday?' today':'');
+    if(entry){const h=document.createElement('span');h.className='heart-badge';h.textContent=MOODS[entry.mood]?.e||'💜';cell.appendChild(h);}
+    else{const n=document.createElement('span');n.className='day-num-small';n.textContent=d;cell.appendChild(n);}
+    cell.onclick=()=>openMoodModal(d);
+    grid.appendChild(cell);cells.push({d,el:cell,hasEntry:!!entry});
+  }
+  requestAnimationFrame(()=>drawConnectors(cells));
+}
+
+function drawConnectors(cells){
+  const svg=document.getElementById('connectorSvg');svg.innerHTML='';
+  const gridRect=document.getElementById('daysGrid').getBoundingClientRect();
+  const pts=[];
+  cells.forEach(c=>{if(c&&c.hasEntry){const r=c.el.getBoundingClientRect();pts.push({x:r.left-gridRect.left+r.width/2,y:r.top-gridRect.top+r.height/2});}});
+  for(let i=1;i<pts.length;i++){
+    const a=pts[i-1],b=pts[i];
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);
+    line.setAttribute('stroke','rgba(160,110,60,0.3)');line.setAttribute('stroke-width','1.5');line.setAttribute('stroke-dasharray','3 4');
+    svg.appendChild(line);
+  }
+}
+
+function openMoodModal(d){
+  selDay=d;const entry=getEntry(curY,curM,d);selMood=entry?entry.mood:0;
+  document.getElementById('modalDate').textContent=`${curY}年 ${mLabels[curM]} ${d}日`;
+  renderMoodGrid(selMood);document.getElementById('moodModal').classList.add('active');
+}
+
+function renderMoodGrid(idx){
+  const grid=document.getElementById('moodGrid');grid.innerHTML='';
+  MOODS.forEach((m,i)=>{const btn=document.createElement('span');btn.className='mood-btn'+(i===idx?' selected':'');btn.textContent=m.e;btn.onclick=()=>{selMood=i;renderMoodGrid(i);};grid.appendChild(btn);});
+}
+
+document.getElementById('moodConfirm').onclick=()=>{
+  document.getElementById('moodModal').classList.remove('active');
+  document.getElementById('bubbles').classList.add('dimmed');
+  const entry=getEntry(curY,curM,selDay);
+  document.getElementById('journalDateTitle').textContent=`${curY}年${mLabels[curM]}${selDay}日`;
+  document.getElementById('moodDisplay').textContent=MOODS[selMood].e;
+  document.getElementById('journalText').value=entry?entry.text:'';
+  showScreen('journalScreen');
+};
+
+document.getElementById('saveBtn').onclick=()=>{
+  const text=document.getElementById('journalText').value.trim();
+  if(!text)return;
+  saveEntry(curY,curM,selDay,selMood,text);
+  document.getElementById('bubbles').classList.remove('dimmed');
+  showScreen('calScreen');renderCalendar();
+};
+
+document.getElementById('backBtn').onclick=()=>{
+  document.getElementById('bubbles').classList.remove('dimmed');
+  showScreen('calScreen');renderCalendar();
+};
+
+document.getElementById('prevMonth').onclick=()=>{curM--;if(curM<0){curM=11;curY--;}renderCalendar();};
+document.getElementById('nextMonth').onclick=()=>{curM++;if(curM>11){curM=0;curY++;}renderCalendar();};
+
+curY=today.getFullYear();curM=today.getMonth();
+</script>
+</body>
+</html>

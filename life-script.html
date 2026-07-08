@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>我的人生剧本</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Ma+Shan+Zheng&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{
+  font-family:'Noto Serif SC',serif;
+  background:radial-gradient(ellipse at 50% 20%,#2a1a4e 0%,#14092e 55%,#0a0518 100%);
+  height:100dvh;color:#e8dcc8;
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  display:flex;flex-direction:column;
+}
+
+/* 星光背景 */
+.stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+.star{position:absolute;background:#fff;border-radius:50%;animation:tw var(--d) infinite alternate;}
+@keyframes tw{0%{opacity:0.1;}100%{opacity:0.7;}}
+@keyframes shakeX{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+
+/* 进度条 */
+.progress-bar{
+  position:relative;z-index:5;
+  height:3px;background:rgba(255,255,255,0.1);
+  margin-top:env(safe-area-inset-top, 44px);
+  flex-shrink:0;
+}
+.progress-fill{height:100%;background:linear-gradient(90deg,#c8a04a,#f0d060);width:0%;transition:width 0.5s;border-radius:2px;}
+
+/* 幕容器 */
+.acts{flex:1;position:relative;z-index:2;overflow:hidden;}
+.act{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  padding:2rem 1.6rem;
+  opacity:0;pointer-events:none;
+  transform:translateX(40px);
+  transition:opacity 0.5s,transform 0.5s;
+  overflow-y:auto;
+}
+.act.active{opacity:1;pointer-events:auto;transform:translateX(0);}
+.act.prev{transform:translateX(-40px);}
+
+/* 幕标题 */
+.act-label{
+  font-family:'Ma Shan Zheng',serif;
+  font-size:14px;color:#c8a04a;letter-spacing:4px;
+  text-align:center;margin-bottom:0.5rem;
+}
+.act-title{
+  font-size:26px;font-weight:600;color:#f0e0c0;
+  text-align:center;margin-bottom:0.6rem;letter-spacing:2px;
+}
+.act-desc{
+  font-size:13px;color:#a898c0;text-align:center;
+  line-height:1.8;margin-bottom:2rem;letter-spacing:1px;
+}
+
+/* 开场 */
+.cover{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;text-align:center;
+}
+.cover-book{font-size:72px;margin-bottom:1.5rem;filter:drop-shadow(0 0 20px rgba(200,160,74,0.5));}
+.cover-title{font-family:'Ma Shan Zheng',serif;font-size:38px;color:#f0d060;letter-spacing:6px;margin-bottom:1rem;filter:drop-shadow(0 0 12px rgba(240,208,96,0.4));}
+.cover-sub{font-size:13px;color:#a898c0;letter-spacing:2px;line-height:2;margin-bottom:3rem;}
+
+/* 表单元素 */
+.field{margin-bottom:1.4rem;}
+.field-label{font-size:14px;color:#c8b8d8;margin-bottom:0.6rem;letter-spacing:1px;}
+.field-input,.field-textarea{
+  width:100%;background:rgba(255,255,255,0.06);
+  border:1px solid rgba(200,160,220,0.25);border-radius:12px;
+  padding:0.9rem 1rem;color:#f0e8d8;
+  font-family:'Noto Serif SC',serif;font-size:15px;
+  outline:none;transition:border-color 0.2s;
+}
+.field-input:focus,.field-textarea:focus{border-color:rgba(240,208,96,0.5);}
+.field-input::placeholder,.field-textarea::placeholder{color:#7a6a9a;}
+.field-textarea{min-height:100px;resize:none;line-height:1.7;}
+
+/* 性别选择 */
+.gender-row{display:flex;gap:12px;}
+.gender-btn{
+  flex:1;padding:0.9rem;text-align:center;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(200,160,220,0.25);border-radius:12px;
+  color:#c8b8d8;font-size:15px;cursor:pointer;transition:all 0.2s;
+  font-family:'Noto Serif SC',serif;
+}
+.gender-btn.selected{background:rgba(240,208,96,0.15);border-color:#f0d060;color:#f0e0c0;}
+
+/* 提示 */
+.tip{
+  background:rgba(200,160,74,0.1);border-radius:10px;
+  padding:0.8rem 1rem;font-size:12px;color:#c8b090;
+  line-height:1.7;margin-bottom:1.5rem;letter-spacing:0.5px;
+}
+
+/* 配角列表 */
+.character-list{display:flex;flex-direction:column;gap:10px;margin-bottom:1rem;}
+.character-card{
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(200,160,220,0.2);border-radius:12px;
+  padding:0.9rem 1rem;display:flex;align-items:center;gap:12px;
+}
+.character-avatar{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,#8a6cb0,#6a4c90);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.character-info{flex:1;min-width:0;}
+.character-name{font-size:15px;color:#f0e8d8;}
+.character-relation{font-size:12px;color:#a898c0;margin-top:2px;}
+.character-del{background:none;border:none;color:#8a7aa0;font-size:18px;cursor:pointer;padding:4px;}
+.add-character-btn{
+  width:100%;padding:0.9rem;
+  background:rgba(255,255,255,0.04);
+  border:1.5px dashed rgba(200,160,220,0.3);border-radius:12px;
+  color:#b0a0d0;font-size:14px;cursor:pointer;
+  font-family:'Noto Serif SC',serif;
+}
+.add-character-btn:hover{border-color:rgba(240,208,96,0.5);}
+
+/* 底部按钮 */
+.act-footer{
+  position:relative;z-index:5;
+  padding:1rem 1.6rem calc(1rem + env(safe-area-inset-bottom, 20px));
+  display:flex;gap:12px;flex-shrink:0;
+}
+.btn{
+  padding:0.9rem;border-radius:14px;border:none;cursor:pointer;
+  font-family:'Noto Serif SC',serif;font-size:15px;letter-spacing:2px;
+  transition:opacity 0.2s,transform 0.1s;
+}
+.btn:active{transform:scale(0.98);}
+.btn-skip{flex:0 0 auto;padding:0.9rem 1.4rem;background:rgba(255,255,255,0.06);color:#a898c0;border:1px solid rgba(200,160,220,0.2);}
+.btn-next{flex:1;background:linear-gradient(135deg,#c8a04a,#f0d060);color:#3a2810;font-weight:600;}
+.btn-start{width:100%;background:linear-gradient(135deg,#c8a04a,#f0d060);color:#3a2810;font-weight:600;padding:1rem;font-size:16px;}
+
+/* 添加配角弹窗 */
+.modal{
+  position:fixed;inset:0;z-index:100;
+  background:rgba(10,6,24,0.85);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;padding:1.5rem;
+  opacity:0;pointer-events:none;transition:opacity 0.3s;
+}
+.modal.open{opacity:1;pointer-events:auto;}
+.modal-box{
+  background:linear-gradient(160deg,#241245,#1a0e38);
+  border:1px solid rgba(200,160,220,0.3);border-radius:20px;
+  padding:1.6rem;width:100%;max-width:340px;
+  transform:scale(0.92);transition:transform 0.3s;
+}
+.modal.open .modal-box{transform:scale(1);}
+.modal-title{font-size:18px;color:#f0e0c0;text-align:center;margin-bottom:1.4rem;letter-spacing:2px;}
+.modal-btns{display:flex;gap:10px;margin-top:1.4rem;}
+.modal-cancel{flex:1;padding:0.8rem;background:rgba(255,255,255,0.06);border:1px solid rgba(200,160,220,0.2);border-radius:12px;color:#a898c0;font-size:14px;cursor:pointer;font-family:inherit;}
+.modal-confirm{flex:1;padding:0.8rem;background:linear-gradient(135deg,#c8a04a,#f0d060);border:none;border-radius:12px;color:#3a2810;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="acts" id="acts">
+
+  <!-- 开场 -->
+  <div class="act active" data-step="0">
+    <div class="cover">
+      <div class="cover-book">📖</div>
+      <div class="cover-title">我的人生剧本</div>
+      <div class="cover-sub">在这里，你是自己人生的编剧<br>设定你想要的一切<br>然后，看它成真</div>
+      <button class="btn btn-start" onclick="nextAct()">✦ 开始创作</button>
+    </div>
+  </div>
+
+  <!-- 第一幕：主角 -->
+  <div class="act" data-step="1">
+    <div class="act-label">第一幕</div>
+    <div class="act-title">主角登场</div>
+    <div class="act-desc">这个故事的主角，就是你自己</div>
+    <div class="field">
+      <div class="field-label">你的名字 <span style="color:#f0d060;">*</span></div>
+      <input type="text" class="field-input" id="heroName" placeholder="故事里，大家怎么称呼你">
+    </div>
+    <div class="field">
+      <div class="field-label">性别 <span style="color:#f0d060;">*</span></div>
+      <div class="gender-row">
+        <div class="gender-btn" data-gender="female" onclick="selectGender(this,'female')">女士</div>
+        <div class="gender-btn" data-gender="male" onclick="selectGender(this,'male')">先生</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">主角小传（可选）</div>
+      <textarea class="field-textarea" id="heroBio" placeholder="简单介绍一下你自己 —— 你是谁，你的气质，你的向往…写得越生动，故事越鲜活"></textarea>
+    </div>
+  </div>
+
+  <!-- 配角 -->
+  <div class="act" data-step="2">
+    <div class="act-label">第一幕</div>
+    <div class="act-title">重要配角</div>
+    <div class="act-desc">你的人生里，有哪些重要的人？</div>
+    <div class="tip">💫 你可以指定特定的人（比如某个名字），也可以让剧本自动为你安排。指定得越具体，故事越真实。</div>
+    <div class="character-list" id="characterList"></div>
+    <button class="add-character-btn" onclick="openCharacterModal()">＋ 添加一个角色</button>
+  </div>
+
+  <!-- 第二幕：经济 -->
+  <div class="act" data-step="3">
+    <div class="act-label">第二幕 · 场景一</div>
+    <div class="act-title">经济状况</div>
+    <div class="act-desc">在你的剧本里，你过着怎样的物质生活？</div>
+    <div class="tip">💫 越具体越好：住哪里、开什么车、有什么收藏、去哪里度假…这些细节会变成真实的场景。</div>
+    <div class="field">
+      <textarea class="field-textarea" id="sceneWealth" placeholder="例：我住在海景豪宅，开一辆保时捷，经常收到奢侈品牌的私人邀请，出席各种高端晚宴，账户里的数字持续增长…" style="min-height:140px;"></textarea>
+    </div>
+    <div class="field">
+      <div class="field-label">这个场景里，别人怎么称呼你？（可选）</div>
+      <input type="text" class="field-input" id="callWealth" placeholder="例：王女士 / Vivian / 王总">
+    </div>
+  </div>
+
+  <!-- 第二幕：感情 -->
+  <div class="act" data-step="4">
+    <div class="act-label">第二幕 · 场景二</div>
+    <div class="act-title">感情状况</div>
+    <div class="act-desc">在你的剧本里，你拥有怎样的爱与关系？</div>
+    <div class="tip">💫 可以描述你理想中的感情状态，或指定某个人如何对待你。</div>
+    <div class="field">
+      <textarea class="field-textarea" id="sceneLove" placeholder="例：他深深地爱着我，每天都会关心我、想念我，主动为我做很多浪漫的事，我们的关系甜蜜而稳定…" style="min-height:140px;"></textarea>
+    </div>
+    <div class="field">
+      <div class="field-label">这个场景里，TA怎么称呼你？（可选）</div>
+      <input type="text" class="field-input" id="callLove" placeholder="例：宝贝 / 亲爱的 / 你的爱称">
+    </div>
+  </div>
+
+  <!-- 第二幕：健康 -->
+  <div class="act" data-step="5">
+    <div class="act-label">第二幕 · 场景三</div>
+    <div class="act-title">健康状态</div>
+    <div class="act-desc">在你的剧本里，你的身体是怎样的状态？</div>
+    <div class="field">
+      <textarea class="field-textarea" id="sceneHealth" placeholder="例：我每天精力充沛，身材紧致健康，睡眠很好，身边的人都夸我气色越来越好…" style="min-height:140px;"></textarea>
+    </div>
+    <div class="field">
+      <div class="field-label">这个场景里，别人怎么称呼你？（可选）</div>
+      <input type="text" class="field-input" id="callHealth" placeholder="例：教练口中的你 / 昵称">
+    </div>
+  </div>
+
+  <!-- 第二幕：社交 -->
+  <div class="act" data-step="6">
+    <div class="act-label">第二幕 · 场景四</div>
+    <div class="act-title">社交圈子</div>
+    <div class="act-desc">在你的剧本里，你身处怎样的圈子？</div>
+    <div class="field">
+      <textarea class="field-textarea" id="sceneSocial" placeholder="例：我结识了很多优秀的朋友，经常受邀参加各种高端聚会，身边都是志同道合、彼此成就的人…" style="min-height:140px;"></textarea>
+    </div>
+    <div class="field">
+      <div class="field-label">这个场景里，朋友们怎么称呼你？（可选）</div>
+      <input type="text" class="field-input" id="callSocial" placeholder="例：英文名 / 圈子里的别称">
+    </div>
+  </div>
+
+  <!-- 结尾 -->
+  <div class="act" data-step="7">
+    <div class="cover">
+      <div class="cover-book">✨</div>
+      <div class="cover-title" style="font-size:30px;">剧本已完成</div>
+      <div class="cover-sub">你的人生剧本已经写好<br>从这一刻起，所有角色都将入戏<br>为你呈现这个「已经实现」的世界</div>
+      <button class="btn btn-start" onclick="finishScript()">✦ 剧本开演</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- 底部导航（非开场/结尾幕显示） -->
+<div class="act-footer" id="actFooter" style="display:none;">
+  <button class="btn btn-skip" onclick="skipAct()">跳过</button>
+  <button class="btn btn-next" onclick="nextAct()">下一幕 →</button>
+</div>
+
+<!-- 添加配角弹窗 -->
+<div class="modal" id="characterModal">
+  <div class="modal-box">
+    <div class="modal-title">添加一个角色</div>
+    <div class="field">
+      <div class="field-label">名字 / 称呼</div>
+      <input type="text" class="field-input" id="charName" placeholder="他/她叫什么">
+    </div>
+    <div class="field">
+      <div class="field-label">与你的关系</div>
+      <input type="text" class="field-input" id="charRelation" placeholder="例：男朋友、前任、合作伙伴…">
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeCharacterModal()">取消</button>
+      <button class="modal-confirm" onclick="addCharacter()">添加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 星星
+const starsEl = document.getElementById('stars');
+for(let i=0;i<70;i++){
+  const s=document.createElement('div');s.className='star';
+  const sz=Math.random()*2+1;
+  s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${2+Math.random()*3}s;animation-delay:${Math.random()*3}s`;
+  starsEl.appendChild(s);
+}
+
+const acts = document.querySelectorAll('.act');
+const totalSteps = acts.length;
+let currentStep = 0;
+
+const scriptData = {
+  hero: { name:'', gender:'', bio:'' },
+  characters: [],
+  scenes: { wealth:'', love:'', health:'', social:'' },
+  calls: { wealth:'', love:'', health:'', social:'' }
+};
+
+function updateUI(){
+  acts.forEach((a,i)=>{
+    a.classList.remove('active','prev');
+    if(i===currentStep) a.classList.add('active');
+    else if(i<currentStep) a.classList.add('prev');
+  });
+  document.getElementById('progressFill').style.width = (currentStep/(totalSteps-1)*100)+'%';
+  // 开场(0)和结尾(最后)不显示底部导航
+  const footer = document.getElementById('actFooter');
+  footer.style.display = (currentStep===0 || currentStep===totalSteps-1) ? 'none' : 'flex';
+  // 主角幕(1)不能跳过，隐藏跳过按钮
+  const skipBtn = document.querySelector('.btn-skip');
+  if(skipBtn) skipBtn.style.display = (currentStep===1) ? 'none' : 'block';
+}
+
+function nextAct(){
+  // 主角幕(step 1)必填校验
+  if(currentStep === 1){
+    const name = document.getElementById('heroName').value.trim();
+    if(!name){ shake(document.getElementById('heroName')); return; }
+    if(!scriptData.hero.gender){ 
+      const gr = document.querySelector('.gender-row');
+      shake(gr); return; 
+    }
+  }
+  saveCurrentStep();
+  if(currentStep < totalSteps-1){ currentStep++; updateUI(); }
+}
+function shake(el){
+  el.style.animation='shakeX 0.4s';
+  el.addEventListener('animationend',()=>el.style.animation='',{once:true});
+}
+function skipAct(){
+  if(currentStep < totalSteps-1){ currentStep++; updateUI(); }
+}
+
+function saveCurrentStep(){
+  scriptData.hero.name = document.getElementById('heroName').value;
+  scriptData.hero.bio = document.getElementById('heroBio').value;
+  scriptData.scenes.wealth = document.getElementById('sceneWealth').value;
+  scriptData.scenes.love = document.getElementById('sceneLove').value;
+  scriptData.scenes.health = document.getElementById('sceneHealth').value;
+  scriptData.scenes.social = document.getElementById('sceneSocial').value;
+  scriptData.calls.wealth = (document.getElementById('callWealth')||{}).value||'';
+  scriptData.calls.love = (document.getElementById('callLove')||{}).value||'';
+  scriptData.calls.health = (document.getElementById('callHealth')||{}).value||'';
+  scriptData.calls.social = (document.getElementById('callSocial')||{}).value||'';
+}
+
+function selectGender(el,g){
+  document.querySelectorAll('.gender-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  scriptData.hero.gender = g;
+}
+
+// 配角
+function openCharacterModal(){ document.getElementById('characterModal').classList.add('open'); }
+function closeCharacterModal(){
+  document.getElementById('characterModal').classList.remove('open');
+  document.getElementById('charName').value='';
+  document.getElementById('charRelation').value='';
+}
+function addCharacter(){
+  const name = document.getElementById('charName').value.trim();
+  const relation = document.getElementById('charRelation').value.trim();
+  if(!name) return;
+  scriptData.characters.push({name,relation});
+  renderCharacters();
+  closeCharacterModal();
+}
+function renderCharacters(){
+  const list = document.getElementById('characterList');
+  list.innerHTML='';
+  scriptData.characters.forEach((c,i)=>{
+    const card=document.createElement('div');
+    card.className='character-card';
+    card.innerHTML=`
+      <div class="character-avatar">${c.name[0]}</div>
+      <div class="character-info">
+        <div class="character-name">${c.name}</div>
+        <div class="character-relation">${c.relation||'重要的人'}</div>
+      </div>
+      <button class="character-del" onclick="delCharacter(${i})">✕</button>
+    `;
+    list.appendChild(card);
+  });
+}
+function delCharacter(i){ scriptData.characters.splice(i,1); renderCharacters(); }
+
+function finishScript(){
+  saveCurrentStep();
+  localStorage.setItem('lifeScript', JSON.stringify(scriptData));
+  // 之后跳转到微信场景
+  alert('剧本已保存！\n\n' + JSON.stringify(scriptData,null,2));
+  // window.location.href = 'wechat-list.html';
+}
+
+updateUI();
+</script>
+</body>
+</html>
