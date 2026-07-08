@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>我的世界</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{
+  font-family:'Noto Serif SC',serif;
+  height:100dvh;position:fixed;inset:0;
+  background:linear-gradient(180deg,#f5e8dc 0%,#e8dcc8 30%,#d8c8b0 60%,#c0b090 100%);
+  animation:fadeIn 1s ease-out;
+}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+/* 顶部时间/日期区 */
+.top-area{
+  position:absolute;top:calc(env(safe-area-inset-top,44px) + 8%);
+  left:0;width:100%;text-align:center;
+}
+.clock{font-size:64px;font-weight:300;color:#4a3828;letter-spacing:2px;}
+.date{font-size:15px;color:#6a5848;letter-spacing:3px;margin-top:4px;}
+.greeting{font-size:13px;color:#8a7058;letter-spacing:2px;margin-top:16px;opacity:0.8;}
+
+/* App网格 */
+.app-grid{
+  position:absolute;bottom:calc(env(safe-area-inset-bottom,20px) + 10%);
+  left:0;width:100%;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:24px 12px;padding:0 8%;
+}
+.app{
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  cursor:pointer;transition:transform 0.2s;
+}
+.app:active{transform:scale(0.9);}
+.app-icon{
+  width:60px;height:60px;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:30px;
+  box-shadow:0 4px 16px rgba(90,60,40,0.2);
+  position:relative;
+}
+.app-icon.locked{opacity:0.5;}
+.app-name{font-size:12px;color:#4a3828;letter-spacing:1px;}
+
+.icon-wechat{background:linear-gradient(135deg,#4ec16a,#3aad56);}
+.icon-vision{background:linear-gradient(135deg,#e8a0b8,#d878a0);}
+.icon-mail{background:linear-gradient(135deg,#6ab0e8,#4a90d8);}
+.icon-sms{background:linear-gradient(135deg,#8ad078,#6ab858);}
+.icon-more{background:linear-gradient(135deg,#c0a8d8,#a888c0);}
+
+.app-badge{
+  position:absolute;top:-5px;right:-5px;
+  background:#fa5151;color:#fff;min-width:20px;height:20px;
+  border-radius:10px;font-size:12px;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 5px;border:2px solid #f5e8dc;
+}
+
+.lock-tag{
+  position:absolute;bottom:-2px;right:-2px;
+  font-size:12px;background:rgba(0,0,0,0.3);border-radius:50%;
+  width:18px;height:18px;display:flex;align-items:center;justify-content:center;
+}
+
+/* 提示 */
+.toast{
+  position:absolute;bottom:30%;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(60,40,30,0.9);color:#f0e0d0;
+  padding:10px 20px;border-radius:20px;font-size:13px;letter-spacing:1px;
+  opacity:0;pointer-events:none;transition:all 0.3s;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* 返回秘境 */
+.back-garden{
+  position:absolute;top:calc(env(safe-area-inset-top,44px) + 12px);left:16px;
+  width:38px;height:38px;border-radius:50%;
+  background:rgba(255,255,255,0.3);backdrop-filter:blur(6px);
+  border:1px solid rgba(255,255,255,0.4);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:#4a3828;z-index:20;
+}
+.back-garden svg{width:20px;height:20px;}
+</style>
+</head>
+<body>
+
+<div class="back-garden" onclick="location.href='index.html'">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</div>
+
+<div class="top-area">
+  <div class="clock" id="clock">08:16</div>
+  <div class="date" id="date"></div>
+  <div class="greeting" id="greeting">这是你的世界，一切已然成真</div>
+</div>
+
+<div class="app-grid">
+  <div class="app" onclick="openApp('wechat')">
+    <div class="app-icon icon-wechat">💬<div class="app-badge" id="wxBadge">6</div></div>
+    <div class="app-name">微信</div>
+  </div>
+  <div class="app" onclick="openApp('mail')">
+    <div class="app-icon icon-mail locked">📧<div class="lock-tag">🔒</div></div>
+    <div class="app-name">邮箱</div>
+  </div>
+  <div class="app" onclick="openApp('sms')">
+    <div class="app-icon icon-sms locked">💌<div class="lock-tag">🔒</div></div>
+    <div class="app-name">短信</div>
+  </div>
+</div>
+
+<div class="toast" id="toast">敬请期待</div>
+
+<script>
+function updateClock(){
+  const now=new Date();
+  const h=String(now.getHours()).padStart(2,'0');
+  const m=String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent=`${h}:${m}`;
+  const days=['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+  document.getElementById('date').textContent=`${now.getMonth()+1}月${now.getDate()}日 ${days[now.getDay()]}`;
+}
+updateClock();
+setInterval(updateClock,10000);
+
+// 读取剧本主角名字做个性化问候
+try{
+  const s=JSON.parse(localStorage.getItem('lifeScript')||'{}');
+  if(s.hero&&s.hero.name){
+    document.getElementById('greeting').textContent=`${s.hero.name}，这是你的世界，一切已然成真`;
+  }
+}catch(e){}
+
+function openApp(app){
+  if(app==='wechat'){ location.href='wechat-list.html'; }
+  else{
+    const t=document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),1500);
+  }
+}
+</script>
+</body>
+</html>
