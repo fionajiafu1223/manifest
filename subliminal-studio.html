@@ -9,23 +9,23 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 body{
   font-family:'Noto Sans SC',sans-serif;
-  background:linear-gradient(165deg,#1a1040 0%,#0e0828 55%,#080418 100%);
-  min-height:100vh;color:#e0d5f0;
+  background:linear-gradient(180deg,#f0ecd8 0%,#e4ecc8 25%,#d0e4b8 55%,#b8d8a0 80%,#a0cc90 100%);
+  min-height:100vh;color:#4a3828;
   padding:2rem 1.2rem 4rem;
 }
 .wrap{max-width:460px;margin:0 auto;}
 .header{text-align:center;margin-bottom:2rem;}
-.header h1{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:400;color:#d0b8f0;letter-spacing:4px;margin-bottom:6px;}
-.header p{font-size:12px;color:#8a7ab0;letter-spacing:2px;}
+.header h1{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:400;color:#c89030;letter-spacing:4px;margin-bottom:6px;}
+.header p{font-size:12px;color:#8a7868;letter-spacing:2px;}
 
 .card{
-  background:rgba(40,25,80,0.5);
-  border:1px solid rgba(160,120,220,0.2);
+  background:rgba(255,255,255,0.85);
+  border:1px solid rgba(120,160,90,0.3);
   border-radius:20px;padding:1.4rem;margin-bottom:1.2rem;
   backdrop-filter:blur(10px);
 }
-.card-title{font-family:'Noto Serif SC',serif;font-size:15px;color:#c0a8e0;letter-spacing:2px;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
-.step-num{background:linear-gradient(135deg,#8a5fc0,#a878d8);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0;}
+.card-title{font-family:'Noto Serif SC',serif;font-size:15px;color:#3a4a2a;letter-spacing:2px;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+.step-num{background:linear-gradient(135deg,#5a9060,#3a7048);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0;}
 
 /* 录音区 */
 .record-area{display:flex;flex-direction:column;align-items:center;gap:14px;}
@@ -39,33 +39,33 @@ body{
 .record-btn.recording{background:radial-gradient(circle at 38% 35%,rgba(255,60,60,0.9),rgba(160,10,10,0.85));animation:recPulse 1.4s infinite;}
 .record-btn.has-recording{background:radial-gradient(circle at 38% 35%,rgba(80,180,120,0.88),rgba(20,100,60,0.78));}
 @keyframes recPulse{0%,100%{box-shadow:0 4px 18px rgba(180,30,30,0.4),0 0 0 0 rgba(220,60,60,0.35);}50%{box-shadow:0 4px 24px rgba(220,30,30,0.6),0 0 0 14px rgba(220,60,60,0);}}
-.record-timer{font-family:'Noto Serif SC',serif;font-size:1.4rem;color:#d0c0f0;letter-spacing:0.1em;}
-.record-status{font-size:12px;color:#9a8ac0;letter-spacing:1px;text-align:center;}
+.record-timer{font-family:'Noto Serif SC',serif;font-size:1.4rem;color:#4a3828;letter-spacing:0.1em;}
+.record-status{font-size:12px;color:#8a7868;letter-spacing:1px;text-align:center;}
 
 .upload-zone{
-  border:1.5px dashed rgba(160,120,220,0.35);border-radius:14px;
+  border:1.5px dashed rgba(180,140,90,0.4);border-radius:14px;
   padding:14px;text-align:center;cursor:pointer;transition:all 0.2s;
-  margin-top:12px;font-size:12px;color:#9a8ac0;
+  margin-top:12px;font-size:12px;color:#8a7868;
 }
-.upload-zone:hover{border-color:rgba(180,140,240,0.6);background:rgba(255,255,255,0.04);}
+.upload-zone:hover{border-color:rgba(200,150,70,0.7);background:rgba(255,255,255,0.3);}
 
 .guide-tip{
-  background:rgba(160,120,220,0.12);border-radius:10px;padding:10px 12px;
-  font-size:11px;color:#b0a0d0;line-height:1.7;margin-bottom:12px;
+  background:rgba(232,176,74,0.15);border-radius:10px;padding:10px 12px;
+  font-size:11px;color:#8a6838;line-height:1.7;margin-bottom:12px;
 }
 
 /* 滑块 */
 .slider-row{margin-bottom:1.2rem;}
-.slider-label{display:flex;justify-content:space-between;font-size:13px;color:#b8a8d8;margin-bottom:8px;}
-.slider-value{color:#d8b8ff;font-family:'Noto Serif SC',serif;}
+.slider-label{display:flex;justify-content:space-between;font-size:13px;color:#3a4a2a;margin-bottom:8px;}
+.slider-value{color:#c89030;font-family:'Noto Serif SC',serif;}
 input[type=range]{
   width:100%;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;
-  background:rgba(255,255,255,0.15);outline:none;cursor:pointer;
+  background:rgba(120,90,60,0.2);outline:none;cursor:pointer;
 }
 input[type=range]::-webkit-slider-thumb{
   -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
-  background:linear-gradient(135deg,#c090ff,#9060d0);
-  box-shadow:0 2px 8px rgba(140,80,220,0.5);cursor:pointer;
+  background:linear-gradient(135deg,#e8b04a,#c89030);
+  box-shadow:0 2px 8px rgba(180,140,60,0.5);cursor:pointer;
 }
 
 .btn-row{display:flex;gap:10px;margin-top:8px;}
@@ -75,18 +75,18 @@ input[type=range]::-webkit-slider-thumb{
   transition:opacity 0.2s,transform 0.1s;
 }
 .btn:active{transform:scale(0.98);}
-.btn-play{background:rgba(100,120,220,0.4);color:#d0e0ff;border:1px solid rgba(120,160,255,0.3);}
-.btn-primary{background:linear-gradient(135deg,#8a4fc0,#b070e0);color:#fff;}
+.btn-play{background:rgba(232,176,74,0.25);color:#8a6838;border:1px solid rgba(200,150,70,0.4);}
+.btn-primary{background:linear-gradient(135deg,#d89838,#c88828);color:#fff;}
 .btn:disabled{opacity:0.4;cursor:not-allowed;}
 
-.hint{font-size:11px;color:#7a6a a0;text-align:center;margin-top:10px;line-height:1.6;color:#8070a0;}
+.hint{font-size:11px;text-align:center;margin-top:10px;line-height:1.6;color:#9a8878;}
 
-.processing{display:none;text-align:center;padding:1rem;color:#b0a0d0;font-size:13px;}
+.processing{display:none;text-align:center;padding:1rem;color:#8a6838;font-size:13px;}
 .processing.show{display:block;}
 </style>
 </head>
 <body>
-<div id="back-to-garden" style="position:fixed;top:calc(env(safe-area-inset-top,44px) + 12px);left:16px;z-index:9999;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#e0d5f0;" onclick="window.location.href='index.html'"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+<div id="back-to-garden" style="position:fixed;top:calc(env(safe-area-inset-top,44px) + 12px);left:16px;z-index:9999;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.6);border:1px solid rgba(120,160,90,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#3a4a2a;" onclick="window.location.href='index.html'"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
 
 <div class="wrap">
   <div class="header">
