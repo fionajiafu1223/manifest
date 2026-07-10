@@ -11,8 +11,8 @@ html,body{width:100%;height:100%;overflow:hidden;}
 body{
   font-family:'Noto Serif SC',serif;
   height:100dvh;position:fixed;inset:0;
-  background:linear-gradient(180deg,#2a2440 0%,#1a1630 60%,#12101f 100%);
-  color:#e8e0f0;
+  background:linear-gradient(180deg,#f0ecd8 0%,#e4ecc8 25%,#d0e4b8 55%,#b8d8a0 80%,#a0cc90 100%);
+  color:#4a3828;
 }
 
 /* 顶栏 */
@@ -23,10 +23,10 @@ body{
   padding-left:12px;padding-right:12px;
   height:calc(env(safe-area-inset-top,44px) + 52px);
 }
-.back-btn{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#e8e0f0;}
+.back-btn{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#4a3828;}
 .back-btn svg{width:20px;height:20px;}
-.topbar-title{font-size:17px;letter-spacing:3px;color:#e8dcf0;}
-.mode-toggle{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#e8e0f0;}
+.topbar-title{font-size:17px;letter-spacing:3px;color:#4a3828;}
+.mode-toggle{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#4a3828;}
 .mode-toggle svg{width:20px;height:20px;}
 
 /* 拼贴模式 */
@@ -55,7 +55,7 @@ body{
 /* 空状态 */
 .empty{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  text-align:center;color:#8a7ab0;width:80%;
+  text-align:center;color:#9a8878;width:80%;
 }
 .empty-icon{font-size:52px;margin-bottom:16px;opacity:0.6;}
 .empty-text{font-size:14px;line-height:2;letter-spacing:1px;}
@@ -64,9 +64,9 @@ body{
 .fab{
   position:absolute;bottom:calc(env(safe-area-inset-bottom,20px) + 20px);
   right:20px;width:56px;height:56px;border-radius:50%;
-  background:linear-gradient(135deg,#a878d8,#8858c0);
+  background:linear-gradient(135deg,#e8b04a,#d89838);
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 20px rgba(140,80,200,0.5);cursor:pointer;z-index:20;
+  box-shadow:0 6px 20px rgba(200,150,60,0.5);cursor:pointer;z-index:20;
   color:#fff;font-size:28px;
 }
 

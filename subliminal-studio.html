@@ -146,7 +146,7 @@ input[type=range]::-webkit-slider-thumb{
 </div>
 
 <!-- SoundTouch.js 变速不变调库 -->
-<script src="https://cdn.jsdelivr.net/npm/soundtouchjs@0.1.30/dist/soundtouch.min.js"></script>
+<script src="https://unpkg.com/soundtouchjs@0.1.30/dist/soundtouch.js"></script>
 <script>
 let audioCtx = null;
 let recordedBuffer = null;      // 录制/上传的原始音频
@@ -237,42 +237,67 @@ function enableControls(){
 
 // ─── 变速不变调处理（SoundTouch）───
 function processAudio(buffer, speed) {
-  const st = new soundtouch.SoundTouch(buffer.sampleRate);
-  st.tempo = speed;  // tempo改变速度但不变调
-  const numFrames = buffer.length;
+  const numChannels = buffer.numberOfChannels;
   const left = buffer.getChannelData(0);
-  const right = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : left;
+  const right = numChannels > 1 ? buffer.getChannelData(1) : left;
+  const totalFrames = buffer.length;
 
+  // SoundTouchJS 的 WebAudio 命名空间
+  const ST = window.soundtouch || window.SoundTouch || {};
+  const SoundTouchClass = ST.SoundTouch;
+  const SimpleFilterClass = ST.SimpleFilter;
+
+  if (!SoundTouchClass || !SimpleFilterClass) {
+    console.error('SoundTouch未加载');
+    return buffer;
+  }
+
+  const st = new SoundTouchClass();
+  st.tempo = speed;      // 变速不变调
+  st.pitch = 1;
+  st.rate = 1;
+
+  // source：交错的立体声样本
+  let readPos = 0;
   const source = {
-    extract: function(target, numFrames, position) {
-      for (let i = 0; i < numFrames; i++) {
-        target[i*2] = left[position + i] || 0;
-        target[i*2+1] = right[position + i] || 0;
+    extract: function(target, numFrames) {
+      const remaining = totalFrames - readPos;
+      const toRead = Math.min(numFrames, remaining);
+      for (let i = 0; i < toRead; i++) {
+        target[i * 2] = left[readPos + i];
+        target[i * 2 + 1] = right[readPos + i];
       }
-      return Math.min(numFrames, buffer.length - position);
+      readPos += toRead;
+      return toRead;
     }
   };
 
-  const filter = new soundtouch.SimpleFilter(source, st);
-  const outLength = Math.floor(numFrames / speed);
-  const outBuffer = getCtx().createBuffer(2, outLength, buffer.sampleRate);
-  const outL = outBuffer.getChannelData(0);
-  const outR = outBuffer.getChannelData(1);
+  const filter = new SimpleFilterClass(source, st);
+
+  // 输出收集
+  const outFrames = Math.ceil(totalFrames / speed) + 4096;
+  const outL = new Float32Array(outFrames);
+  const outR = new Float32Array(outFrames);
 
   const BLOCK = 4096;
   const samples = new Float32Array(BLOCK * 2);
-  let pos = 0;
-  while (pos < outLength) {
-    const extracted = filter.extract(samples, BLOCK);
-    if (extracted === 0) break;
+  let writePos = 0;
+  let extracted;
+  let guard = 0;
+  while ((extracted = filter.extract(samples, BLOCK)) > 0) {
     for (let i = 0; i < extracted; i++) {
-      if (pos + i < outLength) {
-        outL[pos + i] = samples[i*2];
-        outR[pos + i] = samples[i*2+1];
+      if (writePos + i < outFrames) {
+        outL[writePos + i] = samples[i * 2];
+        outR[writePos + i] = samples[i * 2 + 1];
       }
     }
-    pos += extracted;
+    writePos += extracted;
+    if (++guard > 100000) break; // 防死循环
   }
+
+  const outBuffer = getCtx().createBuffer(2, writePos || 1, buffer.sampleRate);
+  outBuffer.copyToChannel(outL.subarray(0, writePos), 0);
+  outBuffer.copyToChannel(outR.subarray(0, writePos), 1);
   return outBuffer;
 }
 
@@ -280,36 +305,45 @@ function processAudio(buffer, speed) {
 document.getElementById('previewBtn').onclick = async () => {
   const btn = document.getElementById('previewBtn');
   if (isPreviewPlaying) {
-    if (previewSource) previewSource.stop();
+    try { if (previewSource) previewSource.stop(); } catch(e){}
     isPreviewPlaying = false;
     btn.textContent = '▶ 试听效果';
     return;
   }
-  if (!recordedBuffer) return;
+  if (!recordedBuffer) { alert('请先录制或上传一段声音'); return; }
+
   const ctx = getCtx();
-  await ctx.resume();
+  await ctx.resume();  // 必须在用户点击时resume
 
   const speed = parseFloat(speedSlider.value);
   const voiceVol = parseInt(voiceSlider.value) / 100;
 
-  btn.textContent = '⏹ 停止';
-  isPreviewPlaying = true;
+  btn.textContent = '处理中…';
 
-  // 处理人声（变速不变调）
-  const processed = speed === 1 ? recordedBuffer : processAudio(recordedBuffer, speed);
+  try {
+    // 处理人声（变速不变调）
+    const processed = (speed === 1) ? recordedBuffer : processAudio(recordedBuffer, speed);
 
-  previewSource = ctx.createBufferSource();
-  previewSource.buffer = processed;
-  const gain = ctx.createGain();
-  gain.gain.value = voiceVol;
-  previewSource.connect(gain).connect(ctx.destination);
-  previewSource.loop = true;
-  previewSource.start();
+    previewSource = ctx.createBufferSource();
+    previewSource.buffer = processed;
+    const gain = ctx.createGain();
+    gain.gain.value = voiceVol;
+    previewSource.connect(gain).connect(ctx.destination);
+    previewSource.loop = true;
+    previewSource.start();
+    isPreviewPlaying = true;
+    btn.textContent = '⏹ 停止';
 
-  previewSource.onended = () => {
-    isPreviewPlaying = false;
+    previewSource.onended = () => {
+      isPreviewPlaying = false;
+      btn.textContent = '▶ 试听效果';
+    };
+  } catch(err) {
+    console.error(err);
+    alert('处理出错：' + err.message);
     btn.textContent = '▶ 试听效果';
-  };
+    isPreviewPlaying = false;
+  }
 };
 
 // ─── 合成导出 ───
@@ -321,31 +355,35 @@ document.getElementById('exportBtn').onclick = async () => {
   const speed = parseFloat(speedSlider.value);
   const voiceVol = parseInt(voiceSlider.value) / 100;
 
-  setTimeout(async () => {
-    const processed = speed === 1 ? recordedBuffer : processAudio(recordedBuffer, speed);
+    try {
+      const processed = (speed === 1) ? recordedBuffer : processAudio(recordedBuffer, speed);
 
-    // 用OfflineAudioContext渲染最终音频
-    const offline = new OfflineAudioContext(2, processed.length, processed.sampleRate);
-    const src = offline.createBufferSource();
-    src.buffer = processed;
-    const gain = offline.createGain();
-    gain.gain.value = voiceVol;
-    src.connect(gain).connect(offline.destination);
-    src.start();
-    const rendered = await offline.startRendering();
+      const offline = new OfflineAudioContext(2, processed.length, processed.sampleRate);
+      const src = offline.createBufferSource();
+      src.buffer = processed;
+      const gain = offline.createGain();
+      gain.gain.value = voiceVol;
+      src.connect(gain).connect(offline.destination);
+      src.start();
+      const rendered = await offline.startRendering();
 
-    // 转成WAV下载
-    const wav = bufferToWav(rendered);
-    const blob = new Blob([wav], { type: 'audio/wav' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = '潜意识音频.wav';
-    a.click();
+      const wav = bufferToWav(rendered);
+      const blob = new Blob([wav], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '潜意识音频.wav';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
 
-    proc.classList.remove('show');
-    document.getElementById('exportHint').style.display = 'block';
-  }, 100);
+      proc.classList.remove('show');
+      document.getElementById('exportHint').style.display = 'block';
+    } catch(err) {
+      console.error(err);
+      proc.classList.remove('show');
+      alert('合成出错：' + err.message);
+    }
 };
 
 // WAV编码

@@ -10,22 +10,22 @@
 html,body{width:100%;height:100%;overflow:hidden;}
 body{
   font-family:'Noto Serif SC',serif;
-  background:radial-gradient(ellipse at 50% 20%,#2a1a4e 0%,#14092e 55%,#0a0518 100%);
-  height:100dvh;color:#e8dcc8;
+  background:linear-gradient(180deg,#f0ecd8 0%,#e4ecc8 25%,#d0e4b8 55%,#b8d8a0 80%,#a0cc90 100%);
+  height:100dvh;color:#4a3828;
   position:fixed;top:0;left:0;right:0;bottom:0;
   display:flex;flex-direction:column;
 }
 
 /* 星光背景 */
 .stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
-.star{position:absolute;background:#fff;border-radius:50%;animation:tw var(--d) infinite alternate;}
+.star{position:absolute;background:#e8b04a;border-radius:50%;animation:tw var(--d) infinite alternate;}
 @keyframes tw{0%{opacity:0.1;}100%{opacity:0.7;}}
 @keyframes shakeX{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
 
 /* 进度条 */
 .progress-bar{
   position:relative;z-index:5;
-  height:3px;background:rgba(255,255,255,0.1);
+  height:3px;background:rgba(120,90,60,0.15);
   margin-top:env(safe-area-inset-top, 44px);
   flex-shrink:0;
 }
@@ -48,15 +48,15 @@ body{
 /* 幕标题 */
 .act-label{
   font-family:'Ma Shan Zheng',serif;
-  font-size:14px;color:#c8a04a;letter-spacing:4px;
+  font-size:14px;color:#c89030;letter-spacing:4px;
   text-align:center;margin-bottom:0.5rem;
 }
 .act-title{
-  font-size:26px;font-weight:600;color:#f0e0c0;
+  font-size:26px;font-weight:600;color:#4a3828;
   text-align:center;margin-bottom:0.6rem;letter-spacing:2px;
 }
 .act-desc{
-  font-size:13px;color:#a898c0;text-align:center;
+  font-size:13px;color:#7a6858;text-align:center;
   line-height:1.8;margin-bottom:2rem;letter-spacing:1px;
 }
 
@@ -66,58 +66,58 @@ body{
   height:100%;text-align:center;
 }
 .cover-book{font-size:72px;margin-bottom:1.5rem;filter:drop-shadow(0 0 20px rgba(200,160,74,0.5));}
-.cover-title{font-family:'Ma Shan Zheng',serif;font-size:38px;color:#f0d060;letter-spacing:6px;margin-bottom:1rem;filter:drop-shadow(0 0 12px rgba(240,208,96,0.4));}
-.cover-sub{font-size:13px;color:#a898c0;letter-spacing:2px;line-height:2;margin-bottom:3rem;}
+.cover-title{font-family:'Ma Shan Zheng',serif;font-size:38px;color:#c89030;letter-spacing:6px;margin-bottom:1rem;filter:drop-shadow(0 0 12px rgba(240,208,96,0.4));}
+.cover-sub{font-size:13px;color:#7a6858;letter-spacing:2px;line-height:2;margin-bottom:3rem;}
 
 /* 表单元素 */
 .field{margin-bottom:1.4rem;}
-.field-label{font-size:14px;color:#c8b8d8;margin-bottom:0.6rem;letter-spacing:1px;}
+.field-label{font-size:14px;color:#6a5848;margin-bottom:0.6rem;letter-spacing:1px;}
 .field-input,.field-textarea{
-  width:100%;background:rgba(255,255,255,0.06);
-  border:1px solid rgba(200,160,220,0.25);border-radius:12px;
-  padding:0.9rem 1rem;color:#f0e8d8;
+  width:100%;background:rgba(255,255,255,0.55);
+  border:1px solid rgba(180,140,90,0.3);border-radius:12px;
+  padding:0.9rem 1rem;color:#4a3828;
   font-family:'Noto Serif SC',serif;font-size:15px;
   outline:none;transition:border-color 0.2s;
 }
-.field-input:focus,.field-textarea:focus{border-color:rgba(240,208,96,0.5);}
-.field-input::placeholder,.field-textarea::placeholder{color:#7a6a9a;}
+.field-input:focus,.field-textarea:focus{border-color:rgba(200,150,70,0.7);}
+.field-input::placeholder,.field-textarea::placeholder{color:#b0a090;}
 .field-textarea{min-height:100px;resize:none;line-height:1.7;}
 
 /* 性别选择 */
 .gender-row{display:flex;gap:12px;}
 .gender-btn{
   flex:1;padding:0.9rem;text-align:center;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(200,160,220,0.25);border-radius:12px;
-  color:#c8b8d8;font-size:15px;cursor:pointer;transition:all 0.2s;
+  background:rgba(255,255,255,0.55);
+  border:1px solid rgba(180,140,90,0.3);border-radius:12px;
+  color:#6a5848;font-size:15px;cursor:pointer;transition:all 0.2s;
   font-family:'Noto Serif SC',serif;
 }
-.gender-btn.selected{background:rgba(240,208,96,0.15);border-color:#f0d060;color:#f0e0c0;}
+.gender-btn.selected{background:rgba(232,176,74,0.2);border-color:#e8b04a;color:#4a3828;}
 
 /* 提示 */
 .tip{
-  background:rgba(200,160,74,0.1);border-radius:10px;
-  padding:0.8rem 1rem;font-size:12px;color:#c8b090;
+  background:rgba(232,176,74,0.15);border-radius:10px;
+  padding:0.8rem 1rem;font-size:12px;color:#8a6838;
   line-height:1.7;margin-bottom:1.5rem;letter-spacing:0.5px;
 }
 
 /* 配角列表 */
 .character-list{display:flex;flex-direction:column;gap:10px;margin-bottom:1rem;}
 .character-card{
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(200,160,220,0.2);border-radius:12px;
+  background:rgba(255,255,255,0.55);
+  border:1px solid rgba(180,140,90,0.25);border-radius:12px;
   padding:0.9rem 1rem;display:flex;align-items:center;gap:12px;
 }
 .character-avatar{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,#8a6cb0,#6a4c90);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
 .character-info{flex:1;min-width:0;}
-.character-name{font-size:15px;color:#f0e8d8;}
-.character-relation{font-size:12px;color:#a898c0;margin-top:2px;}
+.character-name{font-size:15px;color:#4a3828;}
+.character-relation{font-size:12px;color:#8a7868;margin-top:2px;}
 .character-del{background:none;border:none;color:#8a7aa0;font-size:18px;cursor:pointer;padding:4px;}
 .add-character-btn{
   width:100%;padding:0.9rem;
-  background:rgba(255,255,255,0.04);
-  border:1.5px dashed rgba(200,160,220,0.3);border-radius:12px;
-  color:#b0a0d0;font-size:14px;cursor:pointer;
+  background:rgba(255,255,255,0.4);
+  border:1.5px dashed rgba(180,140,90,0.4);border-radius:12px;
+  color:#8a6838;font-size:14px;cursor:pointer;
   font-family:'Noto Serif SC',serif;
 }
 .add-character-btn:hover{border-color:rgba(240,208,96,0.5);}
@@ -134,7 +134,7 @@ body{
   transition:opacity 0.2s,transform 0.1s;
 }
 .btn:active{transform:scale(0.98);}
-.btn-skip{flex:0 0 auto;padding:0.9rem 1.4rem;background:rgba(255,255,255,0.06);color:#a898c0;border:1px solid rgba(200,160,220,0.2);}
+.btn-skip{flex:0 0 auto;padding:0.9rem 1.4rem;background:rgba(255,255,255,0.5);color:#7a6858;border:1px solid rgba(180,140,90,0.25);}
 .btn-next{flex:1;background:linear-gradient(135deg,#c8a04a,#f0d060);color:#3a2810;font-weight:600;}
 .btn-start{width:100%;background:linear-gradient(135deg,#c8a04a,#f0d060);color:#3a2810;font-weight:600;padding:1rem;font-size:16px;}
 
@@ -147,20 +147,20 @@ body{
 }
 .modal.open{opacity:1;pointer-events:auto;}
 .modal-box{
-  background:linear-gradient(160deg,#241245,#1a0e38);
-  border:1px solid rgba(200,160,220,0.3);border-radius:20px;
+  background:linear-gradient(160deg,#fdf4e8,#f8ecd8);
+  border:1px solid rgba(180,140,90,0.3);border-radius:20px;
   padding:1.6rem;width:100%;max-width:340px;
   transform:scale(0.92);transition:transform 0.3s;
 }
 .modal.open .modal-box{transform:scale(1);}
-.modal-title{font-size:18px;color:#f0e0c0;text-align:center;margin-bottom:1.4rem;letter-spacing:2px;}
+.modal-title{font-size:18px;color:#4a3828;text-align:center;margin-bottom:1.4rem;letter-spacing:2px;}
 .modal-btns{display:flex;gap:10px;margin-top:1.4rem;}
-.modal-cancel{flex:1;padding:0.8rem;background:rgba(255,255,255,0.06);border:1px solid rgba(200,160,220,0.2);border-radius:12px;color:#a898c0;font-size:14px;cursor:pointer;font-family:inherit;}
+.modal-cancel{flex:1;padding:0.8rem;background:rgba(120,90,60,0.1);border:1px solid rgba(180,140,90,0.25);border-radius:12px;color:#7a6858;font-size:14px;cursor:pointer;font-family:inherit;}
 .modal-confirm{flex:1;padding:0.8rem;background:linear-gradient(135deg,#c8a04a,#f0d060);border:none;border-radius:12px;color:#3a2810;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600;}
 </style>
 </head>
 <body>
-<div id="back-to-garden" style="position:fixed;top:calc(env(safe-area-inset-top,44px) + 12px);left:16px;z-index:9999;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#e8dcc8;" onclick="if(confirm('确定离开剧本？未保存的内容会丢失。'))window.location.href='index.html'"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+<div id="back-to-garden" style="position:fixed;top:calc(env(safe-area-inset-top,44px) + 12px);left:16px;z-index:9999;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#4a3828;" onclick="if(confirm('确定离开剧本？未保存的内容会丢失。'))window.location.href='index.html'"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
 
 
 <div class="stars" id="stars"></div>
