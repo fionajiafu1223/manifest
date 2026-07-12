@@ -106,11 +106,11 @@ body{
     <div class="app-name">微信</div>
   </div>
   <div class="app" onclick="openApp('mail')">
-    <div class="app-icon icon-mail locked">📧<div class="lock-tag">🔒</div></div>
+    <div class="app-icon icon-mail">📧<div class="app-badge">5</div></div>
     <div class="app-name">邮箱</div>
   </div>
   <div class="app" onclick="openApp('sms')">
-    <div class="app-icon icon-sms locked">💌<div class="lock-tag">🔒</div></div>
+    <div class="app-icon icon-sms">💬<div class="app-badge">4</div></div>
     <div class="app-name">短信</div>
   </div>
 </div>
@@ -139,6 +139,8 @@ try{
 
 function openApp(app){
   if(app==='wechat'){ location.href='wechat-list.html'; }
+  else if(app==='mail'){ location.href='email-list.html'; }
+  else if(app==='sms'){ location.href='sms-list.html'; }
   else{
     const t=document.getElementById('toast');
     t.classList.add('show');

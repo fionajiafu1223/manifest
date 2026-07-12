@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>信息</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;height:100dvh;position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;}
+
+.status-bar{height:env(safe-area-inset-top,44px);background:#fff;flex-shrink:0;}
+
+/* 列表页顶栏 */
+.sms-header{padding:4px 16px 10px;flex-shrink:0;}
+.sms-title{font-size:34px;font-weight:700;color:#000;letter-spacing:-0.5px;}
+.sms-search{background:#e4e4e6;border-radius:10px;height:36px;display:flex;align-items:center;padding:0 8px;gap:6px;margin-top:8px;}
+.sms-search svg{width:16px;height:16px;fill:#8e8e93;}
+.sms-search span{color:#8e8e93;font-size:16px;}
+
+/* 会话列表 */
+.thread-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.thread{display:flex;padding:10px 16px;gap:12px;cursor:pointer;align-items:flex-start;position:relative;}
+.thread:active{background:#f0f0f0;}
+.thread::after{content:'';position:absolute;left:70px;right:0;bottom:0;height:0.5px;background:#e5e5e5;}
+.thread-dot{width:10px;flex-shrink:0;display:flex;align-items:center;padding-top:18px;}
+.thread-dot span{width:8px;height:8px;border-radius:50%;background:#007aff;display:block;}
+.thread-avatar{width:48px;height:48px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;font-weight:400;}
+.thread-body{flex:1;min-width:0;}
+.thread-top{display:flex;justify-content:space-between;align-items:baseline;}
+.thread-name{font-size:16px;color:#000;font-weight:600;}
+.thread-time{font-size:13px;color:#8e8e93;flex-shrink:0;}
+.thread-preview{font-size:15px;color:#8e8e93;line-height:1.35;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+/* 返回 */
+.back-btn{position:fixed;top:calc(env(safe-area-inset-top,44px) + 6px);left:8px;z-index:100;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#007aff;}
+.back-btn svg{width:26px;height:26px;}
+
+/* 对话详情 */
+.chat-detail{position:fixed;inset:0;z-index:200;background:#fff;transform:translateX(100%);transition:transform 0.35s;display:flex;flex-direction:column;}
+.chat-detail.open{transform:translateX(0);}
+.chat-head{display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top,44px) + 4px) 12px 8px;flex-shrink:0;border-bottom:0.5px solid #e5e5e5;position:relative;}
+.chat-back{position:absolute;left:8px;top:calc(env(safe-area-inset-top,44px) + 6px);color:#007aff;cursor:pointer;display:flex;align-items:center;}
+.chat-back svg{width:26px;height:26px;}
+.chat-head-avatar{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;margin-bottom:3px;}
+.chat-head-name{font-size:13px;color:#000;display:flex;align-items:center;gap:3px;}
+.chat-head-name svg{width:12px;height:12px;fill:#8e8e93;}
+
+.chat-body{flex:1;overflow-y:auto;padding:14px 12px;-webkit-overflow-scrolling:touch;}
+.msg-time-label{text-align:center;font-size:11px;color:#8e8e93;margin:12px 0;}
+.msg-time-label b{color:#8e8e93;font-weight:600;}
+.bubble-row{display:flex;margin-bottom:4px;}
+.bubble-row.them{justify-content:flex-start;}
+.bubble-row.me{justify-content:flex-end;}
+.bubble{max-width:72%;padding:8px 14px;border-radius:19px;font-size:16px;line-height:1.35;word-break:break-word;}
+.bubble-row.them .bubble{background:#e9e9eb;color:#000;border-bottom-left-radius:5px;}
+.bubble-row.me .bubble{background:#007aff;color:#fff;border-bottom-right-radius:5px;}
+
+.chat-inputbar{flex-shrink:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom,20px));display:flex;align-items:center;gap:8px;border-top:0.5px solid #e5e5e5;}
+.chat-input{flex:1;border:1px solid #d1d1d6;border-radius:18px;height:36px;padding:0 14px;font-size:16px;outline:none;font-family:inherit;}
+</style>
+</head>
+<body>
+
+<div class="status-bar"></div>
+
+<div class="back-btn" onclick="location.href='desktop.html'">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</div>
+
+<div class="sms-header">
+  <div class="sms-title">信息</div>
+  <div class="sms-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="#8e8e93" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke="#8e8e93" stroke-width="2"/></svg><span>搜索</span></div>
+</div>
+
+<div class="thread-list" id="threadList"></div>
+
+<!-- 对话 -->
+<div class="chat-detail" id="chatDetail">
+  <div class="chat-head">
+    <div class="chat-back" onclick="closeChat()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="chat-head-avatar" id="chatAvatar"></div>
+    <div class="chat-head-name" id="chatName"></div>
+  </div>
+  <div class="chat-body" id="chatBody"></div>
+  <div class="chat-inputbar">
+    <input type="text" class="chat-input" id="chatInput" placeholder="短信/彩信">
+  </div>
+</div>
+
+<script>
+const colors=['#7cb342','#5a9adf','#f4a939','#8e63ce','#ec6a5e','#26a69a'];
+
+const threads=[
+  { name:'招商银行', time:'刚刚', avatar:'银',
+    msgs:[ {t:'【招商银行】您尾号8888的账户于今日14:23收到一笔转账 人民币 +￥1,000,000.00，当前余额￥8,860,000.00。',them:true} ],
+    preview:'您尾号8888的账户收到一笔转账 +￥1,000,000.00' },
+  { name:'国航头等舱', time:'上午 10:30', avatar:'国',
+    msgs:[ {t:'尊敬的白金卡会员，您预订的CA981航班（北京-纽约）已为您免费升舱至头等舱。祝您旅途愉快。',them:true} ],
+    preview:'您预订的航班已为您免费升舱至头等舱' },
+  { name:'宝格丽会所', time:'昨天', avatar:'宝',
+    msgs:[ {t:'尊贵的会员，您预约的私人SPA已确认，本周六下午3点，我们已为您准备好一切。',them:true} ],
+    preview:'您预约的私人SPA已确认，本周六下午3点' },
+  { name:'保时捷中心', time:'昨天', avatar:'保',
+    msgs:[ {t:'女士您好，您定制的新车已到店，随时可安排交付。我们也为您准备了专属提车仪式。',them:true} ],
+    preview:'您定制的新车已到店，随时可安排交付' },
+];
+
+const listEl=document.getElementById('threadList');
+function render(){
+  listEl.innerHTML='';
+  threads.forEach((t,i)=>{
+    const el=document.createElement('div');
+    el.className='thread';
+    const color=colors[i%colors.length];
+    el.innerHTML=`
+      <div class="thread-dot"><span></span></div>
+      <div class="thread-avatar" style="background:${color};">${t.avatar}</div>
+      <div class="thread-body">
+        <div class="thread-top"><span class="thread-name">${t.name}</span><span class="thread-time">${t.time} ›</span></div>
+        <div class="thread-preview">${t.preview}</div>
+      </div>
+    `;
+    el.onclick=()=>openChat(i);
+    listEl.appendChild(el);
+  });
+}
+
+function openChat(i){
+  const t=threads[i];
+  const color=colors[i%colors.length];
+  document.getElementById('chatAvatar').textContent=t.avatar;
+  document.getElementById('chatAvatar').style.background=color;
+  document.getElementById('chatName').innerHTML=t.name+' <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>';
+  const body=document.getElementById('chatBody');
+  body.innerHTML='<div class="msg-time-label"><b>信息</b> '+t.time+'</div>';
+  t.msgs.forEach(m=>{
+    const row=document.createElement('div');
+    row.className='bubble-row '+(m.them?'them':'me');
+    row.innerHTML=`<div class="bubble">${m.t}</div>`;
+    body.appendChild(row);
+  });
+  document.getElementById('chatDetail').classList.add('open');
+}
+function closeChat(){ document.getElementById('chatDetail').classList.remove('open'); }
+
+render();
+</script>
+</body>
+</html>

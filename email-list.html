@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Gmail</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{font-family:'Roboto',-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;height:100dvh;position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;}
+
+.status-bar{height:env(safe-area-inset-top,44px);background:#fff;flex-shrink:0;}
+
+/* Gmail 顶栏 */
+.gm-header{padding:8px 16px;flex-shrink:0;}
+.gm-searchbar{background:#f1f3f4;border-radius:26px;height:48px;display:flex;align-items:center;padding:0 4px 0 16px;gap:12px;}
+.gm-menu{width:24px;height:24px;flex-shrink:0;}
+.gm-menu svg{width:24px;height:24px;fill:#5f6368;}
+.gm-searchtext{flex:1;color:#5f6368;font-size:16px;}
+.gm-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#e88ab0,#c8688f);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0;margin-right:4px;}
+
+.gm-tabs{display:flex;padding:4px 16px 8px;gap:8px;flex-shrink:0;}
+.gm-tab{font-size:13px;color:#5f6368;padding:5px 14px;border-radius:16px;background:#f1f3f4;}
+.gm-tab.active{background:#d3e3fd;color:#041e49;}
+
+/* 邮件列表 */
+.mail-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.mail-item{display:flex;padding:12px 16px;gap:14px;border-bottom:0.5px solid #f0f0f0;cursor:pointer;align-items:flex-start;}
+.mail-item:active{background:#f5f5f5;}
+.mail-avatar{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;font-weight:500;}
+.mail-body{flex:1;min-width:0;}
+.mail-top{display:flex;justify-content:space-between;align-items:baseline;}
+.mail-sender{font-size:15px;color:#202124;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65%;}
+.mail-item.unread .mail-sender{font-weight:700;color:#000;}
+.mail-time{font-size:12px;color:#5f6368;flex-shrink:0;}
+.mail-item.unread .mail-time{color:#1a73e8;font-weight:600;}
+.mail-subject{font-size:14px;color:#202124;margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mail-item.unread .mail-subject{font-weight:600;}
+.mail-snippet{font-size:13px;color:#5f6368;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mail-star{width:20px;flex-shrink:0;color:#dadce0;font-size:18px;align-self:center;}
+.mail-star.starred{color:#f4b400;}
+
+/* 返回 */
+.back-btn{position:fixed;top:calc(env(safe-area-inset-top,44px) + 8px);left:8px;z-index:100;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#5f6368;background:rgba(255,255,255,0.9);}
+.back-btn svg{width:22px;height:22px;}
+
+/* 邮件详情 */
+.mail-detail{position:fixed;inset:0;z-index:200;background:#fff;transform:translateX(100%);transition:transform 0.35s;display:flex;flex-direction:column;}
+.mail-detail.open{transform:translateX(0);}
+.detail-head{display:flex;align-items:center;padding:calc(env(safe-area-inset-top,44px) + 8px) 12px 8px;gap:8px;flex-shrink:0;border-bottom:0.5px solid #eee;}
+.detail-back{width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#5f6368;cursor:pointer;}
+.detail-back svg{width:24px;height:24px;}
+.detail-icons{margin-left:auto;display:flex;gap:16px;color:#5f6368;}
+.detail-icons svg{width:22px;height:22px;}
+.detail-body{flex:1;overflow-y:auto;padding:16px 20px;}
+.detail-subject{font-size:22px;color:#202124;font-weight:400;line-height:1.3;margin-bottom:16px;}
+.detail-sender-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.detail-sender-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0;}
+.detail-sender-info{flex:1;min-width:0;}
+.detail-sender-name{font-size:14px;color:#202124;font-weight:500;}
+.detail-sender-email{font-size:12px;color:#5f6368;}
+.detail-content{font-size:15px;color:#202124;line-height:1.8;white-space:pre-wrap;}
+</style>
+</head>
+<body>
+
+<div class="status-bar"></div>
+
+<div class="back-btn" onclick="location.href='desktop.html'">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</div>
+
+<div class="gm-header">
+  <div class="gm-searchbar">
+    <div class="gm-menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></div>
+    <div class="gm-searchtext">搜索邮件</div>
+    <div class="gm-avatar" id="userAvatar">F</div>
+  </div>
+</div>
+
+<div class="gm-tabs">
+  <div class="gm-tab active">主要</div>
+  <div class="gm-tab">推广</div>
+  <div class="gm-tab">社交</div>
+</div>
+
+<div class="mail-list" id="mailList"></div>
+
+<!-- 邮件详情 -->
+<div class="mail-detail" id="mailDetail">
+  <div class="detail-head">
+    <div class="detail-back" onclick="closeMail()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="detail-icons">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 9V4l1 0c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1l1 0v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg>
+    </div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-subject" id="detailSubject"></div>
+    <div class="detail-sender-row">
+      <div class="detail-sender-avatar" id="detailAvatar"></div>
+      <div class="detail-sender-info">
+        <div class="detail-sender-name" id="detailSender"></div>
+        <div class="detail-sender-email" id="detailEmail"></div>
+      </div>
+    </div>
+    <div class="detail-content" id="detailContent"></div>
+  </div>
+</div>
+
+<script>
+const colors=['#e88ab0','#5a9adf','#7cb342','#f4a939','#8e63ce','#26a69a','#ec6a5e'];
+
+const emails=[
+  { sender:'Ferretti 游艇会', email:'vip@ferretti-yachts.com', subject:'诚邀出席 | 地中海之夜私人游艇晚宴', snippet:'尊敬的贵宾，我们诚挚邀请您出席本周六在游艇码头举办的...', time:'上午 9:24', unread:true, starred:true,
+    content:'尊敬的贵宾：\n\n我们诚挚邀请您出席本周六晚 7 时，在游艇码头举办的「地中海之夜」私人晚宴。\n\n本次晚宴仅面向我们最尊贵的客户，现场将展示 Ferretti 最新旗舰系列，并由米其林主厨为您呈现专属餐点。\n\n您的专属泊位与礼宾服务已安排妥当。期待您的莅临。\n\nFerretti 游艇会 客户关系部' },
+  { sender:'苏富比拍卖行', email:'client@sothebys.com', subject:'您的 VIP 席位已确认 · 近现代艺术专场', snippet:'亲爱的藏家，您关注的近现代艺术夜场即将于下周三举槌...', time:'上午 8:10', unread:true, starred:false,
+    content:'亲爱的藏家：\n\n您关注的「近现代艺术夜场」将于下周三晚举槌。您的 VIP 席位（前排 A 区）已为您确认。\n\n本场焦点拍品包括多件重要私人收藏，图录已随函附上。如您希望在拍卖前私下鉴赏任何拍品，我们可为您安排专属预览。\n\n期待与您相见。\n\n苏富比 客户顾问' },
+  { sender:'私人银行 · 张明', email:'m.zhang@privatebank.com', subject:'您的季度资产报告 · 收益超出预期', snippet:'尊敬的客户，您本季度的投资组合表现优异，整体收益率...', time:'昨天', unread:true, starred:false,
+    content:'尊敬的客户：\n\n很高兴向您汇报，您本季度的投资组合表现优异，整体收益率超出预期目标。\n\n您的专属理财方案已根据市场情况完成优化。我已为您预留了本周的私人会面时间，届时将为您详细解读，并探讨下一步的财富增值计划。\n\n随时为您服务。\n\n张明 | 您的私人银行家' },
+  { sender:'Chanel 高级定制', email:'hautecouture@chanel.com', subject:'您的专属高定预约邀请', snippet:'尊敬的女士，新一季高级定制系列已抵店，我们为您预留...', time:'昨天', unread:false, starred:true,
+    content:'尊敬的女士：\n\n新一季高级定制系列已抵达精品店，我们特别为您预留了私人试衣间与专属造型师。\n\n本系列的多件作品，我们认为将非常衬托您的气质。期待为您呈现。\n\n请告知您方便的时间，我们将为您安排一切。\n\nChanel 高级定制 客户经理' },
+  { sender:'半岛酒店 礼宾部', email:'concierge@peninsula.com', subject:'欢迎回家 · 您的专属套房已备好', snippet:'尊敬的贵宾，恭候您的再次光临，您常住的顶层套房...', time:'周三', unread:false, starred:false,
+    content:'尊敬的贵宾：\n\n恭候您的再次光临。您常住的顶层景观套房已为您备好，香槟与鲜花已置于房内。\n\n您的专属管家将全程为您服务。若需要私人用车、餐厅预订或任何安排，请随时吩咐。\n\n欢迎回家。\n\n半岛酒店 礼宾部' },
+];
+
+const listEl=document.getElementById('mailList');
+function render(){
+  listEl.innerHTML='';
+  emails.forEach((m,i)=>{
+    const item=document.createElement('div');
+    item.className='mail-item'+(m.unread?' unread':'');
+    const color=colors[i%colors.length];
+    item.innerHTML=`
+      <div class="mail-avatar" style="background:${color};">${m.sender[0]}</div>
+      <div class="mail-body">
+        <div class="mail-top"><span class="mail-sender">${m.sender}</span><span class="mail-time">${m.time}</span></div>
+        <div class="mail-subject">${m.subject}</div>
+        <div class="mail-snippet">${m.snippet}</div>
+      </div>
+      <div class="mail-star ${m.starred?'starred':''}">${m.starred?'★':'☆'}</div>
+    `;
+    item.onclick=()=>openMail(i);
+    listEl.appendChild(item);
+  });
+}
+
+function openMail(i){
+  const m=emails[i];
+  const color=colors[i%colors.length];
+  document.getElementById('detailSubject').textContent=m.subject;
+  document.getElementById('detailAvatar').textContent=m.sender[0];
+  document.getElementById('detailAvatar').style.background=color;
+  document.getElementById('detailSender').textContent=m.sender;
+  document.getElementById('detailEmail').textContent=m.email;
+  document.getElementById('detailContent').textContent=m.content;
+  document.getElementById('mailDetail').classList.add('open');
+  emails[i].unread=false;
+  render();
+}
+function closeMail(){ document.getElementById('mailDetail').classList.remove('open'); }
+
+// 读取主角名字首字母
+try{ const s=JSON.parse(localStorage.getItem('lifeScript')||'{}'); if(s.hero&&s.hero.name){ document.getElementById('userAvatar').textContent=s.hero.name[0]; } }catch(e){}
+
+render();
+</script>
+</body>
+</html>
