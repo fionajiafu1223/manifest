@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>微信</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;
+  background:#ededed;
+  height:100dvh;
+  display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;right:0;bottom:0;
+}
+
+/* 顶部状态栏占位 */
+.status-bar{
+  height:env(safe-area-inset-top, 44px);
+  background:#ededed;flex-shrink:0;
+}
+
+/* 微信标题栏 */
+.wx-header{
+  background:#ededed;
+  padding:8px 16px 10px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.wx-title{font-size:17px;font-weight:600;color:#000;}
+.wx-header-icons{display:flex;gap:22px;}
+.wx-header-icons svg{width:23px;height:23px;stroke:#000;fill:none;stroke-width:2;}
+
+/* 搜索框 */
+.search-bar{
+  padding:0 12px 8px;background:#ededed;flex-shrink:0;
+}
+.search-box{
+  background:#fff;border-radius:6px;height:36px;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  color:#9b9b9b;font-size:15px;
+}
+.search-box svg{width:16px;height:16px;stroke:#9b9b9b;fill:none;stroke-width:2;}
+
+/* 加载中 */
+.loading-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:60%;color:#9b9b9b;font-size:14px;gap:14px;
+}
+.loading-dot{
+  width:8px;height:8px;border-radius:50%;background:#07c160;
+  animation:loadPulse 1.2s ease-in-out infinite;
+}
+.loading-dots{display:flex;gap:6px;}
+.loading-dots .loading-dot:nth-child(2){animation-delay:0.2s;}
+.loading-dots .loading-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes loadPulse{0%,100%{opacity:0.3;transform:scale(0.8);}50%{opacity:1;transform:scale(1.1);}}
+
+/* 聊天列表 */
+.chat-list{
+  flex:1;overflow-y:auto;background:#fff;
+  -webkit-overflow-scrolling:touch;
+}
+.chat-item{
+  display:flex;padding:12px 16px 12px 14px;
+  align-items:center;gap:12px;
+  border-bottom:0.5px solid #ededed;
+  cursor:pointer;position:relative;
+}
+.chat-item:active{background:#e5e5e5;}
+
+.chat-avatar{
+  width:48px;height:48px;border-radius:6px;
+  flex-shrink:0;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;color:#fff;font-weight:500;
+  overflow:hidden;
+}
+.chat-avatar img{width:100%;height:100%;object-fit:cover;}
+
+/* 未读红点 */
+.unread-dot{
+  position:absolute;top:-4px;right:-4px;
+  background:#fa5151;color:#fff;
+  min-width:18px;height:18px;border-radius:9px;
+  font-size:12px;display:flex;align-items:center;justify-content:center;
+  padding:0 5px;border:2px solid #fff;
+}
+
+.chat-content{flex:1;min-width:0;}
+.chat-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
+.chat-name{font-size:17px;color:#000;font-weight:400;}
+.chat-time{font-size:12px;color:#b2b2b2;flex-shrink:0;margin-left:8px;}
+.chat-preview{
+  font-size:14px;color:#9b9b9b;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* 底部Tab */
+.tab-bar{
+  display:flex;background:#f7f7f7;
+  border-top:0.5px solid #d5d5d5;
+  padding-bottom:env(safe-area-inset-bottom, 20px);
+  flex-shrink:0;
+}
+.tab-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:6px 0 4px;gap:2px;cursor:pointer;
+}
+.tab-item.disabled{opacity:1;}
+.tab-icon{width:26px;height:26px;position:relative;}
+.tab-icon svg{width:26px;height:26px;}
+.tab-label{font-size:10px;color:#7f7f7f;}
+.tab-item.active .tab-label{color:#07c160;}
+.tab-badge{
+  position:absolute;top:-3px;right:-6px;
+  background:#fa5151;color:#fff;
+  min-width:16px;height:16px;border-radius:8px;
+  font-size:11px;display:flex;align-items:center;justify-content:center;
+  padding:0 4px;border:1.5px solid #f7f7f7;
+}
+</style>
+</head>
+<body>
+
+<div class="status-bar"></div>
+
+<!-- 微信标题栏 -->
+<div class="wx-header">
+  <div class="wx-title">微信</div>
+  <div class="wx-header-icons">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16" y1="16" x2="21" y2="21"/></svg>
+    <svg viewBox="0 0 24 24" onclick="location.href='desktop.html'" style="cursor:pointer;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </div>
+</div>
+
+<!-- 搜索 -->
+<div class="search-bar">
+  <div class="search-box">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16" y1="16" x2="21" y2="21"/></svg>
+    搜索
+  </div>
+</div>
+
+<!-- 聊天列表 -->
+<div class="chat-list" id="chatList"></div>
+
+<!-- 底部Tab -->
+<div class="tab-bar">
+  <div class="tab-item active">
+    <div class="tab-icon">
+      <svg viewBox="0 0 26 26" fill="#07c160"><path d="M13 2C6.9 2 2 6.5 2 12c0 3.1 1.6 5.9 4.1 7.7L5 23l3.8-2c1.3.4 2.7.6 4.2.6 6.1 0 11-4.5 11-10S19.1 2 13 2z"/></svg>
+      <div class="tab-badge" id="tabBadge">5</div>
+    </div>
+    <div class="tab-label">微信</div>
+  </div>
+  <div class="tab-item disabled">
+    <div class="tab-icon">
+      <svg viewBox="0 0 26 26" fill="#7f7f7f"><circle cx="13" cy="8" r="4"/><path d="M5 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+    </div>
+    <div class="tab-label">通讯录</div>
+  </div>
+  <div class="tab-item disabled">
+    <div class="tab-icon">
+      <svg viewBox="0 0 26 26" fill="none" stroke="#7f7f7f" stroke-width="2"><circle cx="13" cy="13" r="10"/><circle cx="13" cy="13" r="3" fill="#7f7f7f"/></svg>
+    </div>
+    <div class="tab-label">发现</div>
+  </div>
+  <div class="tab-item disabled">
+    <div class="tab-icon">
+      <svg viewBox="0 0 26 26" fill="#7f7f7f"><circle cx="13" cy="8" r="4"/><path d="M5 22c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+    </div>
+    <div class="tab-label">我</div>
+  </div>
+</div>
+
+<script>
+const AVATAR_COLORS = ['#8b6f47','#2a5a8a','#3a3a3a','#1a3a6a','#7a2a2a','#2a2a2a','#4a5a7a','#5a7a3a','#6a3a6a'];
+
+// 兜底：没有剧本数据时用的示例联系人（财富维度）
+const FALLBACK_CONTACTS = [
+  { id:'lv', name:'LV客户经理·Vivian', avatar:'💼', color:'#8b6f47', preview:'王先生，本季新款皮具已到店，为您预留了私人试用…', time:'刚刚', unread:2,
+    role:'奢侈品客户经理', character:'专业、体贴、善于洞察客户喜好', background:'知名奢侈品牌VIP客户经理', attitude:'始终恭敬热情，视用户为最重要的贵宾' },
+  { id:'yacht', name:'Ferretti游艇会', avatar:'🛥', color:'#2a5a8a', preview:'尊敬的贵宾，诚邀您出席本周六游艇首航晚宴', time:'刚刚', unread:1,
+    role:'游艇会礼宾', character:'优雅、周到', background:'高端游艇会客户关系负责人', attitude:'礼貌尊敬，营造尊贵感' },
+  { id:'sothebys', name:'苏富比拍卖行', avatar:'🎨', color:'#3a3a3a', preview:'您关注的近现代艺术专场即将开拍，VIP席位已确认', time:'14:20', unread:1,
+    role:'拍卖行客户顾问', character:'专业、懂鉴赏', background:'苏富比资深客户顾问', attitude:'尊重用户品味，主动提供藏品资讯' },
+  { id:'bank', name:'私人银行·张经理', avatar:'🏦', color:'#1a3a6a', preview:'您的专属理财方案已更新，本月收益超出预期', time:'11:05', unread:1,
+    role:'私人银行家', character:'稳重、专业、值得信赖', background:'管理用户资产的私人银行家', attitude:'尽职尽责，主动汇报收益进展' },
+];
+
+const chatList = document.getElementById('chatList');
+let contacts = [];
+
+function showLoading(text){
+  chatList.innerHTML = `<div class="loading-state"><div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div><div>${text}</div></div>`;
+}
+
+function renderList() {
+  chatList.innerHTML = '';
+  contacts.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'chat-item';
+    item.innerHTML = `
+      <div class="chat-avatar" style="background:${c.color};">
+        ${c.avatar || (c.name ? c.name[0] : '?')}
+        ${c.unread > 0 ? `<div class="unread-dot">${c.unread}</div>` : ''}
+      </div>
+      <div class="chat-content">
+        <div class="chat-top">
+          <span class="chat-name">${c.name}</span>
+          <span class="chat-time">${c.time}</span>
+        </div>
+        <div class="chat-preview">${c.preview}</div>
+      </div>
+    `;
+    item.onclick = () => {
+      window.location.href = 'wechat-sim.html?id=' + encodeURIComponent(c.id);
+    };
+    chatList.appendChild(item);
+  });
+
+  const totalUnread = contacts.reduce((sum, c) => sum + (c.unread||0), 0);
+  document.getElementById('tabBadge').textContent = totalUnread;
+  document.getElementById('tabBadge').style.display = totalUnread > 0 ? 'flex' : 'none';
+}
+
+// 把主角+场景信息拼成给AI的中文背景描述
+function buildBackgroundText(script){
+  const h = script.hero || {};
+  let text = `主角：${h.name||'（未命名）'}，${h.gender==='female'?'女':'男'}`;
+  if(h.job) text += `，职业是${h.job}`;
+  if(h.character) text += `。性格：${h.character}`;
+  if(h.values) text += `。价值观：${h.values}`;
+  if(h.desire) text += `。内心最深的渴望：${h.desire}`;
+  text += '\n\n';
+  (script.scenes||[]).forEach(s=>{
+    text += `【场景：${s.name}】\n`;
+    if(s.plot) text += `剧情：${s.plot}\n`;
+    if(s.highlight) text += `重点戏份：${s.highlight}\n`;
+    text += '\n';
+  });
+  return text;
+}
+
+// 收集所有场景里用户手动创建的人物
+function collectAllPersons(script){
+  const list = [];
+  (script.scenes||[]).forEach(s=>{
+    (s.persons||[]).forEach(p=>{
+      list.push({ ...p, sceneName: s.name });
+    });
+  });
+  return list;
+}
+
+async function callAI(systemPrompt, userPrompt){
+  const res = await fetch('https://api.freedreleasing.com/api', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      max_tokens: 1200,
+      messages: [
+        { role:'system', content: systemPrompt },
+        { role:'user', content: userPrompt },
+      ],
+    }),
+  });
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content?.trim() || '';
+}
+
+// 情形A：用户已在场景里创建了具体人物 —— 直接用这些人物做联系人，AI只生成开场预览消息
+async function generateFromPersons(script, persons){
+  showLoading('正在为你连接这个世界的人们…');
+  const bg = buildBackgroundText(script);
+  const personList = persons.map((p,i)=>`${i+1}. ${p.name}（${p.role||'关系待定'}），性格：${p.character||'未设定'}，对主角的态度：${p.attitude||'友善'}`).join('\n');
+
+  const sysPrompt = '你是一个「已实现人生」场景生成器。你要根据用户的人生剧本设定，为其中的每一个人物生成一条TA会在微信上发给主角的开场消息预览（不超过30字，口语化、符合人物身份和对主角的态度）。';
+  const userPrompt = `${bg}\n人物列表：\n${personList}\n\n请按顺序为以上每个人物生成一条微信消息预览，严格按照如下格式输出，不要有其他内容：\n1::消息内容\n2::消息内容\n（依此类推，共${persons.length}条）`;
+
+  let previews = {};
+  try{
+    const reply = await callAI(sysPrompt, userPrompt);
+    reply.split('\n').forEach(line=>{
+      const m = line.match(/^(\d+)::(.+)$/);
+      if(m) previews[parseInt(m[1])] = m[2].trim();
+    });
+  }catch(e){ console.error(e); }
+
+  const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
+  contacts = persons.map((p,i)=>({
+    id: 'p'+i,
+    name: p.name,
+    avatar: p.name[0],
+    color: AVATAR_COLORS[i % AVATAR_COLORS.length],
+    preview: previews[i+1] || `Hi，${p.name}想和你聊聊…`,
+    time: times[i % times.length],
+    unread: i < 3 ? (Math.floor(Math.random()*2)+1) : 0,
+    role: p.role, character: p.character, values: p.values, background: p.background, attitude: p.attitude, sceneName: p.sceneName,
+  }));
+}
+
+// 情形B：场景里没有具体人物，只有剧情文字 —— 让AI直接发明一批联系人
+async function generateInventedContacts(script){
+  showLoading('正在为你编织这个世界…');
+  const bg = buildBackgroundText(script);
+  const sysPrompt = '你是一个「已实现人生」场景生成器。根据用户的人生剧本设定，虚构4-6个会在微信上联系主角的人物（如客户经理、朋友、合作伙伴、服务方等），要符合主角的身份和场景设定。';
+  const userPrompt = `${bg}\n请虚构4-6个联系人，每人一条微信消息预览（不超过30字）。严格按照如下格式输出，不要有其他内容：\n姓名::身份角色::消息预览`;
+
+  let list = [];
+  try{
+    const reply = await callAI(sysPrompt, userPrompt);
+    reply.split('\n').forEach(line=>{
+      const parts = line.split('::');
+      if(parts.length>=3) list.push({ name:parts[0].trim(), role:parts[1].trim(), preview:parts[2].trim() });
+    });
+  }catch(e){ console.error(e); }
+
+  if(list.length===0){ contacts = FALLBACK_CONTACTS; return; }
+
+  const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
+  contacts = list.map((p,i)=>({
+    id:'inv'+i, name:p.name, avatar:p.name[0], color:AVATAR_COLORS[i%AVATAR_COLORS.length],
+    preview:p.preview, time:times[i%times.length], unread: i<3 ? (Math.floor(Math.random()*2)+1) : 0,
+    role:p.role, character:'', values:'', background:p.role, attitude:'友善、主动联系用户',
+  }));
+}
+
+async function init(){
+  let script = null;
+  try{ script = JSON.parse(localStorage.getItem('lifeScript')||'null'); }catch(e){}
+
+  // 缓存：同一份剧本不用每次都重新调用AI
+  const cacheKey = 'wechatContactsCache';
+  const cached = localStorage.getItem(cacheKey);
+  const scriptRaw = localStorage.getItem('lifeScript') || '';
+
+  if(cached){
+    try{
+      const c = JSON.parse(cached);
+      if(c.scriptRaw === scriptRaw){
+        contacts = c.contacts;
+        renderList();
+        return;
+      }
+    }catch(e){}
+  }
+
+  if(!script || !script.hero || !script.hero.name){
+    contacts = FALLBACK_CONTACTS;
+    renderList();
+    return;
+  }
+
+  const persons = collectAllPersons(script);
+  if(persons.length > 0){
+    await generateFromPersons(script, persons);
+  } else {
+    await generateInventedContacts(script);
+  }
+
+  localStorage.setItem(cacheKey, JSON.stringify({ scriptRaw, contacts }));
+  renderList();
+}
+
+init();
+</script>
+</body>
+</html>

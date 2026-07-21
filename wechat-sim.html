@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>微信</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;
+  background:#ededed;
+  height:100dvh;
+  display:flex;flex-direction:column;
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+}
+
+/* 顶部导航栏 */
+.nav{
+  background:#ededed;
+  padding-top:env(safe-area-inset-top, 44px);
+  border-bottom:0.5px solid #d5d5d5;
+  flex-shrink:0;
+}
+.nav-inner{
+  height:44px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 8px;
+}
+.nav-back{
+  display:flex;align-items:center;
+  color:#000;font-size:17px;
+  min-width:80px;
+}
+.nav-back svg{width:12px;height:22px;margin-right:4px;}
+.unread-badge{
+  background:#d8d8d8;
+  color:#333;
+  font-size:14px;
+  border-radius:12px;
+  padding:2px 9px;
+  font-weight:400;
+}
+.nav-title{
+  font-size:17px;font-weight:500;color:#000;
+  position:absolute;left:50%;transform:translateX(-50%);
+}
+.nav-more{
+  min-width:80px;display:flex;justify-content:flex-end;
+  padding-right:8px;
+}
+.nav-more svg{width:24px;height:24px;}
+
+/* 聊天区域 */
+.chat-area{
+  flex:1;
+  overflow-y:auto;
+  padding:10px 12px;
+  -webkit-overflow-scrolling:touch;
+}
+
+.time-stamp{
+  text-align:center;
+  font-size:12px;
+  color:#b2b2b2;
+  margin:12px 0 16px;
+}
+
+.msg-row{
+  display:flex;
+  margin-bottom:16px;
+  align-items:flex-start;
+}
+.msg-row.mine{flex-direction:row-reverse;}
+
+.avatar{
+  width:42px;height:42px;
+  border-radius:5px;
+  flex-shrink:0;
+  background:linear-gradient(160deg,#8aa8c8,#5a7898);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:17px;font-weight:400;
+  overflow:hidden;
+}
+.avatar.mine-avatar{
+  background:linear-gradient(135deg,#b98ccf,#9a6cb0);
+}
+
+.bubble-wrap{
+  max-width:65%;
+  margin:0 8px;
+}
+
+.bubble{
+  background:#fff;
+  border-radius:6px;
+  padding:10px 12px;
+  font-size:16px;
+  line-height:1.5;
+  color:#181818;
+  position:relative;
+  word-break:break-word;
+}
+/* 左侧气泡小三角 */
+.msg-row:not(.mine) .bubble::before{
+  content:'';
+  position:absolute;
+  left:-5px;top:14px;
+  width:0;height:0;
+  border-top:5px solid transparent;
+  border-bottom:5px solid transparent;
+  border-right:5px solid #fff;
+}
+/* 右侧绿色气泡 */
+.msg-row.mine .bubble{
+  background:#95ec69;
+}
+.msg-row.mine .bubble::before{
+  content:'';
+  position:absolute;
+  right:-5px;top:14px;
+  width:0;height:0;
+  border-top:5px solid transparent;
+  border-bottom:5px solid transparent;
+  border-left:5px solid #95ec69;
+}
+
+/* 输入区 */
+.input-bar{
+  background:#f7f7f7;
+  border-top:0.5px solid #d5d5d5;
+  padding:8px 8px calc(8px + env(safe-area-inset-bottom, 20px));
+  display:flex;align-items:center;gap:8px;
+  flex-shrink:0;
+}
+.voice-btn,.emoji-btn,.plus-btn{
+  width:30px;height:30px;
+  flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.voice-btn svg,.emoji-btn svg,.plus-btn svg{
+  width:28px;height:28px;
+  stroke:#181818;
+}
+.input-wrap{
+  flex:1;
+  position:relative;
+  display:flex;
+  align-items:center;
+}
+.text-input{
+  width:100%;
+  background:#fff;
+  border:none;
+  border-radius:6px;
+  height:38px;
+  padding:0 36px 0 12px;
+  font-size:16px;
+  outline:none;
+  font-family:inherit;
+}
+.input-mic{
+  position:absolute;
+  right:8px;
+  width:22px;height:22px;
+}
+.send-btn{
+  background:#07c160;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:7px 14px;
+  font-size:15px;
+  display:none;
+}
+.send-btn.visible{display:block;}
+
+/* 打字中动画 */
+.typing .bubble{
+  padding:14px 16px;
+}
+.typing-dots{
+  display:flex;gap:4px;
+}
+.typing-dots span{
+  width:7px;height:7px;
+  background:#c0c0c0;
+  border-radius:50%;
+  animation:typing 1.2s infinite;
+}
+.typing-dots span:nth-child(2){animation-delay:0.2s;}
+.typing-dots span:nth-child(3){animation-delay:0.4s;}
+@keyframes typing{0%,60%,100%{transform:translateY(0);opacity:0.5;}30%{transform:translateY(-4px);opacity:1;}}
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<div class="nav">
+  <div class="nav-inner">
+    <div class="nav-back" onclick="location.href='wechat-list.html'" style="cursor:pointer;">
+      <svg viewBox="0 0 12 22" fill="none">
+        <path d="M10.5 1L1.5 11L10.5 21" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="unread-badge" id="unreadBadge">5</span>
+    </div>
+    <div class="nav-title" id="contactName">阿哲</div>
+    <div class="nav-more">
+      <svg viewBox="0 0 24 24" fill="#000">
+        <circle cx="5" cy="12" r="2"/>
+        <circle cx="12" cy="12" r="2"/>
+        <circle cx="19" cy="12" r="2"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- 聊天区 -->
+<div class="chat-area" id="chatArea">
+  <div class="time-stamp">下午 10:17</div>
+</div>
+
+<!-- 输入栏 -->
+<div class="input-bar">
+  <div class="voice-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
+      <circle cx="12" cy="12" r="10" stroke="#181818"/>
+      <path d="M9.5 9.5v5M12 8v8M14.5 10v4" stroke="#181818" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="input-wrap">
+    <input type="text" class="text-input" id="msgInput" placeholder="">
+    <svg class="input-mic" viewBox="0 0 24 24" fill="none" stroke="#7a7a7a" stroke-width="1.5">
+      <rect x="9" y="3" width="6" height="11" rx="3"/>
+      <path d="M5 11c0 3.87 3.13 7 7 7s7-3.13 7-7M12 18v3" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="emoji-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
+      <circle cx="12" cy="12" r="10" stroke="#181818"/>
+      <circle cx="8.5" cy="10" r="1" fill="#181818"/>
+      <circle cx="15.5" cy="10" r="1" fill="#181818"/>
+      <path d="M8 14.5c1 1.2 2.4 2 4 2s3-0.8 4-2" stroke="#181818" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="plus-btn" id="plusBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
+      <circle cx="12" cy="12" r="10" stroke="#181818"/>
+      <path d="M12 8v8M8 12h8" stroke="#181818" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <button class="send-btn" id="sendBtn">发送</button>
+</div>
+
+<script>
+const chatArea = document.getElementById('chatArea');
+const msgInput = document.getElementById('msgInput');
+const sendBtn = document.getElementById('sendBtn');
+const plusBtn = document.getElementById('plusBtn');
+
+// 从URL读取联系人id，从localStorage缓存中找到对应联系人档案
+const urlParams = new URLSearchParams(window.location.search);
+const contactId = urlParams.get('id') || '';
+
+let contactName = '阿哲';
+let contactInfo = null;
+let heroName = '';
+
+try{
+  const cache = JSON.parse(localStorage.getItem('wechatContactsCache')||'null');
+  if(cache && cache.contacts){
+    contactInfo = cache.contacts.find(c=>c.id===contactId);
+  }
+}catch(e){}
+
+try{
+  const script = JSON.parse(localStorage.getItem('lifeScript')||'null');
+  if(script && script.hero) heroName = script.hero.name || '';
+}catch(e){}
+
+if(contactInfo){
+  contactName = contactInfo.name;
+} else {
+  // 兜底人设：没有联系人档案时，用原本的"男友求和好"剧本
+  contactInfo = { role:'男朋友', character:'深爱用户，充满悔意', background:'和用户最近吵架分开', attitude:'真诚、卑微、恳切，主动求和好，充满悔意和思念' };
+}
+document.getElementById('contactName').textContent = contactName;
+
+function addMessage(text, mine = false) {
+  const row = document.createElement('div');
+  row.className = 'msg-row' + (mine ? ' mine' : '');
+  
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar' + (mine ? ' mine-avatar' : '');
+  avatar.textContent = mine ? '我' : contactName[0];
+  
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+  
+  row.appendChild(avatar);
+  row.appendChild(wrap);
+  chatArea.appendChild(row);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function showTyping() {
+  const row = document.createElement('div');
+  row.className = 'msg-row typing';
+  row.id = 'typingRow';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.textContent = contactName[0];
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  wrap.appendChild(bubble);
+  row.appendChild(avatar);
+  row.appendChild(wrap);
+  chatArea.appendChild(row);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function hideTyping() {
+  const t = document.getElementById('typingRow');
+  if (t) t.remove();
+}
+
+// 进入聊天后，延迟一小段时间，AI主动发起开场对话
+setTimeout(playOpening, 700);
+
+// 用户输入
+msgInput.addEventListener('input', () => {
+  if (msgInput.value.trim()) {
+    sendBtn.classList.add('visible');
+    plusBtn.style.display = 'none';
+  } else {
+    sendBtn.classList.remove('visible');
+    plusBtn.style.display = 'flex';
+  }
+});
+
+// 对话历史（用于AI记忆上下文）
+let conversationHistory = [];
+
+// 人设：根据联系人档案动态生成
+const heroAddr = heroName ? `（用户名叫${heroName}）` : '';
+const persona = `你正在扮演「${contactName}」，与用户（${heroAddr}）在微信上聊天。
+你的身份/关系：${contactInfo.role||'朋友'}
+你的性格：${contactInfo.character||'友善自然'}
+背景：${contactInfo.background||''}
+你对待用户的态度：${contactInfo.attitude||'友善、主动'}
+请像真实的微信聊天一样回复，简短、口语化、符合你的身份和性格，一次只说一两句话，不要长篇大论。不要出现任何旁白、括号说明或AI自称，直接说话。`;
+
+async function getAIReply() {
+  showTyping();
+  try {
+    const res = await fetch('https://api.freedreleasing.com/api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        max_tokens: 500,
+        messages: [
+          { role: 'system', content: persona },
+          ...conversationHistory,
+        ],
+      }),
+    });
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content?.trim() || '……';
+    hideTyping();
+    addMessage(reply);
+    conversationHistory.push({ role: 'assistant', content: reply });
+  } catch (err) {
+    hideTyping();
+    addMessage('……（网络好像有点问题）');
+  }
+}
+
+// 开场：让AI主动生成1-3条开场消息（符合人设与处境）
+async function playOpening() {
+  showTyping();
+  try {
+    const res = await fetch('https://api.freedreleasing.com/api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        max_tokens: 300,
+        messages: [
+          { role: 'system', content: persona },
+          { role: 'user', content: '（这是对话的开始，请你主动发起对话，符合你的身份和处境，发送1-3条简短的开场消息。每条消息独占一行，不要编号，不要有其他说明文字。）' },
+        ],
+      }),
+    });
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content?.trim() || `${heroName||'你'}，最近好吗？`;
+    const lines = reply.split('\n').map(l=>l.trim()).filter(l=>l);
+    hideTyping();
+    let i = 0;
+    function showNext(){
+      if(i>=lines.length) return;
+      addMessage(lines[i]);
+      conversationHistory.push({ role:'assistant', content: lines[i] });
+      i++;
+      if(i<lines.length){
+        setTimeout(()=>{ showTyping(); setTimeout(()=>{ hideTyping(); showNext(); }, 1000+Math.random()*700); }, 400);
+      }
+    }
+    showNext();
+  } catch(err) {
+    hideTyping();
+    addMessage('……（网络好像有点问题，下拉刷新试试）');
+  }
+}
+
+sendBtn.addEventListener('click', () => {
+  const text = msgInput.value.trim();
+  if (!text) return;
+  addMessage(text, true);
+  conversationHistory.push({ role: 'user', content: text });
+  msgInput.value = '';
+  sendBtn.classList.remove('visible');
+  plusBtn.style.display = 'flex';
+  
+  // AI回复
+  setTimeout(getAIReply, 1000 + Math.random() * 800);
+});
+
+msgInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') sendBtn.click();
+});
+</script>
+</body>
+</html>
