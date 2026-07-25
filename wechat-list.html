@@ -178,17 +178,8 @@ body{
 <script>
 const AVATAR_COLORS = ['#8b6f47','#2a5a8a','#3a3a3a','#1a3a6a','#7a2a2a','#2a2a2a','#4a5a7a','#5a7a3a','#6a3a6a'];
 
-// 兜底：没有剧本数据时用的示例联系人（财富维度）
-const FALLBACK_CONTACTS = [
-  { id:'lv', name:'LV客户经理·Vivian', avatar:'💼', color:'#8b6f47', preview:'王先生，本季新款皮具已到店，为您预留了私人试用…', time:'刚刚', unread:2,
-    role:'奢侈品客户经理', character:'专业、体贴、善于洞察客户喜好', background:'知名奢侈品牌VIP客户经理', attitude:'始终恭敬热情，视用户为最重要的贵宾' },
-  { id:'yacht', name:'Ferretti游艇会', avatar:'🛥', color:'#2a5a8a', preview:'尊敬的贵宾，诚邀您出席本周六游艇首航晚宴', time:'刚刚', unread:1,
-    role:'游艇会礼宾', character:'优雅、周到', background:'高端游艇会客户关系负责人', attitude:'礼貌尊敬，营造尊贵感' },
-  { id:'sothebys', name:'苏富比拍卖行', avatar:'🎨', color:'#3a3a3a', preview:'您关注的近现代艺术专场即将开拍，VIP席位已确认', time:'14:20', unread:1,
-    role:'拍卖行客户顾问', character:'专业、懂鉴赏', background:'苏富比资深客户顾问', attitude:'尊重用户品味，主动提供藏品资讯' },
-  { id:'bank', name:'私人银行·张经理', avatar:'🏦', color:'#1a3a6a', preview:'您的专属理财方案已更新，本月收益超出预期', time:'11:05', unread:1,
-    role:'私人银行家', character:'稳重、专业、值得信赖', background:'管理用户资产的私人银行家', attitude:'尽职尽责，主动汇报收益进展' },
-];
+// 没有剧本数据时的兜底：空数组，不再预设联系人
+const FALLBACK_CONTACTS = [];
 
 const chatList = document.getElementById('chatList');
 let contacts = [];
@@ -199,6 +190,14 @@ function showLoading(text){
 
 function renderList() {
   chatList.innerHTML = '';
+  if(contacts.length === 0){
+    chatList.innerHTML = `<div style="text-align:center;padding:80px 30px;color:#999;">
+      <div style="font-size:15px;margin-bottom:8px;">这里还没有人</div>
+      <div style="font-size:13px;color:#bbb;line-height:1.7;">写下你的人生剧本，这个世界才会开始有人与你联系</div>
+    </div>`;
+    document.getElementById('tabBadge').style.display = 'none';
+    return;
+  }
   contacts.forEach(c => {
     const item = document.createElement('div');
     item.className = 'chat-item';
@@ -307,7 +306,7 @@ async function generateFromPersons(script, persons){
 async function generateInventedContacts(script){
   showLoading('正在为你编织这个世界…');
   const bg = buildBackgroundText(script);
-  const sysPrompt = '你是一个「已实现人生」场景生成器。根据用户的人生剧本设定，虚构4-6个会在微信上联系主角的人物（如客户经理、朋友、合作伙伴、服务方等），要符合主角的身份和场景设定。';
+  const sysPrompt = '你是一个「已实现人生」场景生成器。仔细阅读用户写下的每一个场景（可能是事业、学术、健康、创作、心灵成长、人际关系、财富等任何主题），虚构4-6个会在微信上联系主角的人物。人物类型必须由场景内容本身决定，不要预设任何特定主题（不要默认往财富或奢侈品方向靠）——可以是导师、合作者、学生、病人、粉丝、朋友等任何符合场景的角色。';
   const userPrompt = `${bg}\n请虚构4-6个联系人，每人一条微信消息预览（不超过30字）。严格按照如下格式输出，不要有其他内容：\n姓名::身份角色::消息预览`;
 
   let list = [];
