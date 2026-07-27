@@ -6,6 +6,8 @@ workflows:
     integrations:
       app_store_connect: "Codemagic Admin"
     environment:
+      groups:
+        - manifest_secrets
       vars:
         BUNDLE_ID: "com.fionajiafu.manifest"
         XCODE_PROJECT: "App.xcodeproj"
