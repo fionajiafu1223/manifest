@@ -336,6 +336,22 @@ function hideTyping() {
   if (t) t.remove();
 }
 
+// ── 拟真打字节奏 ──
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+// 根据文字长度估算像真人一样的打字时长（不是网络请求要多久就显示多久）
+function estimateTypingMs(text){
+  const len = (text||'').length;
+  const perChar = 90 + Math.random()*50; // 每字约90-140ms，模拟手机打字速度
+  const base = len * perChar;
+  return Math.min(4200, Math.max(700, base));
+}
+
+// 看到消息后，不会立刻开始打字：模拟"看到→愣一下/思考"的停顿
+function readDelay(){
+  return 500 + Math.random()*1300;
+}
+
 // 进入聊天后，延迟一小段时间，AI主动发起开场对话
 setTimeout(playOpening, 700);
 
@@ -363,7 +379,9 @@ const persona = `你正在扮演「${contactName}」，与用户（${heroAddr}�
 请像真实的微信聊天一样回复，简短、口语化、符合你的身份和性格，一次只说一两句话，不要长篇大论。不要出现任何旁白、括号说明或AI自称，直接说话。`;
 
 async function getAIReply() {
+  await sleep(readDelay());
   showTyping();
+  const typingStart = Date.now();
   try {
     const res = await fetch('https://api.freedreleasing.com/api', {
       method: 'POST',
@@ -379,6 +397,21 @@ async function getAIReply() {
     });
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content?.trim() || '……';
+
+    // 让"正在输入"的显示时长贴合消息长度，而不是网络请求耗时
+    let remaining = estimateTypingMs(reply) - (Date.now() - typingStart);
+
+    // 较长的消息，中途停顿一下再继续（像真人打字打到一半又想了想）
+    if(remaining > 1800 && Math.random() < 0.5){
+      const pause = remaining * 0.4;
+      await sleep(pause);
+      hideTyping();
+      await sleep(300 + Math.random()*450);
+      showTyping();
+      remaining -= pause;
+    }
+    if(remaining > 0) await sleep(remaining);
+
     hideTyping();
     addMessage(reply);
     conversationHistory.push({ role: 'assistant', content: reply });
@@ -390,7 +423,9 @@ async function getAIReply() {
 
 // 开场：让AI主动生成1-3条开场消息（符合人设与处境）
 async function playOpening() {
+  await sleep(readDelay());
   showTyping();
+  const typingStart = Date.now();
   try {
     const res = await fetch('https://api.freedreleasing.com/api', {
       method: 'POST',
@@ -406,19 +441,29 @@ async function playOpening() {
     });
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content?.trim() || `${heroName||'你'}，最近好吗？`;
-    const lines = reply.split('\n').map(l=>l.trim()).filter(l=>l);
-    hideTyping();
+    let lines = reply.split('\n').map(l=>l.trim()).filter(l=>l);
+    if(lines.length===0) lines = [`${heroName||'你'}，最近好吗？`];
+
     let i = 0;
-    function showNext(){
-      if(i>=lines.length) return;
-      addMessage(lines[i]);
-      conversationHistory.push({ role:'assistant', content: lines[i] });
+    async function showNext(){
+      const line = lines[i];
+      let wait = estimateTypingMs(line);
+      if(i===0){
+        // 第一条：扣掉已经花在网络请求上的时间，避免叠加等待
+        wait = Math.max(300, wait - (Date.now() - typingStart));
+      }
+      await sleep(wait);
+      hideTyping();
+      addMessage(line);
+      conversationHistory.push({ role:'assistant', content: line });
       i++;
       if(i<lines.length){
-        setTimeout(()=>{ showTyping(); setTimeout(()=>{ hideTyping(); showNext(); }, 1000+Math.random()*700); }, 400);
+        await sleep(350 + Math.random()*450);
+        showTyping();
+        await showNext();
       }
     }
-    showNext();
+    await showNext();
   } catch(err) {
     hideTyping();
     addMessage('……（网络好像有点问题，下拉刷新试试）');
@@ -433,9 +478,9 @@ sendBtn.addEventListener('click', () => {
   msgInput.value = '';
   sendBtn.classList.remove('visible');
   plusBtn.style.display = 'flex';
-  
-  // AI回复
-  setTimeout(getAIReply, 1000 + Math.random() * 800);
+
+  // AI回复（读消息的停顿+按内容长度打字的节奏，都在getAIReply里处理）
+  getAIReply();
 });
 
 msgInput.addEventListener('keypress', (e) => {
