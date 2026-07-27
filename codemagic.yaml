@@ -19,6 +19,10 @@ workflows:
         script: npm install
       - name: Sync Capacitor web assets
         script: npx cap sync ios
+      - name: Increment build number
+        script: |
+          cd ios/App
+          agvtool new-version -all $(date +%s)
       - name: Set up keychain for code signing
         script: keychain initialize
       - name: Fetch signing files
