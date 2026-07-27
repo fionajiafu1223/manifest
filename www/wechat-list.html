@@ -32,6 +32,10 @@ body{
 .wx-header-icons{display:flex;gap:22px;}
 .wx-header-icons svg{width:23px;height:23px;stroke:#000;fill:none;stroke-width:2;}
 
+/* 返回（和全App其他页面统一放左上角） */
+.back-garden{position:fixed;top:calc(env(safe-area-inset-top,44px) + 12px);left:16px;z-index:9999;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#000;}
+.back-garden svg{width:19px;height:19px;stroke:#000;fill:none;stroke-width:2;}
+
 /* 搜索框 */
 .search-bar{
   padding:0 12px 8px;background:#ededed;flex-shrink:0;
@@ -126,12 +130,16 @@ body{
 
 <div class="status-bar"></div>
 
+<div class="back-garden" onclick="location.href='desktop.html'">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</div>
+
 <!-- 微信标题栏 -->
 <div class="wx-header">
   <div class="wx-title" id="wxTitleLongPress">微信</div>
   <div class="wx-header-icons">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16" y1="16" x2="21" y2="21"/></svg>
-    <svg viewBox="0 0 24 24" onclick="location.href='desktop.html'" style="cursor:pointer;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </div>
 </div>
 
@@ -277,7 +285,7 @@ async function generateFromPersons(script, persons){
   const bg = buildBackgroundText(script);
   const personList = persons.map((p,i)=>`${i+1}. ${p.name}（${p.role||'关系待定'}），性格：${p.character||'未设定'}，对主角的态度：${p.attitude||'友善'}`).join('\n');
 
-  const sysPrompt = '你是一个「已实现人生」场景生成器。你要根据用户的人生剧本设定，为其中的每一个人物生成一条TA会在微信上发给主角的开场消息预览（不超过30字，口语化、符合人物身份和对主角的态度）。人物设定与语气准则（本应用用户绝大多数是女性，以下准则务必严格执行）：人物对主角的态度一律平等、尊重、欣赏，不出现俯视、说教、指点的语气；主角应被呈现为有主见、有能力、被认可的一方，不是被动等待安排或需要被"带领"的一方；不使用"张叔""老王""小妹""美女""小姑娘"等有辈分感、市井气或轻视意味的称呼，改用姓名、职称或更现代平等的称呼方式；不出现"你终于懂事了""女孩子就该……"等说教式、评判式语句；专业/权威角色（顾问、银行家、投资人、医生、导师等）不默认为男性，应平等地也生成女性专业角色，赋予同等的专业感和话语权；感情类场景中，对方角色应表现为欣赏、支持主角本来的样子，而非试图改变、纠正或"提升"她；不出现任何将女性物化、矮化或预设需要被保护/管教的措辞；语气整体优雅真诚，避免油腻讨好式的调侃语气。';
+  const sysPrompt = '你是一个「已实现人生」场景生成器。你要根据用户的人生剧本设定，为其中的每一个人物生成一条TA会在微信上发给主角的开场消息预览（不超过30字，口语化、符合人物身份和对主角的态度）。人物设定与语气准则（本应用用户绝大多数是女性，以下准则务必严格执行）：人物对主角的态度一律平等、尊重、欣赏，不出现俯视、说教、指点的语气；主角应被呈现为有主见、有能力、被认可的一方，不是被动等待安排或需要被"带领"的一方；人物姓名和称呼要现代、自然，像用户身边真实认识的同龄人或专业人士——绝对不用"张叔""老王""老刘""老李""王姐""小妹""美女""小姑娘"这类国产老式电视剧、市井气或辈分感很重的称呼方式，这类称呼一律禁止使用；不出现"你终于懂事了""女孩子就该……"等说教式、评判式语句；专业/权威角色（顾问、银行家、投资人、医生、导师等）不默认为男性，应平等地也生成女性专业角色，赋予同等的专业感和话语权；感情类场景中，对方角色应表现为欣赏、支持主角本来的样子，而非试图改变、纠正或"提升"她；不出现任何将女性物化、矮化或预设需要被保护/管教的措辞；语气整体优雅真诚，避免油腻讨好式的调侃语气。';
   const userPrompt = `${bg}\n人物列表：\n${personList}\n\n请按顺序为以上每个人物生成一条微信消息预览，严格按照如下格式输出，不要有其他内容：\n1::消息内容\n2::消息内容\n（依此类推，共${persons.length}条）`;
 
   let previews = {};
@@ -296,6 +304,7 @@ async function generateFromPersons(script, persons){
     avatar: p.name[0],
     color: AVATAR_COLORS[i % AVATAR_COLORS.length],
     preview: previews[i+1] || `Hi，${p.name}想和你聊聊…`,
+    firstMessage: previews[i+1] || `Hi，${p.name}想和你聊聊…`,
     time: times[i % times.length],
     unread: i < 3 ? (Math.floor(Math.random()*2)+1) : 0,
     role: p.role, character: p.character, values: p.values, background: p.background, attitude: p.attitude, sceneName: p.sceneName,
@@ -306,7 +315,7 @@ async function generateFromPersons(script, persons){
 async function generateInventedContacts(script){
   showLoading('正在为你编织这个世界…');
   const bg = buildBackgroundText(script);
-  const sysPrompt = '你是一个「已实现人生」场景生成器。仔细阅读用户写下的每一个场景（可能是事业、学术、健康、创作、心灵成长、人际关系、财富等任何主题），虚构4-6个会在微信上联系主角的人物。人物类型必须由场景内容本身决定，不要预设任何特定主题（不要默认往财富或奢侈品方向靠）——可以是导师、合作者、学生、病人、粉丝、朋友等任何符合场景的角色。人物设定与语气准则（本应用用户绝大多数是女性，以下准则务必严格执行）：人物对主角的态度一律平等、尊重、欣赏，不出现俯视、说教、指点的语气；主角应被呈现为有主见、有能力、被认可的一方，不是被动等待安排或需要被"带领"的一方；不使用"张叔""老王""小妹""美女""小姑娘"等有辈分感、市井气或轻视意味的称呼，改用姓名、职称或更现代平等的称呼方式；不出现"你终于懂事了""女孩子就该……"等说教式、评判式语句；专业/权威角色（顾问、银行家、投资人、医生、导师等）不默认为男性，应平等地也生成女性专业角色，赋予同等的专业感和话语权；感情类场景中，对方角色应表现为欣赏、支持主角本来的样子，而非试图改变、纠正或"提升"她；不出现任何将女性物化、矮化或预设需要被保护/管教的措辞；语气整体优雅真诚，避免油腻讨好式的调侃语气。';
+  const sysPrompt = '你是一个「已实现人生」场景生成器。仔细阅读用户写下的每一个场景（可能是事业、学术、健康、创作、心灵成长、人际关系、财富等任何主题），虚构4-6个会在微信上联系主角的人物。人物类型必须由场景内容本身决定，不要预设任何特定主题（不要默认往财富或奢侈品方向靠）——可以是导师、合作者、学生、病人、粉丝、朋友等任何符合场景的角色。人物设定与语气准则（本应用用户绝大多数是女性，以下准则务必严格执行）：人物对主角的态度一律平等、尊重、欣赏，不出现俯视、说教、指点的语气；主角应被呈现为有主见、有能力、被认可的一方，不是被动等待安排或需要被"带领"的一方；人物姓名和称呼要现代、自然，像用户身边真实认识的同龄人或专业人士——绝对不用"张叔""老王""老刘""老李""王姐""小妹""美女""小姑娘"这类国产老式电视剧、市井气或辈分感很重的称呼方式，这类称呼一律禁止使用；不出现"你终于懂事了""女孩子就该……"等说教式、评判式语句；专业/权威角色（顾问、银行家、投资人、医生、导师等）不默认为男性，应平等地也生成女性专业角色，赋予同等的专业感和话语权；感情类场景中，对方角色应表现为欣赏、支持主角本来的样子，而非试图改变、纠正或"提升"她；不出现任何将女性物化、矮化或预设需要被保护/管教的措辞；语气整体优雅真诚，避免油腻讨好式的调侃语气。';
   const userPrompt = `${bg}\n请虚构4-6个联系人，每人一条微信消息预览（不超过30字）。严格按照如下格式输出，不要有其他内容：\n姓名::身份角色::消息预览`;
 
   let list = [];
@@ -323,7 +332,7 @@ async function generateInventedContacts(script){
   const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
   contacts = list.map((p,i)=>({
     id:'inv'+i, name:p.name, avatar:p.name[0], color:AVATAR_COLORS[i%AVATAR_COLORS.length],
-    preview:p.preview, time:times[i%times.length], unread: i<3 ? (Math.floor(Math.random()*2)+1) : 0,
+    preview:p.preview, firstMessage:p.preview, time:times[i%times.length], unread: i<3 ? (Math.floor(Math.random()*2)+1) : 0,
     role:p.role, character:'', values:'', background:p.role, attitude:'友善、主动联系用户',
   }));
 }

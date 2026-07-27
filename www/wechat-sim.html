@@ -291,6 +291,23 @@ if(contactInfo){
 }
 document.getElementById('contactName').textContent = contactName;
 
+// 这次进来时，这个联系人本来是否有未读消息（用于决定是"直接看到等待中的消息"还是"AI现场开口"）
+const hadUnreadOnEntry = !!(contactInfo.unread > 0 && contactInfo.firstMessage);
+
+// 进来就算已读：把这个联系人的未读数清零，写回缓存
+if(contactId){
+  try{
+    const cache = JSON.parse(localStorage.getItem('wechatContactsCache')||'null');
+    if(cache && cache.contacts){
+      const idx = cache.contacts.findIndex(c=>c.id===contactId);
+      if(idx>=0 && cache.contacts[idx].unread>0){
+        cache.contacts[idx].unread = 0;
+        localStorage.setItem('wechatContactsCache', JSON.stringify(cache));
+      }
+    }
+  }catch(e){}
+}
+
 function addMessage(text, mine = false) {
   const row = document.createElement('div');
   row.className = 'msg-row' + (mine ? ' mine' : '');
@@ -352,9 +369,6 @@ function readDelay(){
   return 500 + Math.random()*1300;
 }
 
-// 进入聊天后，延迟一小段时间，AI主动发起开场对话
-setTimeout(playOpening, 700);
-
 // 用户输入
 msgInput.addEventListener('input', () => {
   if (msgInput.value.trim()) {
@@ -377,6 +391,15 @@ const persona = `你正在扮演「${contactName}」，与用户（${heroAddr}�
 背景：${contactInfo.background||''}
 你对待用户的态度：${contactInfo.attitude||'友善、主动'}
 请像真实的微信聊天一样回复，简短、口语化、符合你的身份和性格，一次只说一两句话，不要长篇大论。不要出现任何旁白、括号说明或AI自称，直接说话。`;
+
+// 进入聊天：如果这个联系人本来就有未读消息——说明消息"早就在那儿等着"，进来就该直接看到，不用演一遍AI现场打字
+// 只有本来没有未读的联系人（比如第一次没生成过未读、或者是重新打开已读过的对话），才走"AI主动开口"的动画
+if(hadUnreadOnEntry){
+  addMessage(contactInfo.firstMessage);
+  conversationHistory.push({ role:'assistant', content: contactInfo.firstMessage });
+} else {
+  setTimeout(playOpening, 700);
+}
 
 async function getAIReply() {
   await sleep(readDelay());
