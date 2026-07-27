@@ -128,7 +128,7 @@ body{
 
 <!-- 微信标题栏 -->
 <div class="wx-header">
-  <div class="wx-title">微信</div>
+  <div class="wx-title" id="wxTitleLongPress">微信</div>
   <div class="wx-header-icons">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16" y1="16" x2="21" y2="21"/></svg>
     <svg viewBox="0 0 24 24" onclick="location.href='desktop.html'" style="cursor:pointer;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -364,6 +364,25 @@ async function init(){
   localStorage.setItem(cacheKey, JSON.stringify({ scriptRaw, contacts }));
   renderList();
 }
+
+// 长按标题"微信"两个字，可以强制重新生成联系人（清掉旧缓存，比如之前生成的不满意的称呼）
+(function(){
+  const el = document.getElementById('wxTitleLongPress');
+  let timer = null;
+  const start = () => { timer = setTimeout(() => {
+    if(confirm('重新生成这个世界里的联系人？\n（之前的聊天记录会被清空，重新根据剧本生成新的联系人）')){
+      localStorage.removeItem('wechatContactsCache');
+      location.reload();
+    }
+  }, 650); };
+  const cancel = () => { if(timer){ clearTimeout(timer); timer=null; } };
+  el.addEventListener('touchstart', start, {passive:true});
+  el.addEventListener('touchend', cancel);
+  el.addEventListener('touchmove', cancel);
+  el.addEventListener('mousedown', start);
+  el.addEventListener('mouseup', cancel);
+  el.addEventListener('mouseleave', cancel);
+})();
 
 init();
 </script>

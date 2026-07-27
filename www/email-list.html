@@ -93,7 +93,7 @@ body{font-family:'Roboto','Google Sans',-apple-system,BlinkMacSystemFont,'PingFa
 <div class="gm-header">
   <div class="gm-searchbar">
     <div class="gm-menu" onclick="location.href='desktop.html'" style="cursor:pointer;"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></div>
-    <div class="gm-searchtext">Search in mail</div>
+    <div class="gm-searchtext" id="gmTitleLongPress">Search in mail</div>
     <div class="gm-avatar" id="userAvatar">F</div>
   </div>
 </div>
@@ -286,6 +286,25 @@ function openMail(i){
 function closeMail(){ document.getElementById('mailDetail').classList.remove('open'); }
 
 try{ const s=JSON.parse(localStorage.getItem('lifeScript')||'{}'); if(s.hero&&s.hero.name){ document.getElementById('userAvatar').textContent=s.hero.name[0].toUpperCase(); } }catch(e){}
+
+// 长按搜索栏文字，可以强制重新生成邮件（清掉旧缓存）
+(function(){
+  const el = document.getElementById('gmTitleLongPress');
+  let timer = null;
+  const start = () => { timer = setTimeout(() => {
+    if(confirm('重新生成这个世界里的邮件？\n（会根据剧本重新生成新的一批邮件）')){
+      localStorage.removeItem('emailCache');
+      location.reload();
+    }
+  }, 650); };
+  const cancel = () => { if(timer){ clearTimeout(timer); timer=null; } };
+  el.addEventListener('touchstart', start, {passive:true});
+  el.addEventListener('touchend', cancel);
+  el.addEventListener('touchmove', cancel);
+  el.addEventListener('mousedown', start);
+  el.addEventListener('mouseup', cancel);
+  el.addEventListener('mouseleave', cancel);
+})();
 
 initEmails();
 </script>

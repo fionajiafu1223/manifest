@@ -88,7 +88,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','PingFang SC','H
 
 <div class="top-bar">
   <div class="edit-btn" onclick="location.href='desktop.html'">Edit</div>
-  <div class="top-title">Messages</div>
+  <div class="top-title" id="smsTitleLongPress">Messages</div>
   <div class="filter-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="17" x2="14" y2="17"/></svg></div>
 </div>
 
@@ -252,6 +252,25 @@ function openChat(i){
 function closeChat(){ document.getElementById('chatDetail').classList.remove('open'); }
 
 try{ const s=JSON.parse(localStorage.getItem('lifeScript')||'{}'); if(s.hero&&s.hero.name){ document.getElementById('profileName').textContent=s.hero.name; } }catch(e){}
+
+// 长按"Messages"标题，可以强制重新生成短信（清掉旧缓存）
+(function(){
+  const el = document.getElementById('smsTitleLongPress');
+  let timer = null;
+  const start = () => { timer = setTimeout(() => {
+    if(confirm('重新生成这个世界里的短信？\n（会根据剧本重新生成新的一批短信）')){
+      localStorage.removeItem('smsCache');
+      location.reload();
+    }
+  }, 650); };
+  const cancel = () => { if(timer){ clearTimeout(timer); timer=null; } };
+  el.addEventListener('touchstart', start, {passive:true});
+  el.addEventListener('touchend', cancel);
+  el.addEventListener('touchmove', cancel);
+  el.addEventListener('mousedown', start);
+  el.addEventListener('mouseup', cancel);
+  el.addEventListener('mouseleave', cancel);
+})();
 
 initThreads();
 </script>
