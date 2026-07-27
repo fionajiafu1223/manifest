@@ -1,0 +1,58 @@
+workflows:
+  ios-workflow:
+    name: Manifest iOS Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: manifest_asc_key  # 在Codemagic网站的Team Settings里创建这个名字的API Key集成
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.fionajiafu.manifest
+      vars:
+        XCODE_WORKSPACE: "App.xcworkspace"
+        XCODE_SCHEME: "App"
+      node: latest
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install npm dependencies
+        script: npm install
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios/App && pod install
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+      - name: Build ipa
+        script: |
+          xcode-project build-ipa \
+            --workspace "ios/App/$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
+  android-workflow:
+    name: Manifest Android Build
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      node: latest
+      groups:
+        - keystore_credentials  # 需要在Codemagic网站上创建这个环境变量组，存放签名密钥信息
+    scripts:
+      - name: Install npm dependencies
+        script: npm install
+      - name: Sync Capacitor
+        script: npx cap sync android
+      - name: Build Android release
+        script: |
+          cd android
+          ./gradlew assembleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>我的人生剧本</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{
+  font-family:'Noto Serif SC',serif;
+  height:100dvh;position:fixed;inset:0;
+  background:linear-gradient(180deg,#f0ecd8 0%,#e4ecc8 25%,#d0e4b8 55%,#b8d8a0 80%,#a0cc90 100%);
+  color:#3a4a2a;
+  display:flex;flex-direction:column;
+}
+
+/* 返回 */
+.back-garden{position:fixed;top:calc(env(safe-area-inset-top,44px) + 12px);left:16px;z-index:9999;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.6);border:1px solid rgba(120,160,90,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#3a4a2a;}
+.back-garden svg{width:20px;height:20px;}
+
+/* 进度条 */
+.progress-bar{position:relative;z-index:5;height:3px;background:rgba(120,90,60,0.15);margin-top:env(safe-area-inset-top,44px);flex-shrink:0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,#c8a04a,#e8c860);width:0%;transition:width 0.5s;border-radius:2px;}
+
+/* 幕容器 */
+.acts{flex:1;position:relative;overflow:hidden;}
+.act{position:absolute;inset:0;display:flex;flex-direction:column;padding:1.5rem 1.4rem 0;opacity:0;pointer-events:none;transform:translateX(30px);transition:opacity 0.5s,transform 0.5s;overflow-y:auto;}
+.act.active{opacity:1;pointer-events:auto;transform:translateX(0);}
+.act-label{font-family:'Ma Shan Zheng',serif;font-size:13px;color:#c89030;letter-spacing:4px;text-align:center;margin-bottom:0.4rem;padding-top:1.5rem;}
+.act-title{font-size:24px;font-weight:600;color:#3a4a2a;text-align:center;margin-bottom:0.5rem;letter-spacing:2px;}
+.act-desc{font-size:13px;color:#6a7858;text-align:center;line-height:1.7;margin-bottom:1.5rem;letter-spacing:1px;}
+
+/* 封面/结尾 */
+.cover{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding-bottom:2rem;}
+.cover-icon{font-size:64px;margin-bottom:1.2rem;filter:drop-shadow(0 4px 12px rgba(120,150,60,0.3));}
+.cover-title{font-family:'Ma Shan Zheng',serif;font-size:34px;color:#c89030;letter-spacing:6px;margin-bottom:1rem;}
+.cover-sub{font-size:13px;color:#6a7858;letter-spacing:2px;line-height:2;margin-bottom:2.5rem;}
+
+/* 表单 */
+.section-hint{font-size:11px;color:#8a9878;letter-spacing:1px;margin:1.2rem 0 0.6rem;padding-bottom:0.3rem;border-bottom:1px solid rgba(120,160,90,0.25);}
+.field{margin-bottom:1rem;}
+.field-label{font-size:13px;color:#5a6a48;margin-bottom:0.5rem;letter-spacing:1px;}
+.field-label .req{color:#c89030;}
+.field-input,.field-textarea{width:100%;background:rgba(255,255,255,0.75);border:1px solid rgba(150,175,110,0.4);border-radius:12px;padding:0.85rem 1rem;color:#3a4a2a;font-family:'Noto Serif SC',serif;font-size:15px;outline:none;transition:border-color 0.2s;}
+.field-input:focus,.field-textarea:focus{border-color:rgba(180,150,70,0.7);}
+.field-input::placeholder,.field-textarea::placeholder{color:#a8b498;}
+.field-textarea{min-height:80px;resize:none;line-height:1.7;}
+.field-half{display:flex;gap:10px;}
+.field-half .field{flex:1;}
+
+.gender-row{display:flex;gap:10px;}
+.gender-btn{flex:1;padding:0.85rem;text-align:center;background:rgba(255,255,255,0.75);border:1px solid rgba(150,175,110,0.4);border-radius:12px;color:#5a6a48;font-size:15px;cursor:pointer;transition:all 0.2s;font-family:'Noto Serif SC',serif;}
+.gender-btn.selected{background:rgba(232,176,74,0.2);border-color:#e8b04a;color:#3a4a2a;}
+
+.tip{background:rgba(232,176,74,0.15);border-radius:10px;padding:0.8rem 1rem;font-size:12px;color:#8a6838;line-height:1.7;margin-bottom:1.3rem;letter-spacing:0.5px;}
+
+/* 场景卡片列表 */
+.scene-card{background:rgba(255,255,255,0.72);border:1px solid rgba(150,175,110,0.35);border-radius:14px;padding:1rem 1.1rem;margin-bottom:12px;cursor:pointer;transition:transform 0.15s;}
+.scene-card:active{transform:scale(0.98);}
+.scene-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.scene-card-name{font-size:16px;color:#3a4a2a;font-weight:600;}
+.scene-card-count{font-size:11px;color:#8a9878;background:rgba(120,160,90,0.15);padding:2px 8px;border-radius:8px;}
+.scene-card-preview{font-size:12px;color:#7a8868;line-height:1.5;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.scene-card-del{float:right;color:#b0a090;font-size:16px;padding:2px 6px;cursor:pointer;}
+
+.add-btn{width:100%;padding:0.9rem;background:rgba(255,255,255,0.5);border:1.5px dashed rgba(150,175,110,0.5);border-radius:12px;color:#7a8858;font-size:14px;cursor:pointer;font-family:'Noto Serif SC',serif;margin-bottom:10px;}
+.add-btn:hover{border-color:rgba(180,150,70,0.6);}
+
+/* 人物卡片 */
+.person-card{background:rgba(255,255,255,0.72);border:1px solid rgba(150,175,110,0.35);border-radius:12px;padding:0.85rem 1rem;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;}
+.person-avatar{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#a0c088,#7aa860);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex-shrink:0;}
+.person-info{flex:1;min-width:0;}
+.person-name{font-size:15px;color:#3a4a2a;}
+.person-role{font-size:12px;color:#8a9878;margin-top:2px;}
+.person-del{color:#b0a090;font-size:16px;padding:4px;cursor:pointer;}
+
+/* 底部按钮 */
+.act-footer{position:relative;z-index:5;padding:1rem 1.4rem calc(1rem + env(safe-area-inset-bottom,20px));display:flex;gap:12px;flex-shrink:0;background:linear-gradient(180deg,transparent,rgba(184,216,160,0.4) 40%);}
+.btn{padding:0.9rem;border-radius:14px;border:none;cursor:pointer;font-family:'Noto Serif SC',serif;font-size:15px;letter-spacing:2px;transition:transform 0.1s;}
+.btn:active{transform:scale(0.98);}
+.btn-skip{flex:0 0 auto;padding:0.9rem 1.3rem;background:rgba(255,255,255,0.6);color:#7a8858;border:1px solid rgba(150,175,110,0.4);}
+.btn-next{flex:1;background:linear-gradient(135deg,#c8a04a,#e8c860);color:#4a3810;font-weight:600;}
+.btn-start{width:100%;background:linear-gradient(135deg,#c8a04a,#e8c860);color:#4a3810;font-weight:600;padding:1rem;font-size:16px;}
+
+/* 全屏编辑层（场景/人物） */
+.editor{position:fixed;inset:0;z-index:200;background:linear-gradient(180deg,#f0ecd8 0%,#e4ecc8 25%,#d0e4b8 55%,#b8d8a0 80%,#a0cc90 100%);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.4s;}
+.editor.open{transform:translateX(0);}
+.editor-head{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,44px) + 12px) 16px 12px;flex-shrink:0;}
+.editor-back{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.6);border:1px solid rgba(120,160,90,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#3a4a2a;}
+.editor-back svg{width:20px;height:20px;}
+.editor-title{font-size:17px;color:#3a4a2a;letter-spacing:2px;font-weight:600;}
+.editor-save{padding:6px 16px;background:linear-gradient(135deg,#c8a04a,#e8c860);border:none;border-radius:10px;color:#4a3810;font-size:14px;cursor:pointer;font-family:'Noto Serif SC',serif;font-weight:600;}
+.editor-body{flex:1;overflow-y:auto;padding:0.5rem 1.4rem 2rem;}
+</style>
+</head>
+<body>
+
+<div class="back-garden" onclick="if(confirm('确定离开剧本？未保存的内容会丢失。'))window.location.href='index.html'">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</div>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="acts" id="acts">
+
+  <!-- 开场 -->
+  <div class="act active" data-step="0">
+    <div class="cover">
+      <div class="cover-icon">📖</div>
+      <div class="cover-title">我的人生剧本</div>
+      <div class="cover-sub">在这里，你是自己人生的编剧<br>设定你想要的一切<br>然后，看它成真</div>
+      <button class="btn btn-start" onclick="nextAct()">✦ 开始创作</button>
+    </div>
+  </div>
+
+  <!-- 第一幕：主角档案 -->
+  <div class="act" data-step="1">
+    <div class="act-label">第一幕</div>
+    <div class="act-title">主角登场</div>
+    <div class="act-desc">这个故事的主角，就是你自己<br>写得越丰富，你的世界越真实</div>
+
+    <div class="section-hint">基础信息</div>
+    <div class="field">
+      <div class="field-label">名字 <span class="req">*</span></div>
+      <input type="text" class="field-input" id="h_name" placeholder="故事里，大家怎么称呼你">
+    </div>
+    <div class="field">
+      <div class="field-label">性别 <span class="req">*</span></div>
+      <div class="gender-row">
+        <div class="gender-btn" onclick="selectGender(this,'female')">女士</div>
+        <div class="gender-btn" onclick="selectGender(this,'male')">先生</div>
+      </div>
+    </div>
+    <div class="field-half">
+      <div class="field"><div class="field-label">年龄</div><input type="text" class="field-input" id="h_age" placeholder="可选"></div>
+      <div class="field"><div class="field-label">星座 / 生日</div><input type="text" class="field-input" id="h_zodiac" placeholder="可选"></div>
+    </div>
+
+    <div class="section-hint">外在形象</div>
+    <div class="field"><div class="field-label">长相 / 外貌</div><textarea class="field-textarea" id="h_look" placeholder="你的容貌、气质…"></textarea></div>
+    <div class="field"><div class="field-label">身材</div><input type="text" class="field-input" id="h_body" placeholder="可选"></div>
+    <div class="field"><div class="field-label">穿衣风格 / 气质</div><input type="text" class="field-input" id="h_style" placeholder="可选"></div>
+
+    <div class="section-hint">内在灵魂</div>
+    <div class="field"><div class="field-label">性格</div><textarea class="field-textarea" id="h_character" placeholder="你是一个怎样的人…"></textarea></div>
+    <div class="field"><div class="field-label">价值观</div><textarea class="field-textarea" id="h_values" placeholder="你最看重什么…"></textarea></div>
+    <div class="field"><div class="field-label">人生观</div><textarea class="field-textarea" id="h_life" placeholder="你如何看待人生…"></textarea></div>
+    <div class="field"><div class="field-label">世界观</div><textarea class="field-textarea" id="h_world" placeholder="你如何看待这个世界…"></textarea></div>
+    <div class="field"><div class="field-label">爱好 / 热情所在</div><input type="text" class="field-input" id="h_hobby" placeholder="可选"></div>
+    <div class="field"><div class="field-label">优点 / 天赋</div><input type="text" class="field-input" id="h_gift" placeholder="可选"></div>
+
+    <div class="section-hint">生活状态</div>
+    <div class="field"><div class="field-label">职业 / 身份</div><input type="text" class="field-input" id="h_job" placeholder="可选"></div>
+    <div class="field"><div class="field-label">居住地 / 生活环境</div><input type="text" class="field-input" id="h_home" placeholder="可选"></div>
+
+    <div class="section-hint">背景故事</div>
+    <div class="field"><div class="field-label">成长背景 / 家庭</div><textarea class="field-textarea" id="h_background" placeholder="可选"></textarea></div>
+    <div class="field"><div class="field-label">重要经历</div><textarea class="field-textarea" id="h_experience" placeholder="可选"></textarea></div>
+
+    <div class="section-hint">内心深处</div>
+    <div class="field"><div class="field-label">最深的渴望</div><textarea class="field-textarea" id="h_desire" placeholder="你最想要的是什么…"></textarea></div>
+    <div class="field"><div class="field-label">想要成为的样子</div><textarea class="field-textarea" id="h_become" placeholder="你渴望成为怎样的人…"></textarea></div>
+  </div>
+
+  <!-- 第二幕：场景管理 -->
+  <div class="act" data-step="2">
+    <div class="act-label">第二幕</div>
+    <div class="act-title">你的人生场景</div>
+    <div class="act-desc">添加你想要的人生场景<br>每个场景里，安排你的人物与剧情</div>
+    <div class="tip">💫 想要几个场景就加几个。写得越具体，AI为你营造的世界越真实。</div>
+    <div id="sceneList"></div>
+    <button class="add-btn" onclick="openSceneEditor(-1)">＋ 添加一个场景</button>
+  </div>
+
+  <!-- 结尾 -->
+  <div class="act" data-step="3">
+    <div class="cover">
+      <div class="cover-icon">✨</div>
+      <div class="cover-title" style="font-size:28px;">剧本已完成</div>
+      <div class="cover-sub">你的人生剧本已经写好<br>从这一刻起，所有角色都将入戏<br>为你呈现这个「已经实现」的世界</div>
+      <button class="btn btn-start" onclick="finishScript()">✦ 剧本开演</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="act-footer" id="actFooter" style="display:none;">
+  <button class="btn btn-skip" onclick="skipAct()">跳过</button>
+  <button class="btn btn-next" onclick="nextAct()">下一幕 →</button>
+</div>
+
+<!-- 场景编辑器 -->
+<div class="editor" id="sceneEditor">
+  <div class="editor-head">
+    <div class="editor-back" onclick="closeSceneEditor()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="editor-title">编辑场景</div>
+    <button class="editor-save" onclick="saveScene()">保存</button>
+  </div>
+  <div class="editor-body">
+    <div class="field"><div class="field-label">场景名称 / 主题 <span class="req">*</span></div><input type="text" class="field-input" id="s_name" placeholder="例：财富自由、甜蜜爱情、事业巅峰…"></div>
+    <div class="field"><div class="field-label">剧情</div><textarea class="field-textarea" id="s_plot" placeholder="这个场景里，发生着怎样的故事…" style="min-height:100px;"></textarea></div>
+    <div class="field"><div class="field-label">重点戏份</div><textarea class="field-textarea" id="s_highlight" placeholder="你最想要的关键情节、最想体验的高光时刻…" style="min-height:100px;"></textarea></div>
+
+    <div class="section-hint">出场人物</div>
+    <div id="personList"></div>
+    <button class="add-btn" onclick="openPersonEditor(-1)">＋ 添加一个人物</button>
+  </div>
+</div>
+
+<!-- 人物编辑器 -->
+<div class="editor" id="personEditor">
+  <div class="editor-head">
+    <div class="editor-back" onclick="closePersonEditor()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="editor-title">人物档案</div>
+    <button class="editor-save" onclick="savePerson()">保存</button>
+  </div>
+  <div class="editor-body">
+    <div class="field"><div class="field-label">姓名 / 称呼 <span class="req">*</span></div><input type="text" class="field-input" id="p_name" placeholder="这个人叫什么"></div>
+    <div class="field"><div class="field-label">与主角的关系 / 戏份</div><input type="text" class="field-input" id="p_role" placeholder="例：男朋友、客户经理、老友…"></div>
+    <div class="field-half">
+      <div class="field"><div class="field-label">年龄</div><input type="text" class="field-input" id="p_age" placeholder="可选"></div>
+      <div class="field"><div class="field-label">性别</div><input type="text" class="field-input" id="p_gender" placeholder="可选"></div>
+    </div>
+    <div class="field"><div class="field-label">长相 / 外貌</div><textarea class="field-textarea" id="p_look" placeholder="TA长什么样…"></textarea></div>
+    <div class="field"><div class="field-label">性格</div><textarea class="field-textarea" id="p_character" placeholder="TA是怎样的性格…"></textarea></div>
+    <div class="field"><div class="field-label">价值观</div><textarea class="field-textarea" id="p_values" placeholder="TA看重什么…"></textarea></div>
+    <div class="field"><div class="field-label">背景</div><textarea class="field-textarea" id="p_background" placeholder="TA的身份、经历、故事…"></textarea></div>
+    <div class="field"><div class="field-label">TA如何对待主角</div><textarea class="field-textarea" id="p_attitude" placeholder="在这个场景里，TA怎样对你说话、对你做事…"></textarea></div>
+  </div>
+</div>
+
+<script>
+const acts=document.querySelectorAll('.act');
+const totalSteps=acts.length;
+let currentStep=0;
+
+let scriptData={ hero:{}, scenes:[] };
+let editingSceneIdx=-1;   // 当前编辑的场景索引
+let editingPersonIdx=-1;  // 当前编辑的人物索引
+let tempPersons=[];       // 场景编辑时的临时人物数组
+
+// 若已有剧本数据，载入表单供编辑（而不是每次清空重写）
+function hydrateFromExisting(){
+  let existing=null;
+  try{ existing=JSON.parse(localStorage.getItem('lifeScript')||'null'); }catch(e){}
+  if(!existing || !existing.hero) return;
+  scriptData = { hero:existing.hero||{}, scenes:existing.scenes||[] };
+
+  const set=(id,val)=>{ const el=document.getElementById(id); if(el && val!==undefined) el.value=val; };
+  const h=scriptData.hero;
+  set('h_name',h.name); set('h_age',h.age); set('h_zodiac',h.zodiac);
+  set('h_look',h.look); set('h_body',h.body); set('h_style',h.style);
+  set('h_character',h.character); set('h_values',h.values); set('h_life',h.lifeView); set('h_world',h.worldView);
+  set('h_hobby',h.hobby); set('h_gift',h.gift); set('h_job',h.job); set('h_home',h.home);
+  set('h_background',h.background); set('h_experience',h.experience);
+  set('h_desire',h.desire); set('h_become',h.become);
+
+  if(h.gender){
+    document.querySelectorAll('.gender-btn').forEach(b=>{
+      if((h.gender==='female' && b.textContent==='女士') || (h.gender==='male' && b.textContent==='先生')){
+        b.classList.add('selected');
+      }
+    });
+  }
+  renderScenes();
+}
+
+function updateUI(){
+  acts.forEach((a,i)=>{a.classList.remove('active');if(i===currentStep)a.classList.add('active');});
+  document.getElementById('progressFill').style.width=(currentStep/(totalSteps-1)*100)+'%';
+  const footer=document.getElementById('actFooter');
+  footer.style.display=(currentStep===0||currentStep===totalSteps-1)?'none':'flex';
+  const skipBtn=document.querySelector('.btn-skip');
+  if(skipBtn) skipBtn.style.display=(currentStep===1)?'none':'block';
+}
+
+function nextAct(){
+  if(currentStep===1){
+    const name=document.getElementById('h_name').value.trim();
+    if(!name){ shake(document.getElementById('h_name')); return; }
+    if(!scriptData.hero.gender){ shake(document.querySelector('.gender-row')); return; }
+  }
+  saveHero();
+  if(currentStep<totalSteps-1){ currentStep++; updateUI(); document.querySelector('.act.active').scrollTop=0; }
+}
+function skipAct(){ if(currentStep<totalSteps-1){ currentStep++; updateUI(); } }
+function shake(el){ el.style.animation='shk 0.4s'; el.addEventListener('animationend',()=>el.style.animation='',{once:true}); }
+
+function selectGender(el,g){ document.querySelectorAll('.gender-btn').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); scriptData.hero.gender=g; }
+
+function saveHero(){
+  const g=id=>document.getElementById(id)?document.getElementById(id).value:'';
+  scriptData.hero={...scriptData.hero,
+    name:g('h_name'),age:g('h_age'),zodiac:g('h_zodiac'),
+    look:g('h_look'),body:g('h_body'),style:g('h_style'),
+    character:g('h_character'),values:g('h_values'),lifeView:g('h_life'),worldView:g('h_world'),
+    hobby:g('h_hobby'),gift:g('h_gift'),job:g('h_job'),home:g('h_home'),
+    background:g('h_background'),experience:g('h_experience'),
+    desire:g('h_desire'),become:g('h_become')
+  };
+}
+
+/* ── 场景 ── */
+function renderScenes(){
+  const list=document.getElementById('sceneList');
+  list.innerHTML='';
+  scriptData.scenes.forEach((s,i)=>{
+    const card=document.createElement('div');
+    card.className='scene-card';
+    card.onclick=(e)=>{ if(e.target.classList.contains('scene-card-del'))return; openSceneEditor(i); };
+    card.innerHTML=`
+      <div class="scene-card-top">
+        <span class="scene-card-name">${s.name||'未命名场景'}</span>
+        <span class="scene-card-del" onclick="delScene(${i})">✕</span>
+      </div>
+      <div class="scene-card-count" style="display:inline-block;margin-bottom:6px;">${(s.persons||[]).length} 位人物</div>
+      <div class="scene-card-preview">${s.plot||s.highlight||'点击编辑剧情与人物'}</div>
+    `;
+    list.appendChild(card);
+  });
+}
+function delScene(i){ event.stopPropagation(); scriptData.scenes.splice(i,1); renderScenes(); }
+
+function openSceneEditor(idx){
+  editingSceneIdx=idx;
+  if(idx>=0){
+    const s=scriptData.scenes[idx];
+    document.getElementById('s_name').value=s.name||'';
+    document.getElementById('s_plot').value=s.plot||'';
+    document.getElementById('s_highlight').value=s.highlight||'';
+    tempPersons=JSON.parse(JSON.stringify(s.persons||[]));
+  } else {
+    document.getElementById('s_name').value='';
+    document.getElementById('s_plot').value='';
+    document.getElementById('s_highlight').value='';
+    tempPersons=[];
+  }
+  renderPersons();
+  document.getElementById('sceneEditor').classList.add('open');
+}
+function closeSceneEditor(){ document.getElementById('sceneEditor').classList.remove('open'); }
+function saveScene(){
+  const name=document.getElementById('s_name').value.trim();
+  if(!name){ shake(document.getElementById('s_name')); return; }
+  const scene={ name, plot:document.getElementById('s_plot').value, highlight:document.getElementById('s_highlight').value, persons:tempPersons };
+  if(editingSceneIdx>=0) scriptData.scenes[editingSceneIdx]=scene;
+  else scriptData.scenes.push(scene);
+  renderScenes();
+  closeSceneEditor();
+}
+
+/* ── 人物 ── */
+function renderPersons(){
+  const list=document.getElementById('personList');
+  list.innerHTML='';
+  tempPersons.forEach((p,i)=>{
+    const card=document.createElement('div');
+    card.className='person-card';
+    card.onclick=(e)=>{ if(e.target.classList.contains('person-del'))return; openPersonEditor(i); };
+    card.innerHTML=`
+      <div class="person-avatar">${(p.name||'?')[0]}</div>
+      <div class="person-info"><div class="person-name">${p.name||'未命名'}</div><div class="person-role">${p.role||'点击编辑档案'}</div></div>
+      <span class="person-del" onclick="delPerson(${i})">✕</span>
+    `;
+    list.appendChild(card);
+  });
+}
+function delPerson(i){ event.stopPropagation(); tempPersons.splice(i,1); renderPersons(); }
+
+function openPersonEditor(idx){
+  editingPersonIdx=idx;
+  const g=id=>document.getElementById(id);
+  if(idx>=0){
+    const p=tempPersons[idx];
+    g('p_name').value=p.name||'';g('p_role').value=p.role||'';g('p_age').value=p.age||'';g('p_gender').value=p.gender||'';
+    g('p_look').value=p.look||'';g('p_character').value=p.character||'';g('p_values').value=p.values||'';
+    g('p_background').value=p.background||'';g('p_attitude').value=p.attitude||'';
+  } else {
+    ['p_name','p_role','p_age','p_gender','p_look','p_character','p_values','p_background','p_attitude'].forEach(k=>g(k).value='');
+  }
+  document.getElementById('personEditor').classList.add('open');
+}
+function closePersonEditor(){ document.getElementById('personEditor').classList.remove('open'); }
+function savePerson(){
+  const g=id=>document.getElementById(id).value;
+  const name=g('p_name').trim();
+  if(!name){ shake(document.getElementById('p_name')); return; }
+  const person={ name, role:g('p_role'), age:g('p_age'), gender:g('p_gender'), look:g('p_look'), character:g('p_character'), values:g('p_values'), background:g('p_background'), attitude:g('p_attitude') };
+  if(editingPersonIdx>=0) tempPersons[editingPersonIdx]=person;
+  else tempPersons.push(person);
+  renderPersons();
+  closePersonEditor();
+}
+
+function finishScript(){
+  saveHero();
+  localStorage.setItem('lifeScript',JSON.stringify(scriptData));
+  document.body.style.transition='opacity 0.8s';
+  document.body.style.opacity='0';
+  setTimeout(()=>{ window.location.href='desktop.html'; },800);
+}
+
+// shake动画
+const st=document.createElement('style');
+st.textContent='@keyframes shk{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}';
+document.head.appendChild(st);
+
+hydrateFromExisting();
+updateUI();
+</script>
+</body>
+</html>
