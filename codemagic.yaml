@@ -8,17 +8,13 @@ workflows:
     environment:
       vars:
         BUNDLE_ID: "com.fionajiafu.manifest"
-        XCODE_WORKSPACE: "App.xcworkspace"
+        XCODE_PROJECT: "App.xcodeproj"
         XCODE_SCHEME: "App"
       node: latest
       xcode: latest
-      cocoapods: default
     scripts:
       - name: Install npm dependencies
         script: npm install
-      - name: Install CocoaPods dependencies
-        script: |
-          cd ios/App && pod install
       - name: Set up keychain for code signing
         script: keychain initialize
       - name: Fetch signing files
@@ -34,7 +30,7 @@ workflows:
       - name: Build ipa
         script: |
           xcode-project build-ipa \
-            --workspace "ios/App/$XCODE_WORKSPACE" \
+            --project "ios/App/$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
     artifacts:
       - build/ios/ipa/*.ipa
