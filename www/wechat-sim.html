@@ -308,7 +308,20 @@ if(contactId){
   }catch(e){}
 }
 
-function addMessage(text, mine = false) {
+// ── 对话记录持久化：每个联系人的聊天记录都存在本地，重新打开时原样还在，不会消失/重生 ──
+const historyKey = 'wechatHistory_' + (contactId || 'default');
+function loadHistory(){
+  try{
+    const raw = localStorage.getItem(historyKey);
+    if(raw){ const arr = JSON.parse(raw); if(Array.isArray(arr)) return arr; }
+  }catch(e){}
+  return null;
+}
+function saveHistory(){
+  try{ localStorage.setItem(historyKey, JSON.stringify(conversationHistory)); }catch(e){}
+}
+
+function addMessage(text, mine = false, persist = true) {
   const row = document.createElement('div');
   row.className = 'msg-row' + (mine ? ' mine' : '');
   
@@ -327,6 +340,11 @@ function addMessage(text, mine = false) {
   row.appendChild(wrap);
   chatArea.appendChild(row);
   chatArea.scrollTop = chatArea.scrollHeight;
+
+  if(persist){
+    conversationHistory.push({ role: mine ? 'user' : 'assistant', content: text });
+    saveHistory();
+  }
 }
 
 function showTyping() {
@@ -392,11 +410,15 @@ const persona = `你正在扮演「${contactName}」，与用户（${heroAddr}�
 你对待用户的态度：${contactInfo.attitude||'友善、主动'}
 请像真实的微信聊天一样回复，简短、口语化、符合你的身份和性格，一次只说一两句话，不要长篇大论。不要出现任何旁白、括号说明或AI自称，直接说话。`;
 
-// 进入聊天：如果这个联系人本来就有未读消息——说明消息"早就在那儿等着"，进来就该直接看到，不用演一遍AI现场打字
-// 只有本来没有未读的联系人（比如第一次没生成过未读、或者是重新打开已读过的对话），才走"AI主动开口"的动画
-if(hadUnreadOnEntry){
+// 进入聊天：优先看这个联系人之前有没有留下的完整对话记录
+// 有 —— 原样显示出来，不重新生成、不用打字动画，对方发过的消息不会凭空消失
+// 没有 —— 才是真的第一次见面：有未读就直接显示等待中的消息；没有就走"AI主动开口"的开场动画
+const savedHistory = loadHistory();
+if(savedHistory && savedHistory.length > 0){
+  conversationHistory = savedHistory;
+  savedHistory.forEach(m => { addMessage(m.content, m.role === 'user', false); });
+} else if(hadUnreadOnEntry){
   addMessage(contactInfo.firstMessage);
-  conversationHistory.push({ role:'assistant', content: contactInfo.firstMessage });
 } else {
   setTimeout(playOpening, 700);
 }
@@ -437,10 +459,9 @@ async function getAIReply() {
 
     hideTyping();
     addMessage(reply);
-    conversationHistory.push({ role: 'assistant', content: reply });
   } catch (err) {
     hideTyping();
-    addMessage('……（网络好像有点问题）');
+    addMessage('……（网络好像有点问题）', false, false);
   }
 }
 
@@ -478,7 +499,6 @@ async function playOpening() {
       await sleep(wait);
       hideTyping();
       addMessage(line);
-      conversationHistory.push({ role:'assistant', content: line });
       i++;
       if(i<lines.length){
         await sleep(350 + Math.random()*450);
@@ -489,7 +509,7 @@ async function playOpening() {
     await showNext();
   } catch(err) {
     hideTyping();
-    addMessage('……（网络好像有点问题，下拉刷新试试）');
+    addMessage('……（网络好像有点问题，下拉刷新试试）', false, false);
   }
 }
 
@@ -497,7 +517,6 @@ sendBtn.addEventListener('click', () => {
   const text = msgInput.value.trim();
   if (!text) return;
   addMessage(text, true);
-  conversationHistory.push({ role: 'user', content: text });
   msgInput.value = '';
   sendBtn.classList.remove('visible');
   plusBtn.style.display = 'flex';

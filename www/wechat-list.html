@@ -381,6 +381,8 @@ async function init(){
   const start = () => { timer = setTimeout(() => {
     if(confirm('重新生成这个世界里的联系人？\n（之前的聊天记录会被清空，重新根据剧本生成新的联系人）')){
       localStorage.removeItem('wechatContactsCache');
+      // 一并清掉每个联系人保存的聊天记录，避免新联系人顶着旧对话
+      Object.keys(localStorage).filter(k=>k.startsWith('wechatHistory_')).forEach(k=>localStorage.removeItem(k));
       location.reload();
     }
   }, 650); };
