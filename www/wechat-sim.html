@@ -327,7 +327,11 @@ function addMessage(text, mine = false, persist = true) {
   
   const avatar = document.createElement('div');
   avatar.className = 'avatar' + (mine ? ' mine-avatar' : '');
-  avatar.textContent = mine ? '我' : contactName[0];
+  if(!mine && contactInfo.avatarImg){
+    avatar.innerHTML = `<img src="${contactInfo.avatarImg}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
+  } else {
+    avatar.textContent = mine ? '我' : contactName[0];
+  }
   
   const wrap = document.createElement('div');
   wrap.className = 'bubble-wrap';
@@ -353,7 +357,11 @@ function showTyping() {
   row.id = 'typingRow';
   const avatar = document.createElement('div');
   avatar.className = 'avatar';
-  avatar.textContent = contactName[0];
+  if(contactInfo.avatarImg){
+    avatar.innerHTML = `<img src="${contactInfo.avatarImg}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
+  } else {
+    avatar.textContent = contactName[0];
+  }
   const wrap = document.createElement('div');
   wrap.className = 'bubble-wrap';
   const bubble = document.createElement('div');
