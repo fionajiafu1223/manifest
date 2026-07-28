@@ -167,6 +167,92 @@ function openApp(app){
     setTimeout(()=>t.classList.remove('show'),1500);
   }
 }
+
+// ── 推送通知：根据人生剧本，安排未来几天会陆续弹出的消息 ──
+
+function buildBackgroundText(script){
+  const h = script.hero || {};
+  let text = `主角：${h.name||'（未命名）'}，${h.gender==='female'?'女':'男'}`;
+  if(h.job) text += `，职业是${h.job}`;
+  if(h.character) text += `。性格：${h.character}`;
+  if(h.values) text += `。价值观：${h.values}`;
+  if(h.desire) text += `。内心最深的渴望：${h.desire}`;
+  text += '\n\n';
+  (script.scenes||[]).forEach(s=>{
+    text += `【场景：${s.name}】\n`;
+    if(s.plot) text += `剧情：${s.plot}\n`;
+    if(s.highlight) text += `重点戏份：${s.highlight}\n`;
+  });
+  return text;
+}
+
+async function generateNotificationTexts(script){
+  const bg = buildBackgroundText(script);
+  const sysPrompt = '你是一个「已实现人生」通知文案生成器。仔细阅读用户写下的每一个场景（可能是事业、学术、健康、创作、心灵成长、人际关系、财富等任何主题），生成5条会作为手机通知弹出的简短暗示性文案，营造"你已经拥有/正在经历这一切"的氛围感。内容类型必须由场景内容本身决定，不要预设任何特定主题（不要默认往财富或奢侈品方向靠）。人物姓名和称呼要现代、自然，绝对不用"张叔""老王""老刘""老李""王姐""美女""小姑娘"这类老式、市井气或轻视意味的称呼。重要：不要涉及银行、转账、具体到账金额，不要使用真实存在的机构官方名称，每条不超过40字，语气温暖、有画面感，像轻声提醒，不要用感叹号堆砌。';
+  const userPrompt = `${bg}\n请生成5条通知文案。严格按照如下格式输出，每条一行，不要编号，不要有其他内容。`;
+
+  try{
+    const res = await fetch('https://api.freedreleasing.com/api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model:'deepseek-chat', max_tokens:600,
+        messages:[ {role:'system',content:sysPrompt}, {role:'user',content:userPrompt} ] }),
+    });
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content?.trim() || '';
+    const lines = reply.split('\n').map(l=>l.trim()).filter(l=>l);
+    return lines.length>0 ? lines : null;
+  }catch(e){ console.error('生成通知文案失败', e); return null; }
+}
+
+async function setupNotifications(){
+  // 只在真正打包的App里才有这个原生能力，网页预览环境里没有，直接跳过
+  if(!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.LocalNotifications) return;
+  const { LocalNotifications } = window.Capacitor.Plugins;
+
+  let script = null;
+  try{ script = JSON.parse(localStorage.getItem('lifeScript')||'null'); }catch(e){}
+  if(!script || !script.hero || !script.hero.name) return; // 还没写过剧本，不安排推送
+
+  try{
+    const perm = await LocalNotifications.requestPermissions();
+    if(perm.display !== 'granted') return;
+
+    // 已经排着的够多就不用再生成新的了（iOS最多同时排64条，这里只保持一个小队列）
+    const pending = await LocalNotifications.getPending();
+    if(pending.notifications && pending.notifications.length >= 6) return;
+
+    const texts = await generateNotificationTexts(script);
+    if(!texts) return;
+
+    const baseId = Date.now() % 1000000;
+    const notifications = texts.map((text, i) => {
+      // 未来6小时到3天内，随机分布的时间点
+      const delayMs = (6 + Math.random()*66) * 60 * 60 * 1000;
+      return {
+        id: baseId + i,
+        title: 'Manifest',
+        body: text,
+        schedule: { at: new Date(Date.now() + delayMs) },
+        extra: { page: 'wechat-list.html' },
+      };
+    });
+
+    await LocalNotifications.schedule({ notifications });
+  }catch(e){ console.error('推送安排失败', e); }
+}
+
+// 监听：点击通知后，跳转到对应页面（比如微信列表）
+try{
+  if(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications){
+    window.Capacitor.Plugins.LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
+      const page = action?.notification?.extra?.page;
+      if(page) location.href = page;
+    });
+  }
+}catch(e){}
+
+setupNotifications();
 </script>
 </body>
 </html>
