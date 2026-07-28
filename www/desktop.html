@@ -162,10 +162,16 @@ function openApp(app){
   else if(app==='mail'){ location.href='email-list.html'; }
   else if(app==='sms'){ location.href='sms-list.html'; }
   else{
-    const t=document.getElementById('toast');
-    t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'),1500);
+    showToast('敬请期待');
   }
+}
+
+function showToast(text){
+  const t=document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 2600);
 }
 
 // ── 推送通知：根据人生剧本，安排未来几天会陆续弹出的消息 ──
@@ -216,19 +222,22 @@ async function setupNotifications(){
 
   try{
     const perm = await LocalNotifications.requestPermissions();
-    if(perm.display !== 'granted') return;
+    if(perm.display !== 'granted'){ showToast('没有通知权限，无法安排推送'); return; }
 
     // 已经排着的够多就不用再生成新的了（iOS最多同时排64条，这里只保持一个小队列）
     const pending = await LocalNotifications.getPending();
-    if(pending.notifications && pending.notifications.length >= 6) return;
+    if(pending.notifications && pending.notifications.length > 0){
+      // 【测试阶段】先清掉旧的排程（可能是之前用长延迟排的），确保这次是干净的短延迟测试
+      await LocalNotifications.cancel({ notifications: pending.notifications.map(n=>({id:n.id})) });
+    }
 
     const texts = await generateNotificationTexts(script);
-    if(!texts) return;
+    if(!texts){ showToast('生成推送文案失败，稍后重试'); return; }
 
     const baseId = Date.now() % 1000000;
     const notifications = texts.map((text, i) => {
-      // 未来6小时到3天内，随机分布的时间点
-      const delayMs = (6 + Math.random()*66) * 60 * 60 * 1000;
+      // 【测试阶段】延迟很短，方便马上验证；确认没问题后会调回更真实的间隔（几小时到几天）
+      const delayMs = (60 + i*90 + Math.random()*60) * 1000; // 第1条约1分钟后，之后每条间隔1.5分钟左右
       return {
         id: baseId + i,
         title: 'Manifest',
@@ -239,7 +248,11 @@ async function setupNotifications(){
     });
 
     await LocalNotifications.schedule({ notifications });
-  }catch(e){ console.error('推送安排失败', e); }
+    showToast(`已安排${notifications.length}条推送（测试模式，1分钟后开始弹出）`);
+  }catch(e){
+    console.error('推送安排失败', e);
+    showToast('推送安排出错：' + (e.message || e));
+  }
 }
 
 // 监听：点击通知后，跳转到对应页面（比如微信列表）
