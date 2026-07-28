@@ -174,7 +174,9 @@ function showToast(text){
   t._timer = setTimeout(()=>t.classList.remove('show'), 2600);
 }
 
-// ── 推送通知：根据人生剧本，安排未来几天会陆续弹出的消息 ──
+// ── 推送通知：直接用微信里真实存在（或同步生成）的联系人消息，不再是各说各话 ──
+
+const AVATAR_COLORS = ['#8b6f47','#2a5a8a','#3a3a3a','#1a3a6a','#7a2a2a','#2a2a2a','#4a5a7a','#5a7a3a','#6a3a6a'];
 
 function buildBackgroundText(script){
   const h = script.hero || {};
@@ -192,23 +194,102 @@ function buildBackgroundText(script){
   return text;
 }
 
-async function generateNotificationTexts(script){
-  const bg = buildBackgroundText(script);
-  const sysPrompt = '你是一个「已实现人生」通知文案生成器。仔细阅读用户写下的每一个场景（可能是事业、学术、健康、创作、心灵成长、人际关系、财富等任何主题），生成5条会作为手机通知弹出的简短暗示性文案，营造"你已经拥有/正在经历这一切"的氛围感。内容类型必须由场景内容本身决定，不要预设任何特定主题（不要默认往财富或奢侈品方向靠）。如果用户提供的信息比较简略，你要主动运用自己对相关职业、身份、文化背景的通用了解去合理补充细节，不要让内容显得单薄空洞。人物姓名和称呼要现代、自然，绝对不用"张叔""老王""老刘""老李""王姐""美女""小姑娘"这类老式、市井气或轻视意味的称呼。重要：不要涉及银行、转账、具体到账金额，不要使用真实存在的机构官方名称，每条不超过40字，语气温暖、有画面感，像轻声提醒，不要用感叹号堆砌。';
-  const userPrompt = `${bg}\n请生成5条通知文案。严格按照如下格式输出，每条一行，不要编号，不要有其他内容。`;
+function collectAllPersons(script){
+  const list = [];
+  (script.scenes||[]).forEach(s=>{
+    (s.persons||[]).forEach(p=>{ list.push({ ...p, sceneName: s.name }); });
+  });
+  return list;
+}
 
+async function callAI(systemPrompt, userPrompt){
+  const res = await fetch('https://api.freedreleasing.com/api', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model:'deepseek-chat', max_tokens:1200,
+      messages:[ {role:'system',content:systemPrompt}, {role:'user',content:userPrompt} ] }),
+  });
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content?.trim() || '';
+}
+
+const CONTACT_RULES = '如果用户提供的信息比较简略（比如只写了职业、国籍、身份等只言片语），你要主动运用你自己对这个职业、身份、文化背景的通用了解，去合理丰富、补充具体细节，让内容显得真实、专业、有血有肉——不要因为用户写得简短，就让生成的内容也显得单薄、空洞、泛泛而谈。人物设定与语气准则（本应用用户绝大多数是女性，以下准则务必严格执行）：人物对主角的态度一律平等、尊重、欣赏，不出现俯视、说教、指点的语气；主角应被呈现为有主见、有能力、被认可的一方，不是被动等待安排或需要被"带领"的一方；人物姓名和称呼要现代、自然，像用户身边真实认识的同龄人或专业人士——绝对不用"张叔""老王""老刘""老李""王姐""小妹""美女""小姑娘"这类国产老式电视剧、市井气或辈分感很重的称呼方式，这类称呼一律禁止使用；不出现"你终于懂事了""女孩子就该……"等说教式、评判式语句；专业/权威角色（顾问、银行家、投资人、医生、导师等）不默认为男性，应平等地也生成女性专业角色，赋予同等的专业感和话语权；感情类场景中，对方角色应表现为欣赏、支持主角本来的样子，而非试图改变、纠正或"提升"她；不出现任何将女性物化、矮化或预设需要被保护/管教的措辞；语气整体优雅真诚，避免油腻讨好式的调侃语气。';
+
+async function generateFromPersons(script, persons){
+  const bg = buildBackgroundText(script);
+  const personList = persons.map((p,i)=>{
+    let line = `${i+1}. ${p.name}（${p.role||'关系待定'}），性格：${p.character||'未设定'}`;
+    if(p.background) line += `，背景：${p.background}`;
+    if(p.values) line += `，价值观：${p.values}`;
+    line += `，对主角的态度：${p.attitude||'友善'}`;
+    return line;
+  }).join('\n');
+  const sysPrompt = '你是一个「已实现人生」场景生成器。你要根据用户的人生剧本设定，为其中的每一个人物生成一条TA会在微信上发给主角的开场消息预览（不超过30字，口语化、符合人物身份和对主角的态度）。' + CONTACT_RULES;
+  const userPrompt = `${bg}\n人物列表：\n${personList}\n\n请按顺序为以上每个人物生成一条微信消息预览，严格按照如下格式输出，不要有其他内容：\n1::消息内容\n2::消息内容\n（依此类推，共${persons.length}条）`;
+
+  let previews = {};
   try{
-    const res = await fetch('https://api.freedreleasing.com/api', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model:'deepseek-chat', max_tokens:600,
-        messages:[ {role:'system',content:sysPrompt}, {role:'user',content:userPrompt} ] }),
+    const reply = await callAI(sysPrompt, userPrompt);
+    reply.split('\n').forEach(line=>{
+      const m = line.match(/^(\d+)::(.+)$/);
+      if(m) previews[parseInt(m[1])] = m[2].trim();
     });
-    const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content?.trim() || '';
-    const lines = reply.split('\n').map(l=>l.trim()).filter(l=>l);
-    return lines.length>0 ? lines : null;
-  }catch(e){ console.error('生成通知文案失败', e); return null; }
+  }catch(e){ console.error(e); }
+
+  const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
+  return persons.map((p,i)=>({
+    id: 'p'+i, name: p.name, avatar: p.name[0], avatarImg: p.avatar || null,
+    color: AVATAR_COLORS[i % AVATAR_COLORS.length],
+    preview: previews[i+1] || `Hi，${p.name}想和你聊聊…`,
+    firstMessage: previews[i+1] || `Hi，${p.name}想和你聊聊…`,
+    time: times[i % times.length], unread: i < 3 ? (Math.floor(Math.random()*2)+1) : 0,
+    role: p.role, character: p.character, values: p.values, background: p.background, attitude: p.attitude, sceneName: p.sceneName,
+  }));
+}
+
+async function generateInventedContacts(script){
+  const bg = buildBackgroundText(script);
+  const sysPrompt = '你是一个「已实现人生」场景生成器。仔细阅读用户写下的每一个场景（可能是事业、学术、健康、创作、心灵成长、人际关系、财富等任何主题），虚构4-6个会在微信上联系主角的人物。人物类型必须由场景内容本身决定，不要预设任何特定主题（不要默认往财富或奢侈品方向靠）——可以是导师、合作者、学生、病人、粉丝、朋友等任何符合场景的角色。' + CONTACT_RULES;
+  const userPrompt = `${bg}\n请虚构4-6个联系人，每人一条微信消息预览（不超过30字）。严格按照如下格式输出，不要有其他内容：\n姓名::身份角色::消息预览`;
+
+  let list = [];
+  try{
+    const reply = await callAI(sysPrompt, userPrompt);
+    reply.split('\n').forEach(line=>{
+      const parts = line.split('::');
+      if(parts.length>=3) list.push({ name:parts[0].trim(), role:parts[1].trim(), preview:parts[2].trim() });
+    });
+  }catch(e){ console.error(e); }
+  if(list.length===0) return [];
+
+  const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
+  return list.map((p,i)=>({
+    id:'inv'+i, name:p.name, avatar:p.name[0], avatarImg:null, color:AVATAR_COLORS[i%AVATAR_COLORS.length],
+    preview:p.preview, firstMessage:p.preview, time:times[i%times.length], unread: i<3 ? (Math.floor(Math.random()*2)+1) : 0,
+    role:p.role, character:'', values:'', background:p.role, attitude:'友善、主动联系用户',
+  }));
+}
+
+// 拿到「和微信列表页完全一致」的联系人数据：有缓存就用缓存，没有就生成并写入同一个缓存
+async function getOrCreateWechatContacts(script){
+  const cacheKey = 'wechatContactsCache';
+  const scriptRaw = localStorage.getItem('lifeScript') || '';
+  try{
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if(cached && cached.scriptRaw === scriptRaw && cached.contacts && cached.contacts.length > 0){
+      return cached.contacts;
+    }
+  }catch(e){}
+
+  const persons = collectAllPersons(script);
+  const contacts = persons.length > 0
+    ? await generateFromPersons(script, persons)
+    : await generateInventedContacts(script);
+
+  if(contacts.length > 0){
+    localStorage.setItem(cacheKey, JSON.stringify({ scriptRaw, contacts }));
+  }
+  return contacts;
 }
 
 async function setupNotifications(){
@@ -224,26 +305,29 @@ async function setupNotifications(){
     const perm = await LocalNotifications.requestPermissions();
     if(perm.display !== 'granted'){ showToast('没有通知权限，无法安排推送'); return; }
 
-    // 已经排着的够多就不用再生成新的了（iOS最多同时排64条，这里只保持一个小队列）
+    // 已经排着的先清掉，确保每次都是和当前联系人数据一致的新排程（避免推送和实际联系人对不上）
     const pending = await LocalNotifications.getPending();
     if(pending.notifications && pending.notifications.length > 0){
-      // 【测试阶段】先清掉旧的排程（可能是之前用长延迟排的），确保这次是干净的短延迟测试
       await LocalNotifications.cancel({ notifications: pending.notifications.map(n=>({id:n.id})) });
     }
 
-    const texts = await generateNotificationTexts(script);
-    if(!texts){ showToast('生成推送文案失败，稍后重试'); return; }
+    const contacts = await getOrCreateWechatContacts(script);
+    if(!contacts || contacts.length === 0){ showToast('生成联系人失败，推送安排取消'); return; }
+
+    // 只从"确实有未读消息"的联系人里选，推送内容和点进去看到的完全一致
+    const unreadContacts = contacts.filter(c => c.unread > 0 && c.firstMessage);
+    const picked = (unreadContacts.length > 0 ? unreadContacts : contacts).slice(0, 4);
 
     const baseId = Date.now() % 1000000;
-    const notifications = texts.map((text, i) => {
+    const notifications = picked.map((c, i) => {
       // 【测试阶段】延迟很短，方便马上验证；确认没问题后会调回更真实的间隔（几小时到几天）
-      const delayMs = (60 + i*90 + Math.random()*60) * 1000; // 第1条约1分钟后，之后每条间隔1.5分钟左右
+      const delayMs = (60 + i*90 + Math.random()*60) * 1000;
       return {
         id: baseId + i,
-        title: 'Manifest',
-        body: text,
+        title: '微信',
+        body: `${c.name}：${c.firstMessage || c.preview}`,
         schedule: { at: new Date(Date.now() + delayMs) },
-        extra: { page: 'wechat-list.html' },
+        extra: { page: 'wechat-sim.html?id=' + c.id }, // 直接跳到这个具体联系人的聊天，不是泛泛的列表页
       };
     });
 
