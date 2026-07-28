@@ -69,6 +69,14 @@ input[type=range]::-webkit-slider-thumb{
 }
 
 .btn-row{display:flex;gap:10px;margin-top:8px;}
+
+.bg-type-row{display:flex;gap:8px;margin-bottom:4px;}
+.bg-type-btn{
+  flex:1;padding:9px 4px;border-radius:10px;border:1px solid rgba(150,175,110,0.4);
+  background:rgba(255,255,255,0.6);color:#5a6a48;font-size:12px;cursor:pointer;
+  font-family:'Noto Sans SC',sans-serif;transition:all 0.2s;
+}
+.bg-type-btn.selected{background:rgba(232,176,74,0.25);border-color:#e8b04a;color:#4a3810;font-weight:600;}
 .btn{
   flex:1;padding:12px;border-radius:12px;border:none;cursor:pointer;
   font-family:'Noto Serif SC',serif;font-size:13px;letter-spacing:1px;
@@ -128,6 +136,16 @@ input[type=range]::-webkit-slider-thumb{
       <input type="range" id="bgSlider" min="0" max="100" step="5" value="50">
     </div>
 
+    <div class="slider-row">
+      <div class="slider-label"><span>背景音类型</span></div>
+      <div class="bg-type-row" id="bgTypeRow">
+        <button class="bg-type-btn selected" data-type="none">无</button>
+        <button class="bg-type-btn" data-type="white">白噪音</button>
+        <button class="bg-type-btn" data-type="pink">粉噪音</button>
+        <button class="bg-type-btn" data-type="brown">深海低频</button>
+      </div>
+    </div>
+
     <div class="btn-row">
       <button class="btn btn-play" id="previewBtn" disabled>▶ 试听效果</button>
     </div>
@@ -155,6 +173,7 @@ let recordChunks = [];
 let recordTimerSec = 0;
 let recordInterval = null;
 let previewSource = null;
+let previewBgSource = null;
 let isPreviewPlaying = false;
 
 function getCtx(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
@@ -169,6 +188,8 @@ recordBtn.onclick = async () => {
     mediaRecorder.stop();
     return;
   }
+  // 已经录过一次了，再点这个按钮是要重新录制——先确认，避免误触覆盖掉之前的录音
+  if (recordedBuffer && !confirm('重新录制会覆盖之前的录音，确定吗？')) return;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream);
@@ -229,6 +250,53 @@ const bgVal = document.getElementById('bgVal');
 speedSlider.oninput = () => speedVal.textContent = parseFloat(speedSlider.value).toFixed(1) + 'x';
 voiceSlider.oninput = () => voiceVal.textContent = voiceSlider.value + '%';
 bgSlider.oninput = () => bgVal.textContent = bgSlider.value + '%';
+
+// ─── 背景音类型 ───
+let bgType = 'none';
+document.querySelectorAll('.bg-type-btn').forEach(btn=>{
+  btn.onclick = () => {
+    document.querySelectorAll('.bg-type-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    bgType = btn.dataset.type;
+  };
+});
+
+// 现场生成噪音背景音(不需要外部音频文件)：白噪音/粉噪音/褐噪音(更低沉，接近深海/引擎低鸣的感觉)
+function generateNoiseBuffer(type, lengthInSamples, sampleRate){
+  const ctx = getCtx();
+  const buffer = ctx.createBuffer(2, lengthInSamples, sampleRate);
+  for(let ch=0; ch<2; ch++){
+    const data = buffer.getChannelData(ch);
+    if(type === 'white'){
+      for(let i=0;i<lengthInSamples;i++) data[i] = (Math.random()*2-1) * 0.35;
+    } else if(type === 'pink'){
+      // Paul Kellet 的简化粉噪音算法
+      let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+      for(let i=0;i<lengthInSamples;i++){
+        const white = Math.random()*2-1;
+        b0 = 0.99886*b0 + white*0.0555179;
+        b1 = 0.99332*b1 + white*0.0750759;
+        b2 = 0.96900*b2 + white*0.1538520;
+        b3 = 0.86650*b3 + white*0.3104856;
+        b4 = 0.55000*b4 + white*0.5329522;
+        b5 = -0.7616*b5 - white*0.0168980;
+        const pink = b0+b1+b2+b3+b4+b5+b6+white*0.5362;
+        b6 = white*0.115926;
+        data[i] = pink * 0.08;
+      }
+    } else if(type === 'brown'){
+      // 布朗噪音：白噪音积分，声音更低沉厚重
+      let last = 0;
+      for(let i=0;i<lengthInSamples;i++){
+        const white = Math.random()*2-1;
+        last = (last + 0.02*white) / 1.02;
+        data[i] = last * 3.5;
+      }
+    }
+    // type === 'none' 时保持全0（静音），上层会直接跳过混音
+  }
+  return buffer;
+}
 
 function enableControls(){
   document.getElementById('previewBtn').disabled = false;
@@ -306,6 +374,7 @@ document.getElementById('previewBtn').onclick = async () => {
   const btn = document.getElementById('previewBtn');
   if (isPreviewPlaying) {
     try { if (previewSource) previewSource.stop(); } catch(e){}
+    try { if (previewBgSource) previewBgSource.stop(); } catch(e){}
     isPreviewPlaying = false;
     btn.textContent = '▶ 试听效果';
     return;
@@ -317,6 +386,7 @@ document.getElementById('previewBtn').onclick = async () => {
 
   const speed = parseFloat(speedSlider.value);
   const voiceVol = parseInt(voiceSlider.value) / 100;
+  const bgVol = parseInt(bgSlider.value) / 100;
 
   btn.textContent = '处理中…';
 
@@ -331,6 +401,21 @@ document.getElementById('previewBtn').onclick = async () => {
     previewSource.connect(gain).connect(ctx.destination);
     previewSource.loop = true;
     previewSource.start();
+
+    // 混入背景音（如果选了类型且音量大于0）
+    let bgSource = null;
+    if(bgType !== 'none' && bgVol > 0){
+      const bgBuffer = generateNoiseBuffer(bgType, processed.length, processed.sampleRate);
+      bgSource = ctx.createBufferSource();
+      bgSource.buffer = bgBuffer;
+      const bgGain = ctx.createGain();
+      bgGain.gain.value = bgVol;
+      bgSource.connect(bgGain).connect(ctx.destination);
+      bgSource.loop = true;
+      bgSource.start();
+    }
+    previewBgSource = bgSource;
+
     isPreviewPlaying = true;
     btn.textContent = '⏹ 停止';
 
@@ -354,6 +439,7 @@ document.getElementById('exportBtn').onclick = async () => {
 
   const speed = parseFloat(speedSlider.value);
   const voiceVol = parseInt(voiceSlider.value) / 100;
+  const bgVol = parseInt(bgSlider.value) / 100;
 
     try {
       const processed = (speed === 1) ? recordedBuffer : processAudio(recordedBuffer, speed);
@@ -365,6 +451,18 @@ document.getElementById('exportBtn').onclick = async () => {
       gain.gain.value = voiceVol;
       src.connect(gain).connect(offline.destination);
       src.start();
+
+      // 混入背景音（导出的文件也要包含背景音，不只是试听时有）
+      if(bgType !== 'none' && bgVol > 0){
+        const bgBuffer = generateNoiseBuffer(bgType, processed.length, processed.sampleRate);
+        const bgSrc = offline.createBufferSource();
+        bgSrc.buffer = bgBuffer;
+        const bgGain = offline.createGain();
+        bgGain.gain.value = bgVol;
+        bgSrc.connect(bgGain).connect(offline.destination);
+        bgSrc.start();
+      }
+
       const rendered = await offline.startRendering();
 
       const wav = bufferToWav(rendered);
