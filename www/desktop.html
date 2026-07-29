@@ -292,6 +292,23 @@ async function getOrCreateWechatContacts(script){
   return contacts;
 }
 
+// 给"已经聊过"的联系人，生成一条真正承接上文的新消息（不是翻来覆去用同一条旧的）
+async function generateFollowUpMessage(contact, priorHistory){
+  const persona = `你正在扮演「${contact.name}」，Ta是主角微信上的联系人。
+你的身份/关系：${contact.role||'朋友'}
+你的性格：${contact.character||'友善自然'}
+背景：${contact.background||''}
+价值观：${contact.values||''}
+你对待用户的态度：${contact.attitude||'友善、主动'}
+如果背景信息比较简略，你要主动运用自己对这个职业/身份/文化的通用了解去合理补充细节，不要显得单薄空洞。`;
+  const recentContext = priorHistory.slice(-6).map(m => (m.role==='user'?'对方：':'你：') + m.content).join('\n');
+  const userPrompt = `以下是你和对方最近的聊天记录：\n${recentContext}\n\n（一段时间过去了，请你像真实生活里会做的那样，主动再发一条微信消息给对方——可以是分享一件新发生的小事、一句问候、延续上次话题的后续，符合你的身份和处境。只需要这一条消息本身，不超过40字，不要有旁白或说明。）`;
+  try{
+    const reply = await callAI(persona, userPrompt);
+    return reply.split('\n')[0].trim() || null;
+  }catch(e){ console.error(e); return null; }
+}
+
 async function setupNotifications(){
   // 只在真正打包的App里才有这个原生能力，网页预览环境里没有，直接跳过
   if(!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.LocalNotifications) return;
@@ -314,20 +331,47 @@ async function setupNotifications(){
     const contacts = await getOrCreateWechatContacts(script);
     if(!contacts || contacts.length === 0){ showToast('生成联系人失败，推送安排取消'); return; }
 
-    // 只从"确实有未读消息"的联系人里选，推送内容和点进去看到的完全一致
-    const unreadContacts = contacts.filter(c => c.unread > 0 && c.firstMessage);
-    const picked = (unreadContacts.length > 0 ? unreadContacts : contacts).slice(0, 4);
+    // 选几个联系人来安排推送：优先选还没聊过的（用现成的未读消息），凑不够数再从聊过的里面挑，生成真正的新消息
+    const neverOpened = contacts.filter(c => c.unread > 0 && c.firstMessage);
+    const alreadyOpened = contacts.filter(c => !(c.unread > 0 && c.firstMessage));
+
+    const picked = []; // { contact, bodyText, isFollowUp }
+    neverOpened.slice(0, 4).forEach(c => picked.push({ contact: c, bodyText: c.firstMessage, isFollowUp: false }));
+
+    if(picked.length < 4){
+      for(const c of alreadyOpened){
+        if(picked.length >= 4) break;
+        let history = [];
+        try{ history = JSON.parse(localStorage.getItem('wechatHistory_' + c.id) || '[]'); }catch(e){}
+        if(history.length === 0) continue; // 没聊过也没有未读消息的，跳过（生成不出有意义的后续）
+        const followUp = await generateFollowUpMessage(c, history);
+        if(followUp) picked.push({ contact: c, bodyText: followUp, isFollowUp: true });
+      }
+    }
+
+    if(picked.length === 0){ showToast('暂时没有可以安排推送的联系人'); return; }
+
+    // 后续消息要真正写进这个联系人的聊天记录里，不然点进去还是看不到
+    picked.forEach(p => {
+      if(p.isFollowUp){
+        const key = 'wechatHistory_' + p.contact.id;
+        let history = [];
+        try{ history = JSON.parse(localStorage.getItem(key) || '[]'); }catch(e){}
+        history.push({ role:'assistant', content: p.bodyText });
+        localStorage.setItem(key, JSON.stringify(history));
+      }
+    });
 
     const baseId = Date.now() % 1000000;
-    const notifications = picked.map((c, i) => {
+    const notifications = picked.map((p, i) => {
       // 【测试阶段】延迟很短，方便马上验证；确认没问题后会调回更真实的间隔（几小时到几天）
       const delayMs = (60 + i*90 + Math.random()*60) * 1000;
       return {
         id: baseId + i,
         title: '微信',
-        body: `${c.name}：${c.firstMessage || c.preview}`,
+        body: `${p.contact.name}：${p.bodyText}`,
         schedule: { at: new Date(Date.now() + delayMs) },
-        extra: { page: 'wechat-sim.html?id=' + c.id }, // 直接跳到这个具体联系人的聊天，不是泛泛的列表页
+        extra: { page: 'wechat-sim.html?id=' + p.contact.id }, // 直接跳到这个具体联系人的聊天，不是泛泛的列表页
       };
     });
 
