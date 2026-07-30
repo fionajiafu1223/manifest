@@ -294,7 +294,9 @@ async function getOrCreateWechatContacts(script){
 
 // 给"已经聊过"的联系人，生成一条真正承接上文的新消息（不是翻来覆去用同一条旧的）
 async function generateFollowUpMessage(contact, priorHistory){
-  const persona = `你正在扮演「${contact.name}」，Ta是主角微信上的联系人。
+  const _nd = new Date();
+  const _ntc = `当前时间：${_nd.getFullYear()}年${_nd.getMonth()+1}月${_nd.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][_nd.getDay()]} ${String(_nd.getHours()).padStart(2,'0')}:${String(_nd.getMinutes()).padStart(2,'0')}。`;
+  const persona = `${_ntc}你正在扮演「${contact.name}」，Ta是主角微信上的联系人。
 你的身份/关系：${contact.role||'朋友'}
 你的性格：${contact.character||'友善自然'}
 背景：${contact.background||''}

@@ -414,7 +414,9 @@ let conversationHistory = [];
 
 // 人设：根据联系人档案动态生成
 const heroAddr = heroName ? `（用户名叫${heroName}）` : '';
-const persona = `你正在扮演「${contactName}」，与用户（${heroAddr}）在微信上聊天。
+const _now = new Date();
+const _timeCtx = `当前时间：${_now.getFullYear()}年${_now.getMonth()+1}月${_now.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][_now.getDay()]} ${String(_now.getHours()).padStart(2,'0')}:${String(_now.getMinutes()).padStart(2,'0')}。`;
+const persona = `${_timeCtx}你正在扮演「${contactName}」，与用户（${heroAddr}）在微信上聊天。
 你的身份/关系：${contactInfo.role||'朋友'}
 你的性格：${contactInfo.character||'友善自然'}
 背景：${contactInfo.background||''}
