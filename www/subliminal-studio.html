@@ -200,7 +200,10 @@ recordBtn.onclick = async () => {
       clearInterval(recordInterval);
       const blob = new Blob(recordChunks, { type: mediaRecorder.mimeType });
       const arrayBuf = await blob.arrayBuffer();
-      recordedBuffer = await getCtx().decodeAudioData(arrayBuf);
+      // 用一个临时的AudioContext解码，不影响播放用的那个
+      const decodeCtx = new (window.AudioContext || window.webkitAudioContext)();
+      recordedBuffer = await decodeCtx.decodeAudioData(arrayBuf);
+      decodeCtx.close();
       recordBtn.classList.remove('recording');
       recordBtn.classList.add('has-recording');
       recordBtn.textContent = '✓';
@@ -232,7 +235,9 @@ fileInput.onchange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const arrayBuf = await file.arrayBuffer();
-  recordedBuffer = await getCtx().decodeAudioData(arrayBuf);
+  const decodeCtx = new (window.AudioContext || window.webkitAudioContext)();
+  recordedBuffer = await decodeCtx.decodeAudioData(arrayBuf);
+  decodeCtx.close();
   recordBtn.classList.add('has-recording');
   recordBtn.textContent = '✓';
   recordStatus.textContent = '已导入音频！调节下方参数试听';
@@ -381,8 +386,13 @@ document.getElementById('previewBtn').onclick = async () => {
   }
   if (!recordedBuffer) { alert('请先录制或上传一段声音'); return; }
 
-  const ctx = getCtx();
-  await ctx.resume();  // 必须在用户点击时resume
+  // iOS上AudioContext可能处于suspended状态，强制新建一个确保能播放
+  try {
+    if(audioCtx && audioCtx.state !== 'closed') { audioCtx.close(); }
+  } catch(e){}
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const ctx = audioCtx;
+  await ctx.resume();
 
   const speed = parseFloat(speedSlider.value);
   const voiceVol = parseInt(voiceSlider.value) / 100;
