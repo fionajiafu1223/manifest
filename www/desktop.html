@@ -333,28 +333,68 @@ async function setupNotifications(){
     const contacts = await getOrCreateWechatContacts(script);
     if(!contacts || contacts.length === 0){ showToast('生成联系人失败，推送安排取消'); return; }
 
-    // 选几个联系人来安排推送：优先选还没聊过的（用现成的未读消息），凑不够数再从聊过的里面挑，生成真正的新消息
+    // ── 关系类型识别 ──
+    // 根据角色描述判断亲密程度，决定推送频率
+    function getRelationshipTier(contact){
+      const role = (contact.role||'').toLowerCase();
+      const intimateKeywords = ['另一半','男友','女友','男朋友','女朋友','恋人','爱人','伴侣','老公','老婆','丈夫','妻子','boyfriend','girlfriend','partner','husband','wife','lover','crush','暗恋'];
+      const closeKeywords = ['闺蜜','死党','好朋友','好友','发小','roommate','室友','同学','best friend'];
+      if(intimateKeywords.some(k => role.includes(k))) return 'intimate';   // 另一半：一天多次
+      if(closeKeywords.some(k => role.includes(k))) return 'close';          // 密友：每天1-2次
+      return 'casual';                                                         // 普通联系人：几天一次
+    }
+
+    // 生成后续消息（同时处理多条，another half 一次可以发多条）
+    async function generateFollowUpsForContact(contact, history, count = 1){
+      const messages = [];
+      for(let i = 0; i < count; i++){
+        // 把之前生成的也加进上下文，模拟连续发消息
+        const contextHistory = [...history, ...messages.map(m=>({role:'assistant',content:m}))];
+        const msg = await generateFollowUpMessage(contact, contextHistory);
+        if(msg) messages.push(msg);
+        else break;
+      }
+      return messages;
+    }
+
+    // 选联系人 + 决定每人安排几条
     const neverOpened = contacts.filter(c => c.unread > 0 && c.firstMessage);
     const alreadyOpened = contacts.filter(c => !(c.unread > 0 && c.firstMessage));
 
-    const picked = []; // { contact, bodyText, isFollowUp }
-    neverOpened.slice(0, 4).forEach(c => picked.push({ contact: c, bodyText: c.firstMessage, isFollowUp: false }));
+    const allNotifications = [];
+    let baseId = Date.now() % 1000000;
 
-    if(picked.length < 4){
-      for(const c of alreadyOpened){
-        if(picked.length >= 4) break;
+    // 先处理还没聊过的（用现成的未读消息）
+    for(const c of neverOpened.slice(0, 3)){
+      const tier = getRelationshipTier(c);
+      const count = tier === 'intimate' ? 3 : tier === 'close' ? 2 : 1;
+      // 第一条是现成的未读消息
+      allNotifications.push({ contact: c, bodyText: c.firstMessage, isFollowUp: false, tier });
+      // 另一半和密友，额外再生成几条预排
+      if(count > 1){
         let history = [];
         try{ history = JSON.parse(localStorage.getItem('wechatHistory_' + c.id) || '[]'); }catch(e){}
-        if(history.length === 0) continue; // 没聊过也没有未读消息的，跳过（生成不出有意义的后续）
-        const followUp = await generateFollowUpMessage(c, history);
-        if(followUp) picked.push({ contact: c, bodyText: followUp, isFollowUp: true });
+        const extras = await generateFollowUpsForContact(c, [...history, {role:'assistant',content:c.firstMessage}], count-1);
+        extras.forEach(msg => allNotifications.push({ contact: c, bodyText: msg, isFollowUp: true, tier }));
       }
     }
 
-    if(picked.length === 0){ showToast('暂时没有可以安排推送的联系人'); return; }
+    // 再处理聊过的
+    for(const c of alreadyOpened){
+      if(allNotifications.filter(n=>n.contact.id===c.id).length > 0) continue;
+      let history = [];
+      try{ history = JSON.parse(localStorage.getItem('wechatHistory_' + c.id) || '[]'); }catch(e){}
+      if(history.length === 0) continue;
+      const tier = getRelationshipTier(c);
+      const count = tier === 'intimate' ? 3 : tier === 'close' ? 2 : 1;
+      const msgs = await generateFollowUpsForContact(c, history, count);
+      msgs.forEach(msg => allNotifications.push({ contact: c, bodyText: msg, isFollowUp: true, tier }));
+    }
 
-    // 后续消息要真正写进这个联系人的聊天记录里，不然点进去还是看不到
-    picked.forEach(p => {
+    if(allNotifications.length === 0){ showToast('暂时没有可以安排推送的联系人'); return; }
+
+    // 写进聊天记录
+    allNotifications.forEach(p => {
       if(p.isFollowUp){
         const key = 'wechatHistory_' + p.contact.id;
         let history = [];
@@ -364,16 +404,24 @@ async function setupNotifications(){
       }
     });
 
-    const baseId = Date.now() % 1000000;
-    const notifications = picked.map((p, i) => {
-      // 【测试阶段】延迟很短，方便马上验证；确认没问题后会调回更真实的间隔（几小时到几天）
-      const delayMs = (60 + i*90 + Math.random()*60) * 1000;
+    // 按关系类型分配时间间隔
+    // 【测试阶段】用短延迟验证；正式用时按注释里的真实间隔
+    let delayOffset = 0;
+    const notifications = allNotifications.map((p, i) => {
+      const tier = p.tier;
+      // 真实间隔（测试阶段暂时用短间隔）:
+      // intimate: 1-4小时  close: 4-12小时  casual: 12-48小时
+      // 测试阶段:
+      const gapMs = tier === 'intimate' ? (60 + Math.random()*60) * 1000
+                  : tier === 'close'    ? (120 + Math.random()*90) * 1000
+                  :                       (180 + Math.random()*120) * 1000;
+      delayOffset += gapMs;
       return {
         id: baseId + i,
         title: '微信',
         body: `${p.contact.name}：${p.bodyText}`,
-        schedule: { at: new Date(Date.now() + delayMs) },
-        extra: { page: 'wechat-sim.html?id=' + p.contact.id }, // 直接跳到这个具体联系人的聊天，不是泛泛的列表页
+        schedule: { at: new Date(Date.now() + delayOffset) },
+        extra: { page: 'wechat-sim.html?id=' + p.contact.id },
       };
     });
 
