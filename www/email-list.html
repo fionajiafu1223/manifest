@@ -191,8 +191,9 @@ function buildBackgroundText(script){
 
 async function generateEmails(script){
   const bg = buildBackgroundText(script);
-  const _t_email_list = new Date(); const _tc_email_list = `当前时间：${_t_email_list.getFullYear()}年${_t_email_list.getMonth()+1}月${_t_email_list.getDate()}日 ${'["周日","周一","周二","周三","周四","周五","周六"][_t_' + varname + '.getDay()]'} ${'String(_t_' + varname + '.getHours()).padStart(2,"0")'}:${'String(_t_' + varname + '.getMinutes()).padStart(2,"0")'}。`;
-  const sysPrompt = '`+_tc_email_list+`你是一个「已实现人生」邮件场景生成器。仔细阅读用户写下的每一个场景（可能是事业、学术、健康、创作、心灵成长、人际关系、财富等任何主题），虚构5封主角在这些场景中会收到的邮件。邮件类型必须由场景内容本身决定，不要预设任何特定主题（不要默认往财富或奢侈品方向靠）——如果用户写的是学术场景，邮件可以是期刊约稿、学术会议邀请；如果是创作场景，可以是画廊展览邀约、出版社来信；请让内容真正贴合用户写下的具体文字。如果用户提供的信息比较简略（比如只写了职业、国籍、身份等只言片语），你要主动运用你自己对这个职业、身份、文化背景的通用了解，去合理丰富、补充具体细节，让内容显得真实、专业、有血有肉——不要因为用户写得简短，就让生成的内容也显得单薄、空洞、泛泛而谈。人物设定与语气准则（本应用用户绝大多数是女性，以下准则务必严格执行）：人物对主角的态度一律平等、尊重、欣赏，不出现俯视、说教、指点的语气；主角应被呈现为有主见、有能力、被认可的一方，不是被动等待安排或需要被"带领"的一方；人物姓名和称呼要现代、自然，像用户身边真实认识的同龄人或专业人士——绝对不用"张叔""老王""老刘""老李""王姐""小妹""美女""小姑娘"这类国产老式电视剧、市井气或辈分感很重的称呼方式，这类称呼一律禁止使用；不出现"你终于懂事了""女孩子就该……"等说教式、评判式语句；专业/权威角色（顾问、银行家、投资人、医生、导师等）不默认为男性，应平等地也生成女性专业角色，赋予同等的专业感和话语权；感情类场景中，对方角色应表现为欣赏、支持主角本来的样子，而非试图改变、纠正或"提升"她；不出现任何将女性物化、矮化或预设需要被保护/管教的措辞；语气整体优雅真诚，避免油腻讨好式的调侃语气。';
+  const _te = new Date();
+  const _tce = `当前时间：${_te.getFullYear()}年${_te.getMonth()+1}月${_te.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][_te.getDay()]} ${String(_te.getHours()).padStart(2,'0')}:${String(_te.getMinutes()).padStart(2,'0')}。`;
+  const sysPrompt = _tce + '你是一个「已实现人生」邮件场景生成器。仔细阅读用户写下的每一个场景（可能是事业、学术、健康、创作、心灵成长、人际关系、财富等任何主题），虚构5封主角在这些场景中会收到的邮件。邮件类型必须由场景内容本身决定，不要预设任何特定主题（不要默认往财富或奢侈品方向靠）——如果用户写的是学术场景，邮件可以是期刊约稿、学术会议邀请；如果是创作场景，可以是画廊展览邀约、出版社来信；请让内容真正贴合用户写下的具体文字。如果用户提供的信息比较简略（比如只写了职业、国籍、身份等只言片语），你要主动运用你自己对这个职业、身份、文化背景的通用了解，去合理丰富、补充具体细节，让内容显得真实、专业、有血有肉——不要因为用户写得简短，就让生成的内容也显得单薄、空洞、泛泛而谈。人物设定与语气准则（本应用用户绝大多数是女性，以下准则务必严格执行）：人物对主角的态度一律平等、尊重、欣赏，不出现俯视、说教、指点的语气；主角应被呈现为有主见、有能力、被认可的一方，不是被动等待安排或需要被"带领"的一方；人物姓名和称呼要现代、自然，像用户身边真实认识的同龄人或专业人士——绝对不用"张叔""老王""老刘""老李""王姐""小妹""美女""小姑娘"这类国产老式电视剧、市井气或辈分感很重的称呼方式，这类称呼一律禁止使用；不出现"你终于懂事了""女孩子就该……"等说教式、评判式语句；专业/权威角色（顾问、银行家、投资人、医生、导师等）不默认为男性，应平等地也生成女性专业角色，赋予同等的专业感和话语权；感情类场景中，对方角色应表现为欣赏、支持主角本来的样子，而非试图改变、纠正或"提升"她；不出现任何将女性物化、矮化或预设需要被保护/管教的措辞；语气整体优雅真诚，避免油腻讨好式的调侃语气。';
   const userPrompt = `${bg}\n请虚构5封邮件。严格按照如下格式输出，每封邮件占5行，用===分隔不同邮件，不要有其他内容：\n发件人（英文机构名）\n发件人邮箱\n主题\n预览摘要（不超过30字）\n正文（3-5句话，尊敬得体，符合身份）`;
 
   try{
@@ -242,24 +243,133 @@ async function initEmails(){
   render();
 }
 
+// ── Stripe付款通知：每天自动增加数量，直到爆单 ──
+
+const TIERS = [
+  { name:'月度订阅', amount:'¥8.00', type:'monthly', weight:6 },
+  { name:'季度订阅', amount:'¥18.00', type:'quarterly', weight:3 },
+  { name:'年度订阅', amount:'¥68.00', type:'annual', weight:1 },
+];
+
+const FIRST_NAMES = ['晓雯','雨桐','思琦','子涵','欣然','嘉慧','紫萱','若曦','梦洁','芷若','恩熙','诗雅','映彤','婧萱','沐汐','南笙','初晴','云溪','汐颜','晴澜','温棠','慕颜','沁瑶','清晏','棠梨'];
+const LAST_NAMES = ['林','陈','张','王','李','刘','黄','吴','周','徐','孙','赵','朱','高','郑','谢','苏','江','叶','杨'];
+const DOMAINS = ['gmail.com','qq.com','163.com','outlook.com','icloud.com','hotmail.com','yahoo.com'];
+
+function seededRandom(seed){
+  let x = Math.sin(seed + 1) * 10000;
+  return x - Math.floor(x);
+}
+
+function generateCustomer(seed){
+  const fn = FIRST_NAMES[Math.floor(seededRandom(seed * 7) * FIRST_NAMES.length)];
+  const ln = LAST_NAMES[Math.floor(seededRandom(seed * 13) * LAST_NAMES.length)];
+  const domain = DOMAINS[Math.floor(seededRandom(seed * 17) * DOMAINS.length)];
+  const num = Math.floor(seededRandom(seed * 23) * 9000) + 1000;
+  return {
+    name: ln + fn,
+    email: ln.toLowerCase() + fn.toLowerCase() + num + '@' + domain,
+  };
+}
+
+function pickTier(seed){
+  const totalWeight = TIERS.reduce((s,t)=>s+t.weight,0);
+  let r = seededRandom(seed * 31) * totalWeight;
+  for(const t of TIERS){ r -= t.weight; if(r <= 0) return t; }
+  return TIERS[0];
+}
+
+function getDayCount(){
+  const key = 'theEndFirstOpen';
+  let first = localStorage.getItem(key);
+  if(!first){ first = Date.now().toString(); localStorage.setItem(key, first); }
+  const daysPassed = Math.floor((Date.now() - parseInt(first)) / 86400000);
+  return daysPassed;
+}
+
+function getEmailCountForDay(day){
+  // 慢慢增长，第30天爆单
+  if(day === 0) return 3;
+  if(day <= 3) return 3 + day * 2;         // 3→5→7→9
+  if(day <= 7) return 8 + day * 2;         // 10→12→...→22
+  if(day <= 14) return 20 + day * 3;       // 23→...→62
+  if(day <= 21) return 55 + day * 4;       // 63→...→139
+  if(day <= 30) return 120 + day * 6;      // 141→...→300
+  return 300 + day * 10;                   // 爆单
+}
+
+function generatePaymentEmails(){
+  const day = getDayCount();
+  const count = getEmailCountForDay(day);
+  const now = new Date();
+  const paymentEmails = [];
+
+  for(let i = 0; i < count; i++){
+    const seed = day * 1000 + i;
+    const customer = generateCustomer(seed);
+    const tier = pickTier(seed + 100);
+
+    // 今天的邮件随机分布在一天内的不同时间点
+    const hoursAgo = seededRandom(seed * 41) * 22;
+    const mailTime = new Date(now - hoursAgo * 3600000);
+    const timeStr = hoursAgo < 12
+      ? `${mailTime.getHours()}:${String(mailTime.getMinutes()).padStart(2,'0')}`
+      : hoursAgo < 24 * 1.5 ? '昨天'
+      : `${mailTime.getMonth()+1}月${mailTime.getDate()}日`;
+
+    paymentEmails.push({
+      sender: 'Stripe',
+      email: 'notifications@stripe.com',
+      subject: `为 The End 收取的 ${customer.name} 的 ${tier.amount} 付款`,
+      snippet: `恭喜！您刚通过 Stripe 收到了一笔新的付款。${tier.amount} — ${tier.name}`,
+      time: timeStr,
+      unread: i < 3,
+      starred: false,
+      isPayment: true,
+      paymentAmount: tier.amount,
+      paymentType: tier.name,
+      customerName: customer.name,
+      customerEmail: customer.email,
+      content: `恭喜您 The End！\n\n您刚通过 Stripe 收到了一笔新的付款。\n\n此次支付的 ${tier.amount}（扣除手续费后）将进入您的银行账户。提现款项将很快出现在管理平台。\n\n支付\n${tier.amount} — ${tier.name}\n\n客户\n${customer.email}\n\n感谢您使用 Stripe。\n\nStripe 团队`,
+    });
+  }
+
+  // 最新的排在最前面
+  return paymentEmails;
+}
+
 const personSvg='<svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
 const starSvg='<svg viewBox="0 0 24 24"><path d="M12 17.27l4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-.58.31-1.68-.57-1.75l-4.83-.41-1.89-4.46c-.34-.81-1.5-.81-1.84 0L9.19 8.63l-4.83.41c-.88.07-1.24 1.17-.57 1.75l3.67 3.18-1.1 4.72c-.2.86.73 1.54 1.49 1.08L12 17.27z"/></svg>';
 
+// Stripe紫色logo SVG
+const stripeSvg = `<svg viewBox="0 0 60 25" xmlns="http://www.w3.org/2000/svg"><path d="M59.64 14.28h-8.06v-1.44c0-.96.32-1.44.96-1.44.64 0 .96.48.96 1.44v.48h6.14v-.48c0-3.36-2.08-5.04-7.1-5.04-5.02 0-7.1 1.68-7.1 5.52v1.92c0 3.84 2.08 5.52 7.1 5.52 5.02 0 7.1-1.68 7.1-5.52v-.96zM35.3 7.8c-5.02 0-7.1 1.68-7.1 5.52v1.92c0 3.84 2.08 5.52 7.1 5.52 5.02 0 7.1-1.68 7.1-5.52v-1.92C42.4 9.48 40.32 7.8 35.3 7.8zm.96 8.4c0 .96-.32 1.44-.96 1.44-.64 0-.96-.48-.96-1.44v-3.84c0-.96.32-1.44.96-1.44.64 0 .96.48.96 1.44v3.84zM20.9 7.8c-2.24 0-3.84.64-4.8 1.92V2.52H9.96v18.24h6.14v-8.4c0-.96.32-1.44.96-1.44.64 0 .96.48.96 1.44v8.4h6.14v-9.84C24.16 9.48 22.98 7.8 20.9 7.8zM6.46 4.2C4.22 4.2 2.46 5.4.7 7.8L0 8.28v12.48h6.14v-8.4c0-.96.32-1.44.96-1.44.64 0 .96.48.96 1.44v8.4H14.2V8.28C12.44 5.88 10.62 4.2 8.7 4.2H6.46z" fill="#635BFF"/></svg>`;
+
 const listEl=document.getElementById('mailList');
+let allEmailItems = []; // 合并付款邮件+AI邮件
+
 function render(){
   listEl.innerHTML='';
-  if(emails.length === 0){
+  // 付款邮件 + AI生成邮件合并显示
+  const paymentEmails = generatePaymentEmails();
+  allEmailItems = [...paymentEmails, ...emails];
+
+  if(allEmailItems.length === 0){
     listEl.innerHTML = `<div style="text-align:center;padding:80px 30px;color:#999;">
       <div style="font-size:15px;margin-bottom:8px;">收件箱是空的</div>
       <div style="font-size:13px;color:#bbb;line-height:1.7;">写下你的人生剧本，专属邮件才会出现</div>
     </div>`;
     return;
   }
-  emails.forEach((m,i)=>{
+
+  allEmailItems.forEach((m,i)=>{
     const item=document.createElement('div');
     item.className='mail-item'+(m.unread?'':' read');
+
+    const avatarContent = m.isPayment
+      ? `<div style="width:100%;height:100%;background:#635BFF;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg></div>`
+      : personSvg;
+
     item.innerHTML=`
-      <div class="mail-avatar${i===4?' blue':''}">${personSvg}</div>
+      <div class="mail-avatar${!m.isPayment && i===4?' blue':''}">${avatarContent}</div>
       <div class="mail-body">
         <div class="mail-top"><span class="mail-sender">${m.sender}</span><span class="mail-time">${m.time}</span></div>
         <div class="mail-subject">${m.subject}</div>
@@ -269,21 +379,44 @@ function render(){
         </div>
       </div>
     `;
-    item.onclick=()=>openMail(i);
+    item.onclick=()=>openMailByIndex(i);
     listEl.appendChild(item);
   });
 }
 
-function openMail(i){
-  const m=emails[i];
+function openMailByIndex(i){
+  const m = allEmailItems[i];
   document.getElementById('detailSubject').textContent=m.subject;
   document.getElementById('detailSender').textContent=m.sender;
   document.getElementById('detailEmail').textContent=m.email;
-  document.getElementById('detailContent').textContent=m.content;
+
+  if(m.isPayment){
+    // Stripe样式的付款详情
+    document.getElementById('detailContent').innerHTML = `
+      <div style="text-align:center;padding:20px 0 16px;">
+        <div style="font-size:22px;font-weight:700;color:#635BFF;letter-spacing:-1px;">stripe</div>
+      </div>
+      <div style="font-size:17px;font-weight:700;color:#1a1a2e;margin-bottom:10px;">恭喜您 The End！</div>
+      <div style="font-size:14px;color:#444;line-height:1.8;margin-bottom:18px;">您刚通过 Stripe 收到了一笔新的付款。</div>
+      <div style="background:#f6f9fc;border-radius:10px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:12px;color:#8898aa;margin-bottom:4px;">支付</div>
+        <div style="font-size:18px;font-weight:700;color:#635BFF;">${m.paymentAmount}</div>
+        <div style="font-size:13px;color:#525f7f;">— ${m.paymentType}</div>
+        <div style="font-size:12px;color:#8898aa;margin-top:12px;margin-bottom:4px;">客户</div>
+        <div style="font-size:13px;color:#525f7f;">${m.customerEmail}</div>
+      </div>
+      <div style="font-size:13px;color:#8898aa;line-height:1.8;">此次付款将在扣除手续费后进入您的银行账户。</div>
+    `;
+  } else {
+    document.getElementById('detailContent').textContent = m.content;
+  }
+
   document.getElementById('mailDetail').classList.add('open');
-  emails[i].unread=false;
+  allEmailItems[i].unread=false;
   render();
 }
+
+function openMail(i){ openMailByIndex(i); }
 function closeMail(){ document.getElementById('mailDetail').classList.remove('open'); }
 
 try{ const s=JSON.parse(localStorage.getItem('lifeScript')||'{}'); if(s.hero&&s.hero.name){ document.getElementById('userAvatar').textContent=s.hero.name[0].toUpperCase(); } }catch(e){}
