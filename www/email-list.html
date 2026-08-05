@@ -319,8 +319,8 @@ function generatePaymentEmails(){
     paymentEmails.push({
       sender: 'Stripe',
       email: 'notifications@stripe.com',
-      subject: `为 The End 收取的 ${customer.name} 的 ${tier.amount} 付款`,
-      snippet: `恭喜！您刚通过 Stripe 收到了一笔新的付款。${tier.amount} — ${tier.name}`,
+      subject: `为 Freed Releasing 收取的 ${customer.name} 的 ${tier.amount} 付款`,
+      snippet: `恭喜！您刚通过 Stripe 收到了一笔新的付款 · ${tier.amount} ${tier.name}`,
       time: timeStr,
       unread: i < 3,
       starred: false,
