@@ -266,11 +266,11 @@ function collectAllPersons(script){
 }
 
 async function callAI(systemPrompt, userPrompt){
-  const res = await fetch('https://api.freedreleasing.com/api', {
+  const res = await fetch('https://manifest-proxy.fionajiafu1223.workers.dev', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: 'gpt-4o-mini',
       max_tokens: 1200,
       messages: [
         { role:'system', content: systemPrompt },

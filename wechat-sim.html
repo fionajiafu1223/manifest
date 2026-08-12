@@ -365,11 +365,11 @@ const persona = `你正在扮演「${contactName}」，与用户（${heroAddr}�
 async function getAIReply() {
   showTyping();
   try {
-    const res = await fetch('https://api.freedreleasing.com/api', {
+    const res = await fetch('https://manifest-proxy.fionajiafu1223.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'gpt-4o-mini',
         max_tokens: 500,
         messages: [
           { role: 'system', content: persona },
@@ -392,11 +392,11 @@ async function getAIReply() {
 async function playOpening() {
   showTyping();
   try {
-    const res = await fetch('https://api.freedreleasing.com/api', {
+    const res = await fetch('https://manifest-proxy.fionajiafu1223.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'gpt-4o-mini',
         max_tokens: 300,
         messages: [
           { role: 'system', content: persona },

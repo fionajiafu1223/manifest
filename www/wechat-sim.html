@@ -442,11 +442,11 @@ async function getAIReply() {
   showTyping();
   const typingStart = Date.now();
   try {
-    const res = await fetch('https://api.freedreleasing.com/api', {
+    const res = await fetch('https://manifest-proxy.fionajiafu1223.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'gpt-4o-mini',
         max_tokens: 500,
         messages: [
           { role: 'system', content: persona },
@@ -485,11 +485,11 @@ async function playOpening() {
   showTyping();
   const typingStart = Date.now();
   try {
-    const res = await fetch('https://api.freedreleasing.com/api', {
+    const res = await fetch('https://manifest-proxy.fionajiafu1223.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'gpt-4o-mini',
         max_tokens: 300,
         messages: [
           { role: 'system', content: persona },

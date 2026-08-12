@@ -197,10 +197,10 @@ async function generateEmails(script){
   const userPrompt = `${bg}\n请虚构5封邮件。严格按照如下格式输出，每封邮件占5行，用===分隔不同邮件，不要有其他内容：\n发件人（英文机构名）\n发件人邮箱\n主题\n预览摘要（不超过30字）\n正文（3-5句话，尊敬得体，符合身份）`;
 
   try{
-    const res = await fetch('https://api.freedreleasing.com/api', {
+    const res = await fetch('https://manifest-proxy.fionajiafu1223.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model:'deepseek-chat', max_tokens:1500,
+      body: JSON.stringify({ model: 'gpt-4o-mini', max_tokens:1500,
         messages:[ {role:'system',content:sysPrompt}, {role:'user',content:userPrompt} ] }),
     });
     const data = await res.json();

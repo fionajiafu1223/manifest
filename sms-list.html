@@ -155,10 +155,10 @@ async function generateThreads(script){
   const userPrompt = `${bg}\n请虚构4条短信。严格按照如下格式输出，每条占2行，用===分隔，不要有其他内容：\n发件方名称（如"国航""管家服务"，不用真实短号）\n短信正文（1-2句话，服务性语气，不超过60字）`;
 
   try{
-    const res = await fetch('https://api.freedreleasing.com/api', {
+    const res = await fetch('https://manifest-proxy.fionajiafu1223.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model:'deepseek-chat', max_tokens:800,
+      body: JSON.stringify({ model: 'gpt-4o-mini', max_tokens:800,
         messages:[ {role:'system',content:sysPrompt}, {role:'user',content:userPrompt} ] }),
     });
     const data = await res.json();
