@@ -207,7 +207,7 @@ body{
       <span class="unread-badge" id="unreadBadge">5</span>
     </div>
     <div class="nav-title" id="contactName">阿哲</div>
-    <div class="nav-more">
+    <div class="nav-more" id="navMoreBtn" style="cursor:pointer;">
       <svg viewBox="0 0 24 24" fill="#000">
         <circle cx="5" cy="12" r="2"/>
         <circle cx="12" cy="12" r="2"/>
@@ -537,6 +537,14 @@ sendBtn.addEventListener('click', () => {
 
 msgInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') sendBtn.click();
+});
+
+// 右上角"更多"按钮：删除和这个人的聊天记录
+document.getElementById('navMoreBtn').addEventListener('click', () => {
+  if(confirm('删除和「' + contactName + '」的聊天记录？\n删除后再次打开会重新看到最初的那条消息，之后的对话都会消失。')){
+    localStorage.removeItem(historyKey);
+    location.reload();
+  }
 });
 </script>
 </body>
