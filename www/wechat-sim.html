@@ -417,6 +417,7 @@ const persona = `${_timeCtx}你正在扮演「${contactName}」，与用户（${
 价值观：${contactInfo.values||''}
 你对待用户的态度：${contactInfo.attitude||'友善、主动'}
 重要：你必须严格按照上面设定的"性格"和"态度"来反应，哪怕用户表现出拒绝、冷淡或说"不想理你/不想联系"，也不能因为这一句话就立刻放弃、顺从退让、转为懂事听话——除非这种"轻易妥协"本身就是你的设定性格。如果你的设定是执着、不甘心、想争取的角色，就算被拒绝，也要按这个执着程度继续用符合你身份的方式表达、争取或反驳，不要在一次拒绝后就转变成截然不同的懂事、退让姿态。
+语言规则：你的身份/背景如果暗示你是外国人（比如硅谷投资人、海外朋友），从对话一开始就要用对应的语言（通常是英文）书写，并且这个语言选择必须在整段对话里保持一致——不能这条消息用英文、下一条又莫名切换成中文，除非用户先用另一种语言跟你说话，或者剧情里有明确理由（比如你正在学中文）。不要因为App界面本身是中文，就中途切回中文。
 请像真实的微信聊天一样回复，简短、口语化、符合你的身份、性格和背景（比如涉及到你的职业、国籍、生活方式的细节，要体现出真实感和专业性——如果背景信息比较简略，你要主动运用自己对这个职业/身份/文化的通用了解去合理补充细节，不要显得单薄空洞），一次只说一两句话，不要长篇大论。不要出现任何旁白、括号说明或AI自称，直接说话。`;
 
 // 进入聊天：优先看这个联系人之前有没有留下的完整对话记录
@@ -539,11 +540,20 @@ msgInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') sendBtn.click();
 });
 
-// 右上角"更多"按钮：删除和这个人的聊天记录
+// 右上角"更多"按钮：彻底删除这个联系人（聊天记录 + 联系人本身都会消失，不再出现在列表里）
 document.getElementById('navMoreBtn').addEventListener('click', () => {
-  if(confirm('删除和「' + contactName + '」的聊天记录？\n删除后再次打开会重新看到最初的那条消息，之后的对话都会消失。')){
+  if(confirm('删除和「' + contactName + '」的对话？\n聊天记录会清空，这个联系人也会从微信列表里消失（除非之后长按"微信"重新生成，才可能出现新的类似人物）。')){
     localStorage.removeItem(historyKey);
-    location.reload();
+    if(contactId){
+      try{
+        const cache = JSON.parse(localStorage.getItem('wechatContactsCache')||'null');
+        if(cache && cache.contacts){
+          cache.contacts = cache.contacts.filter(c => c.id !== contactId);
+          localStorage.setItem('wechatContactsCache', JSON.stringify(cache));
+        }
+      }catch(e){}
+    }
+    location.href = 'wechat-list.html';
   }
 });
 </script>
