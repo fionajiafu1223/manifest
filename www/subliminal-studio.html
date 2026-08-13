@@ -159,7 +159,8 @@ input[type=range]::-webkit-slider-thumb{
       <button class="btn btn-primary" id="exportBtn" disabled>✦ 合成潜意识音频</button>
     </div>
     <div class="processing" id="processing">正在合成中…</div>
-    <div class="hint" id="exportHint" style="display:none;">合成完成！可下载或在播放器中循环播放</div>
+    <div class="hint" id="exportHint" style="display:none;">合成完成！可以直接在下方播放，长按可循环播放一整晚</div>
+    <audio id="exportPlayer" controls loop style="display:none;width:100%;margin-top:12px;"></audio>
   </div>
 </div>
 
@@ -174,6 +175,8 @@ let recordTimerSec = 0;
 let recordInterval = null;
 let previewSource = null;
 let previewBgSource = null;
+let previewGain = null;
+let previewBgGain = null;
 let isPreviewPlaying = false;
 
 function getCtx(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
@@ -252,9 +255,19 @@ const speedVal = document.getElementById('speedVal');
 const voiceVal = document.getElementById('voiceVal');
 const bgVal = document.getElementById('bgVal');
 
-speedSlider.oninput = () => speedVal.textContent = parseFloat(speedSlider.value).toFixed(1) + 'x';
-voiceSlider.oninput = () => voiceVal.textContent = voiceSlider.value + '%';
-bgSlider.oninput = () => bgVal.textContent = bgSlider.value + '%';
+speedSlider.oninput = () => {
+  speedVal.textContent = parseFloat(speedSlider.value).toFixed(1) + 'x';
+  // 语速涉及重新处理音频，不能像音量一样实时调节，正在试听时自动重新开始播放以应用新语速
+  if(isPreviewPlaying) startPreview();
+};
+voiceSlider.oninput = () => {
+  voiceVal.textContent = voiceSlider.value + '%';
+  if(isPreviewPlaying && previewGain) previewGain.gain.value = parseInt(voiceSlider.value) / 100;
+};
+bgSlider.oninput = () => {
+  bgVal.textContent = bgSlider.value + '%';
+  if(isPreviewPlaying && previewBgGain) previewBgGain.gain.value = parseInt(bgSlider.value) / 100;
+};
 
 // ─── 背景音类型 ───
 let bgType = 'none';
@@ -375,16 +388,11 @@ function processAudio(buffer, speed) {
 }
 
 // ─── 试听 ───
-document.getElementById('previewBtn').onclick = async () => {
+async function startPreview(){
   const btn = document.getElementById('previewBtn');
-  if (isPreviewPlaying) {
-    try { if (previewSource) previewSource.stop(); } catch(e){}
-    try { if (previewBgSource) previewBgSource.stop(); } catch(e){}
-    isPreviewPlaying = false;
-    btn.textContent = '▶ 试听效果';
-    return;
-  }
-  if (!recordedBuffer) { alert('请先录制或上传一段声音'); return; }
+  // 先停掉正在播的（比如语速滑块联动重启时）
+  try { if (previewSource) previewSource.stop(); } catch(e){}
+  try { if (previewBgSource) previewBgSource.stop(); } catch(e){}
 
   // iOS上AudioContext可能处于suspended状态，强制新建一个确保能播放
   try {
@@ -408,6 +416,7 @@ document.getElementById('previewBtn').onclick = async () => {
     previewSource.buffer = processed;
     const gain = ctx.createGain();
     gain.gain.value = voiceVol;
+    previewGain = gain;
     previewSource.connect(gain).connect(ctx.destination);
     previewSource.loop = true;
     previewSource.start();
@@ -420,9 +429,12 @@ document.getElementById('previewBtn').onclick = async () => {
       bgSource.buffer = bgBuffer;
       const bgGain = ctx.createGain();
       bgGain.gain.value = bgVol;
+      previewBgGain = bgGain;
       bgSource.connect(bgGain).connect(ctx.destination);
       bgSource.loop = true;
       bgSource.start();
+    } else {
+      previewBgGain = null;
     }
     previewBgSource = bgSource;
 
@@ -439,6 +451,19 @@ document.getElementById('previewBtn').onclick = async () => {
     btn.textContent = '▶ 试听效果';
     isPreviewPlaying = false;
   }
+}
+
+document.getElementById('previewBtn').onclick = async () => {
+  const btn = document.getElementById('previewBtn');
+  if (isPreviewPlaying) {
+    try { if (previewSource) previewSource.stop(); } catch(e){}
+    try { if (previewBgSource) previewBgSource.stop(); } catch(e){}
+    isPreviewPlaying = false;
+    btn.textContent = '▶ 试听效果';
+    return;
+  }
+  if (!recordedBuffer) { alert('请先录制或上传一段声音'); return; }
+  await startPreview();
 };
 
 // ─── 合成导出 ───
@@ -478,6 +503,16 @@ document.getElementById('exportBtn').onclick = async () => {
       const wav = bufferToWav(rendered);
       const blob = new Blob([wav], { type: 'audio/wav' });
       const url = URL.createObjectURL(blob);
+
+      // 关键修复：之前只做了浏览器下载链接，但在真机App(WKWebView)里这种下载方式经常静默失败，
+      // 文件"下载"了但用户根本找不到、也没有任何地方能播放。
+      // 现在直接把生成好的音频装进页面里的<audio>播放器，loop已开启，用户可以直接原地循环播放。
+      const player = document.getElementById('exportPlayer');
+      player.src = url;
+      player.style.display = 'block';
+      player.loop = true;
+
+      // 仍然尝试提供下载链接作为备选（网页预览环境里这个是有效的）
       const a = document.createElement('a');
       a.href = url;
       a.download = '潜意识音频.wav';

@@ -81,8 +81,9 @@ body{height:100dvh;position:fixed;inset:0;background:#eaf4ec;font-family:'Ma Sha
 .title .t1{font-size:32px;color:#5a7a58;letter-spacing:8px;text-shadow:0 2px 16px rgba(255,255,255,0.8);}
 
 /* 底部三个迷你物件 */
-.dock{position:absolute;bottom:calc(env(safe-area-inset-bottom,20px) + 4%);left:0;width:100%;
-  display:flex;justify-content:space-around;align-items:flex-end;padding:0 8%;z-index:10;}
+.dock{position:absolute;bottom:calc(env(safe-area-inset-bottom,20px) + 6%);left:0;width:100%;
+  display:grid;grid-template-columns:repeat(2,1fr);gap:26px 8px;
+  padding:0 17%;z-index:10;}
 .dock-item{cursor:pointer;transition:transform 0.3s;display:flex;flex-direction:column;align-items:center;gap:6px;}
 .dock-item:active{transform:scale(0.9);}
 .dock-item svg{filter:drop-shadow(0 4px 12px rgba(60,90,50,0.3));animation:bob var(--bob) ease-in-out infinite alternate;}
@@ -166,10 +167,7 @@ body{height:100dvh;position:fixed;inset:0;background:#eaf4ec;font-family:'Ma Sha
 
   </div>
 
-  <!-- 标题 -->
-  <div class="title"><div class="t1">秘 境</div></div>
-
-  <!-- 底部三个迷你物件 -->
+  <!-- 底部四宫格功能图标 -->
   <div class="dock" id="dock">
     <!-- 感恩日记本 -->
     <div class="dock-item" onclick="walkTo('gratitude',1)">
@@ -245,8 +243,10 @@ function walkTo(feature, pos){
   const title = document.querySelector('.title');
   dock.style.transition='opacity 0.5s';
   dock.style.opacity='0';
-  title.style.transition='opacity 0.5s';
-  title.style.opacity='0';
+  if(title){
+    title.style.transition='opacity 0.5s';
+    title.style.opacity='0';
+  }
   garden.classList.add('walk-'+pos);
 
   let dest;
