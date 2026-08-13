@@ -289,9 +289,6 @@ if(contactInfo){
 }
 document.getElementById('contactName').textContent = contactName;
 
-// 这次进来时，这个联系人本来是否有未读消息（用于决定是"直接看到等待中的消息"还是"AI现场开口"）
-const hadUnreadOnEntry = !!(contactInfo.unread > 0 && contactInfo.firstMessage);
-
 // 进来就算已读：把这个联系人的未读数清零，写回缓存
 if(contactId){
   try{
@@ -428,7 +425,8 @@ const savedHistory = loadHistory();
 if(savedHistory && savedHistory.length > 0){
   conversationHistory = savedHistory;
   savedHistory.forEach(m => { addMessage(m.content, m.role === 'user', false); });
-} else if(hadUnreadOnEntry){
+} else if(contactInfo.firstMessage){
+  // 不管有没有未读红点，只要列表里有预览消息，打开聊天就必须显示同一条内容——不能重新生成一句不一样的话
   addMessage(contactInfo.firstMessage);
 } else {
   setTimeout(playOpening, 700);
