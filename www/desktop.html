@@ -191,11 +191,18 @@ function pickAvatarType(name, roleText, characterText){
   const types = ['portrait','portrait','cartoon','landscape','abstract'];
   return types[hashStr(name) % types.length];
 }
-function avatarUrlFor(type, seed){
+function inferGenderCode(g){
+  if(!g) return null;
+  const s = String(g).trim();
+  if(/^(男|male|m$|man|先生)/i.test(s)) return 'men';
+  if(/^(女|female|f$|woman|女士)/i.test(s)) return 'women';
+  return null;
+}
+function avatarUrlFor(type, seed, genderCode){
   const h = hashStr(seed);
   switch(type){
     case 'portrait': {
-      const gender = h % 2 === 0 ? 'women' : 'men';
+      const gender = genderCode || (h % 2 === 0 ? 'women' : 'men');
       const idx = (h % 80) + 1;
       return `https://randomuser.me/api/portraits/${gender}/${idx}.jpg`;
     }
@@ -210,9 +217,9 @@ function avatarUrlFor(type, seed){
       return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(seed)}`;
   }
 }
-function autoAvatarImg(name, roleText, characterText){
+function autoAvatarImg(name, roleText, characterText, genderHint){
   const type = pickAvatarType(name, roleText, characterText);
-  return avatarUrlFor(type, name);
+  return avatarUrlFor(type, name, inferGenderCode(genderHint));
 }
 
 function buildBackgroundText(script){
@@ -275,7 +282,7 @@ async function generateFromPersons(script, persons){
 
   const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
   return persons.map((p,i)=>({
-    id: 'p'+hashStr(p.name+'|'+(p.role||'')).toString(36), name: p.name, avatar: p.name[0], avatarImg: p.avatar || autoAvatarImg(p.name, p.role, p.character),
+    id: 'p'+hashStr(p.name+'|'+(p.role||'')).toString(36), name: p.name, avatar: p.name[0], avatarImg: p.avatar || autoAvatarImg(p.name, p.role, p.character, p.gender),
     color: AVATAR_COLORS[i % AVATAR_COLORS.length],
     preview: previews[i+1] || `Hi，${p.name}想和你聊聊…`,
     firstMessage: previews[i+1] || `Hi，${p.name}想和你聊聊…`,
@@ -288,21 +295,21 @@ async function generateFromPersons(script, persons){
 async function generateInventedContacts(script){
   const bg = buildBackgroundText(script);
   const sysPrompt = '你是一个「已实现人生」场景生成器。仔细阅读用户写下的每一个场景（可能是事业、学术、健康、创作、心灵成长、人际关系、财富等任何主题），虚构4-6个会在微信上联系主角的人物。人物类型必须由场景内容本身决定，不要预设任何特定主题（不要默认往财富或奢侈品方向靠）——可以是导师、合作者、学生、病人、粉丝、朋友等任何符合场景的角色。' + CONTACT_RULES;
-  const userPrompt = `${bg}\n请虚构4-6个联系人，每人一条微信消息预览（不超过30字）。严格按照如下格式输出，不要有其他内容：\n姓名::身份角色::消息预览`;
+  const userPrompt = `${bg}\n请虚构4-6个联系人，每人一条微信消息预览（不超过30字）。严格按照如下格式输出，不要有其他内容：\n姓名::性别(男或女)::身份角色::消息预览`;
 
   let list = [];
   try{
     const reply = await callAI(sysPrompt, userPrompt);
     reply.split('\n').forEach(line=>{
       const parts = line.split('::');
-      if(parts.length>=3) list.push({ name:parts[0].trim(), role:parts[1].trim(), preview:parts[2].trim() });
+      if(parts.length>=4) list.push({ name:parts[0].trim(), gender:parts[1].trim(), role:parts[2].trim(), preview:parts[3].trim() });
     });
   }catch(e){ console.error(e); }
   if(list.length===0) return [];
 
   const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
   return list.map((p,i)=>({
-    id:'inv'+hashStr(p.name+'|'+(p.role||'')).toString(36), name:p.name, avatar:p.name[0], avatarImg: autoAvatarImg(p.name, p.role, ''), color:AVATAR_COLORS[i%AVATAR_COLORS.length],
+    id:'inv'+hashStr(p.name+'|'+(p.role||'')).toString(36), name:p.name, avatar:p.name[0], avatarImg: autoAvatarImg(p.name, p.role, '', p.gender), color:AVATAR_COLORS[i%AVATAR_COLORS.length],
     preview:p.preview, firstMessage:p.preview, time:times[i%times.length], unread: i<3 ? (Math.floor(Math.random()*2)+1) : 0,
     role:p.role, character:'', values:'', background:p.role, attitude:'友善、主动联系用户',
     isUserCreated: false,
