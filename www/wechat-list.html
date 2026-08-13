@@ -189,6 +189,45 @@ const AVATAR_COLORS = ['#8b6f47','#2a5a8a','#3a3a3a','#1a3a6a','#7a2a2a','#2a2a2
 // 没有剧本数据时的兜底：空数组，不再预设联系人
 const FALLBACK_CONTACTS = [];
 
+// ---- 头像生成：根据人物性格/角色关键词，从4种风格里挑一种（不是所有人都用真人照片） ----
+function hashStr(s){
+  let h = 0;
+  for(let i=0; i<s.length; i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+function pickAvatarType(name, roleText, characterText){
+  const text = (roleText||'') + (characterText||'');
+  if(/艺术|设计|插画|音乐|诗|作家|摄影师|策展/.test(text)) return 'abstract';
+  if(/自然|户外|旅行|登山|徒步|田园|海边|骑行|露营/.test(text)) return 'landscape';
+  if(/学生|年轻|活泼|网红|游戏|二次元|博主/.test(text)) return 'cartoon';
+  // 没有明显关键词：按姓名做稳定的伪随机分配，保证同一人物每次刷新头像不变，且整体风格有变化
+  const types = ['portrait','portrait','cartoon','landscape','abstract'];
+  return types[hashStr(name) % types.length];
+}
+function avatarUrlFor(type, seed){
+  const h = hashStr(seed);
+  switch(type){
+    case 'portrait': {
+      const gender = h % 2 === 0 ? 'women' : 'men';
+      const idx = (h % 80) + 1;
+      return `https://randomuser.me/api/portraits/${gender}/${idx}.jpg`;
+    }
+    case 'landscape': {
+      const ids = [1018,1015,1043,1036,1039,1050,1044,1024];
+      const id = ids[h % ids.length];
+      return `https://picsum.photos/id/${id}/200/200`;
+    }
+    case 'cartoon':
+      return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
+    case 'abstract':
+      return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(seed)}`;
+  }
+}
+function autoAvatarImg(name, roleText, characterText){
+  const type = pickAvatarType(name, roleText, characterText);
+  return avatarUrlFor(type, name);
+}
+
 const chatList = document.getElementById('chatList');
 let contacts = [];
 
@@ -312,7 +351,7 @@ async function generateFromPersons(script, persons){
     id: 'p'+i,
     name: p.name,
     avatar: p.name[0],
-    avatarImg: p.avatar || null,
+    avatarImg: p.avatar || autoAvatarImg(p.name, p.role, p.character),
     color: AVATAR_COLORS[i % AVATAR_COLORS.length],
     preview: previews[i+1] || `Hi，${p.name}想和你聊聊…`,
     firstMessage: previews[i+1] || `Hi，${p.name}想和你聊聊…`,
@@ -343,7 +382,7 @@ async function generateInventedContacts(script){
 
   const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
   contacts = list.map((p,i)=>({
-    id:'inv'+i, name:p.name, avatar:p.name[0], color:AVATAR_COLORS[i%AVATAR_COLORS.length],
+    id:'inv'+i, name:p.name, avatar:p.name[0], avatarImg: autoAvatarImg(p.name, p.role, ''), color:AVATAR_COLORS[i%AVATAR_COLORS.length],
     preview:p.preview, firstMessage:p.preview, time:times[i%times.length], unread: i<3 ? (Math.floor(Math.random()*2)+1) : 0,
     role:p.role, character:'', values:'', background:p.role, attitude:'友善、主动联系用户',
   }));
