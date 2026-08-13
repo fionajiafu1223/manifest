@@ -446,9 +446,11 @@ async function init(){
     }
   }, 650); };
   const cancel = () => { if(timer){ clearTimeout(timer); timer=null; } };
-  el.addEventListener('touchstart', start, {passive:true});
+  // passive:false + preventDefault，彻底屏蔽iOS原生的长按菜单（复制/分享/存储到照片）
+  el.addEventListener('touchstart', (e)=>{ e.preventDefault(); start(); }, {passive:false});
   el.addEventListener('touchend', cancel);
   el.addEventListener('touchmove', cancel);
+  el.addEventListener('contextmenu', (e)=>{ e.preventDefault(); });
   el.addEventListener('mousedown', start);
   el.addEventListener('mouseup', cancel);
   el.addEventListener('mouseleave', cancel);
