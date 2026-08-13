@@ -243,114 +243,15 @@ async function initEmails(){
   render();
 }
 
-// ── Stripe付款通知：每天自动增加数量，直到爆单 ──
-
-const TIERS = [
-  { name:'月度订阅', amount:'¥8.00', type:'monthly', weight:6 },
-  { name:'季度订阅', amount:'¥18.00', type:'quarterly', weight:3 },
-  { name:'年度订阅', amount:'¥68.00', type:'annual', weight:1 },
-];
-
-const FIRST_NAMES = ['晓雯','雨桐','思琦','子涵','欣然','嘉慧','紫萱','若曦','梦洁','芷若','恩熙','诗雅','映彤','婧萱','沐汐','南笙','初晴','云溪','汐颜','晴澜','温棠','慕颜','沁瑶','清晏','棠梨'];
-const LAST_NAMES = ['林','陈','张','王','李','刘','黄','吴','周','徐','孙','赵','朱','高','郑','谢','苏','江','叶','杨'];
-const DOMAINS = ['gmail.com','qq.com','163.com','outlook.com','icloud.com','hotmail.com','yahoo.com'];
-
-function seededRandom(seed){
-  let x = Math.sin(seed + 1) * 10000;
-  return x - Math.floor(x);
-}
-
-function generateCustomer(seed){
-  const fn = FIRST_NAMES[Math.floor(seededRandom(seed * 7) * FIRST_NAMES.length)];
-  const ln = LAST_NAMES[Math.floor(seededRandom(seed * 13) * LAST_NAMES.length)];
-  const domain = DOMAINS[Math.floor(seededRandom(seed * 17) * DOMAINS.length)];
-  const num = Math.floor(seededRandom(seed * 23) * 9000) + 1000;
-  return {
-    name: ln + fn,
-    email: ln.toLowerCase() + fn.toLowerCase() + num + '@' + domain,
-  };
-}
-
-function pickTier(seed){
-  const totalWeight = TIERS.reduce((s,t)=>s+t.weight,0);
-  let r = seededRandom(seed * 31) * totalWeight;
-  for(const t of TIERS){ r -= t.weight; if(r <= 0) return t; }
-  return TIERS[0];
-}
-
-function getDayCount(){
-  const key = 'theEndFirstOpen';
-  let first = localStorage.getItem(key);
-  if(!first){ first = Date.now().toString(); localStorage.setItem(key, first); }
-  const daysPassed = Math.floor((Date.now() - parseInt(first)) / 86400000);
-  return daysPassed;
-}
-
-function getEmailCountForDay(day){
-  // 慢慢增长，第30天爆单
-  if(day === 0) return 3;
-  if(day <= 3) return 3 + day * 2;         // 3→5→7→9
-  if(day <= 7) return 8 + day * 2;         // 10→12→...→22
-  if(day <= 14) return 20 + day * 3;       // 23→...→62
-  if(day <= 21) return 55 + day * 4;       // 63→...→139
-  if(day <= 30) return 120 + day * 6;      // 141→...→300
-  return 300 + day * 10;                   // 爆单
-}
-
-function generatePaymentEmails(){
-  const day = getDayCount();
-  const count = getEmailCountForDay(day);
-  const now = new Date();
-  const paymentEmails = [];
-
-  for(let i = 0; i < count; i++){
-    const seed = day * 1000 + i;
-    const customer = generateCustomer(seed);
-    const tier = pickTier(seed + 100);
-
-    // 今天的邮件随机分布在一天内的不同时间点
-    const hoursAgo = seededRandom(seed * 41) * 22;
-    const mailTime = new Date(now - hoursAgo * 3600000);
-    const timeStr = hoursAgo < 12
-      ? `${mailTime.getHours()}:${String(mailTime.getMinutes()).padStart(2,'0')}`
-      : hoursAgo < 24 * 1.5 ? '昨天'
-      : `${mailTime.getMonth()+1}月${mailTime.getDate()}日`;
-
-    paymentEmails.push({
-      sender: 'Stripe',
-      email: 'notifications@stripe.com',
-      subject: `为 Freed Releasing 收取的 ${customer.name} 的 ${tier.amount} 付款`,
-      snippet: `恭喜！您刚通过 Stripe 收到了一笔新的付款 · ${tier.amount} ${tier.name}`,
-      time: timeStr,
-      unread: i < 3,
-      starred: false,
-      isPayment: true,
-      paymentAmount: tier.amount,
-      paymentType: tier.name,
-      customerName: customer.name,
-      customerEmail: customer.email,
-      content: `恭喜您 The End！\n\n您刚通过 Stripe 收到了一笔新的付款。\n\n此次支付的 ${tier.amount}（扣除手续费后）将进入您的银行账户。提现款项将很快出现在管理平台。\n\n支付\n${tier.amount} — ${tier.name}\n\n客户\n${customer.email}\n\n感谢您使用 Stripe。\n\nStripe 团队`,
-    });
-  }
-
-  // 最新的排在最前面
-  return paymentEmails;
-}
-
 const personSvg='<svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
 const starSvg='<svg viewBox="0 0 24 24"><path d="M12 17.27l4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-.58.31-1.68-.57-1.75l-4.83-.41-1.89-4.46c-.34-.81-1.5-.81-1.84 0L9.19 8.63l-4.83.41c-.88.07-1.24 1.17-.57 1.75l3.67 3.18-1.1 4.72c-.2.86.73 1.54 1.49 1.08L12 17.27z"/></svg>';
-
-// Stripe紫色logo SVG
-const stripeSvg = `<svg viewBox="0 0 60 25" xmlns="http://www.w3.org/2000/svg"><path d="M59.64 14.28h-8.06v-1.44c0-.96.32-1.44.96-1.44.64 0 .96.48.96 1.44v.48h6.14v-.48c0-3.36-2.08-5.04-7.1-5.04-5.02 0-7.1 1.68-7.1 5.52v1.92c0 3.84 2.08 5.52 7.1 5.52 5.02 0 7.1-1.68 7.1-5.52v-.96zM35.3 7.8c-5.02 0-7.1 1.68-7.1 5.52v1.92c0 3.84 2.08 5.52 7.1 5.52 5.02 0 7.1-1.68 7.1-5.52v-1.92C42.4 9.48 40.32 7.8 35.3 7.8zm.96 8.4c0 .96-.32 1.44-.96 1.44-.64 0-.96-.48-.96-1.44v-3.84c0-.96.32-1.44.96-1.44.64 0 .96.48.96 1.44v3.84zM20.9 7.8c-2.24 0-3.84.64-4.8 1.92V2.52H9.96v18.24h6.14v-8.4c0-.96.32-1.44.96-1.44.64 0 .96.48.96 1.44v8.4h6.14v-9.84C24.16 9.48 22.98 7.8 20.9 7.8zM6.46 4.2C4.22 4.2 2.46 5.4.7 7.8L0 8.28v12.48h6.14v-8.4c0-.96.32-1.44.96-1.44.64 0 .96.48.96 1.44v8.4H14.2V8.28C12.44 5.88 10.62 4.2 8.7 4.2H6.46z" fill="#635BFF"/></svg>`;
 
 const listEl=document.getElementById('mailList');
 let allEmailItems = []; // 合并付款邮件+AI邮件
 
 function render(){
   listEl.innerHTML='';
-  // 付款邮件 + AI生成邮件合并显示
-  const paymentEmails = generatePaymentEmails();
-  allEmailItems = [...paymentEmails, ...emails];
+  allEmailItems = [...emails];
 
   if(allEmailItems.length === 0){
     listEl.innerHTML = `<div style="text-align:center;padding:80px 30px;color:#999;">
@@ -364,12 +265,10 @@ function render(){
     const item=document.createElement('div');
     item.className='mail-item'+(m.unread?'':' read');
 
-    const avatarContent = m.isPayment
-      ? `<div style="width:100%;height:100%;background:#635BFF;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg></div>`
-      : personSvg;
+    const avatarContent = personSvg;
 
     item.innerHTML=`
-      <div class="mail-avatar${!m.isPayment && i===4?' blue':''}">${avatarContent}</div>
+      <div class="mail-avatar${i===4?' blue':''}">${avatarContent}</div>
       <div class="mail-body">
         <div class="mail-top"><span class="mail-sender">${m.sender}</span><span class="mail-time">${m.time}</span></div>
         <div class="mail-subject">${m.subject}</div>
@@ -390,40 +289,7 @@ function openMailByIndex(i){
   document.getElementById('detailSender').textContent=m.sender;
   document.getElementById('detailEmail').textContent=m.email;
 
-  if(m.isPayment){
-    const custId = 'cus_' + m.customerEmail.replace(/[^a-z]/gi,'').substring(0,6).toUpperCase() + Math.floor(seededRandom(i*99)*90000+10000);
-    document.getElementById('detailContent').innerHTML = `
-      <div style="padding:8px 0 32px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;">
-        <div style="margin-bottom:28px;">
-          <span style="font-size:32px;font-weight:900;color:#635BFF;font-style:italic;font-family:Georgia,serif;letter-spacing:-1.5px;">stripe</span>
-        </div>
-        <div style="font-size:18px;font-weight:700;color:#1a1a2e;margin-bottom:14px;">恭喜您 Freed Releasing！</div>
-        <div style="font-size:15px;color:#3c4257;line-height:1.85;margin-bottom:14px;">
-          您刚通过 <span style="background:#fef3c7;padding:1px 4px;border-radius:3px;font-weight:500;">Stripe</span> 收到了一笔新的付款。
-        </div>
-        <div style="font-size:15px;color:#3c4257;line-height:1.85;margin-bottom:28px;">
-          您此次支付的 <strong>${m.paymentAmount}</strong>（扣除任何费用）将进入您的银行账户。提现款项将很快出现在管理平台。您可以查看<span style="color:#635BFF;">余额页面</span>，了解预计到账时间。
-        </div>
-        <div style="background:#f6f9fc;border-radius:12px;padding:18px 20px;margin-bottom:20px;">
-          <div style="font-size:12px;color:#8898aa;letter-spacing:0.8px;margin-bottom:8px;">支付</div>
-          <div style="font-size:20px;font-weight:700;color:#635BFF;margin-bottom:4px;">${m.paymentAmount} <span style="font-size:14px;color:#8898aa;font-weight:400;">— ${m.paymentType === '月度订阅' ? 'Monthly subscription' : m.paymentType === '季度订阅' ? 'Quarterly subscription' : 'Annual subscription'}</span></div>
-          <div style="border-top:1px solid #e0e6ed;margin:14px 0;"></div>
-          <div style="font-size:12px;color:#8898aa;letter-spacing:0.8px;margin-bottom:8px;">客户</div>
-          <div style="font-size:14px;color:#525f7f;word-break:break-all;">${m.customerEmail} — ${custId}</div>
-        </div>
-        <div style="background:#635BFF;border-radius:8px;padding:15px;text-align:center;margin-bottom:28px;">
-          <span style="color:#fff;font-size:15px;font-weight:600;letter-spacing:0.3px;">在管理平台内查看</span>
-        </div>
-        <div style="font-size:13px;color:#8898aa;line-height:1.9;border-top:1px solid #e8ecf0;padding-top:18px;">
-          提现款项的到账时间取决于您银行的处理速度，通常需要 1–3 个工作日。<br><br>
-          感谢您使用 Stripe。<br>
-          <span style="color:#635BFF;">Stripe</span> 团队
-        </div>
-      </div>
-    `;
-  } else {
-    document.getElementById('detailContent').textContent = m.content;
-  }
+  document.getElementById('detailContent').textContent = m.content;
 
   document.getElementById('mailDetail').classList.add('open');
   allEmailItems[i].unread=false;
