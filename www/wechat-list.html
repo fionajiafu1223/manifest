@@ -347,8 +347,8 @@ async function generateFromPersons(script, persons){
   }catch(e){ console.error(e); }
 
   const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
-  contacts = persons.map((p,i)=>({
-    id: 'p'+i,
+  return persons.map((p,i)=>({
+    id: 'p'+hashStr(p.name+'|'+(p.role||'')).toString(36),
     name: p.name,
     avatar: p.name[0],
     avatarImg: p.avatar || autoAvatarImg(p.name, p.role, p.character),
@@ -358,6 +358,7 @@ async function generateFromPersons(script, persons){
     time: times[i % times.length],
     unread: i < 3 ? (Math.floor(Math.random()*2)+1) : 0,
     role: p.role, character: p.character, values: p.values, background: p.background, attitude: p.attitude, sceneName: p.sceneName,
+    isUserCreated: true,
   }));
 }
 
@@ -378,13 +379,14 @@ async function generateInventedContacts(script){
     });
   }catch(e){ console.error(e); }
 
-  if(list.length===0){ contacts = FALLBACK_CONTACTS; return; }
+  if(list.length===0){ return []; }
 
   const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
-  contacts = list.map((p,i)=>({
-    id:'inv'+i, name:p.name, avatar:p.name[0], avatarImg: autoAvatarImg(p.name, p.role, ''), color:AVATAR_COLORS[i%AVATAR_COLORS.length],
+  return list.map((p,i)=>({
+    id:'inv'+hashStr(p.name+'|'+(p.role||'')).toString(36), name:p.name, avatar:p.name[0], avatarImg: autoAvatarImg(p.name, p.role, ''), color:AVATAR_COLORS[i%AVATAR_COLORS.length],
     preview:p.preview, firstMessage:p.preview, time:times[i%times.length], unread: i<3 ? (Math.floor(Math.random()*2)+1) : 0,
     role:p.role, character:'', values:'', background:p.role, attitude:'友善、主动联系用户',
+    isUserCreated: false,
   }));
 }
 
@@ -415,11 +417,17 @@ async function init(){
   }
 
   const persons = collectAllPersons(script);
+  let personContacts = [];
   if(persons.length > 0){
-    await generateFromPersons(script, persons);
-  } else {
-    await generateInventedContacts(script);
+    personContacts = await generateFromPersons(script, persons);
   }
+  let inventedContacts = [];
+  try{
+    inventedContacts = await generateInventedContacts(script);
+  }catch(e){ console.error(e); }
+
+  contacts = [...personContacts, ...inventedContacts];
+  if(contacts.length === 0){ contacts = FALLBACK_CONTACTS; }
 
   localStorage.setItem(cacheKey, JSON.stringify({ scriptRaw, contacts }));
   renderList();
