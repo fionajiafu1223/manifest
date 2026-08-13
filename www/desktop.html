@@ -316,6 +316,78 @@ async function generateInventedContacts(script){
   }));
 }
 
+// ── 短信：和短信App用同一份缓存(smsCache)，推送内容和打开App看到的完全一致 ──
+async function getOrCreateSmsThreads(script){
+  const cacheKey = 'smsCache';
+  const scriptRaw = localStorage.getItem('lifeScript') || '';
+  try{
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if(cached && cached.scriptRaw === scriptRaw && cached.threads && cached.threads.length > 0){
+      return cached.threads;
+    }
+  }catch(e){}
+
+  const bg = buildBackgroundText(script);
+  const _t = new Date();
+  const _tc = `当前时间：${_t.getFullYear()}年${_t.getMonth()+1}月${_t.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][_t.getDay()]} ${String(_t.getHours()).padStart(2,'0')}:${String(_t.getMinutes()).padStart(2,'0')}。`;
+  const sysPrompt = _tc + '你是一个「已实现人生」短信场景生成器。仔细阅读用户写下的每一个场景，虚构4条主角在这些场景中会收到的短信。短信类型必须由场景内容本身决定，不要预设任何特定主题——可以是课程确认、健康数据提醒、合作邀约、活动通知等，具体看用户写了什么。重要：不要涉及银行、转账、具体到账金额，不要使用真实存在的机构官方短号或真实品牌名。' + CONTACT_RULES;
+  const userPrompt = `${bg}\n请虚构4条短信。严格按照如下格式输出，每条占2行，用===分隔，不要有其他内容：\n发件方名称（如"国航""管家服务"，不用真实短号）\n短信正文（1-2句话，服务性语气，不超过60字）`;
+
+  let threads = [];
+  try{
+    const reply = await callAI(sysPrompt, userPrompt);
+    const blocks = reply.split('===').map(b=>b.trim()).filter(b=>b);
+    const times = ['10:07 AM','刚刚','昨天','昨天'];
+    threads = blocks.map((b,i)=>{
+      const lines = b.split('\n').map(l=>l.trim()).filter(l=>l);
+      if(lines.length<2) return null;
+      const text = lines.slice(1).join(' ');
+      return { name:lines[0], time:times[i%times.length], unread:i<2, msgs:[{t:text, them:true}], preview:text };
+    }).filter(x=>x);
+  }catch(e){ console.error(e); }
+
+  if(threads.length > 0){
+    localStorage.setItem(cacheKey, JSON.stringify({ scriptRaw, threads }));
+  }
+  return threads;
+}
+
+// ── 邮件：和邮箱App用同一份缓存(emailCache) ──
+async function getOrCreateEmails(script){
+  const cacheKey = 'emailCache';
+  const scriptRaw = localStorage.getItem('lifeScript') || '';
+  try{
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if(cached && cached.scriptRaw === scriptRaw && cached.emails && cached.emails.length > 0){
+      return cached.emails;
+    }
+  }catch(e){}
+
+  const bg = buildBackgroundText(script);
+  const _t = new Date();
+  const _tc = `当前时间：${_t.getFullYear()}年${_t.getMonth()+1}月${_t.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][_t.getDay()]} ${String(_t.getHours()).padStart(2,'0')}:${String(_t.getMinutes()).padStart(2,'0')}。`;
+  const sysPrompt = _tc + '你是一个「已实现人生」邮件场景生成器。仔细阅读用户写下的每一个场景，虚构5封主角在这些场景中会收到的邮件。邮件类型必须由场景内容本身决定，不要预设任何特定主题——如果用户写的是学术场景，邮件可以是期刊约稿、学术会议邀请；如果是创作场景，可以是画廊展览邀约、出版社来信；请让内容真正贴合用户写下的具体文字。' + CONTACT_RULES;
+  const userPrompt = `${bg}\n请虚构5封邮件。严格按照如下格式输出，每封邮件占5行，用===分隔不同邮件，不要有其他内容：\n发件人（英文机构名）\n发件人邮箱\n主题\n预览摘要（不超过30字）\n正文（3-5句话，尊敬得体，符合身份）`;
+
+  let emails = [];
+  try{
+    const reply = await callAI(sysPrompt, userPrompt);
+    const blocks = reply.split('===').map(b=>b.trim()).filter(b=>b);
+    const times = ['9:24 AM','8:10 AM','昨天','昨天','周三'];
+    emails = blocks.map((b,i)=>{
+      const lines = b.split('\n').map(l=>l.trim()).filter(l=>l);
+      if(lines.length<5) return null;
+      return { sender:lines[0], email:lines[1], subject:lines[2], snippet:lines[3], content:lines.slice(4).join('\n'),
+        time: times[i%times.length], unread: i<3, starred: i===0||i===3 };
+    }).filter(x=>x);
+  }catch(e){ console.error(e); }
+
+  if(emails.length > 0){
+    localStorage.setItem(cacheKey, JSON.stringify({ scriptRaw, emails }));
+  }
+  return emails;
+}
+
 // 拿到「和微信列表页完全一致」的联系人数据：有缓存就用缓存，没有就生成并写入同一个缓存
 async function getOrCreateWechatContacts(script){
   const cacheKey = 'wechatContactsCache';
@@ -383,8 +455,7 @@ async function setupNotifications(){
       await LocalNotifications.cancel({ notifications: pending.notifications.map(n=>({id:n.id})) });
     }
 
-    const contacts = await getOrCreateWechatContacts(script);
-    if(!contacts || contacts.length === 0){ showToast('生成联系人失败，推送安排取消'); return; }
+    const contacts = await getOrCreateWechatContacts(script) || [];
 
     // ── 关系类型识别 ──
     // 根据角色描述判断亲密程度，决定推送频率
@@ -444,7 +515,7 @@ async function setupNotifications(){
       msgs.forEach(msg => allNotifications.push({ contact: c, bodyText: msg, isFollowUp: true, tier }));
     }
 
-    if(allNotifications.length === 0){ showToast('暂时没有可以安排推送的联系人'); return; }
+    // 微信联系人可能没有可推送的内容，不提前return，让短信/邮件仍有机会安排
 
     // 写进聊天记录
     allNotifications.forEach(p => {
@@ -478,8 +549,43 @@ async function setupNotifications(){
       };
     });
 
-    await LocalNotifications.schedule({ notifications });
-    showToast(`已安排${notifications.length}条推送（测试模式，1分钟后开始弹出）`);
+    // ── 短信推送：未读的每条排一次 ──
+    let smsNotifications = [];
+    try{
+      const smsThreads = await getOrCreateSmsThreads(script);
+      smsNotifications = smsThreads
+        .map((t, idx) => ({ t, idx }))
+        .filter(x => x.t.unread)
+        .map((x, i) => ({
+          id: baseId + 500 + i,
+          title: '短信',
+          body: `${x.t.name}：${x.t.preview}`,
+          schedule: { at: new Date(Date.now() + (30 + i * 90 + Math.random()*40) * 1000) },
+          extra: { page: 'sms-list.html?open=' + x.idx },
+        }));
+    }catch(e){ console.error(e); }
+
+    // ── 邮件推送：未读的每封排一次 ──
+    let emailNotifications = [];
+    try{
+      const emails = await getOrCreateEmails(script);
+      emailNotifications = emails
+        .map((m, idx) => ({ m, idx }))
+        .filter(x => x.m.unread)
+        .map((x, i) => ({
+          id: baseId + 800 + i,
+          title: '邮件',
+          body: `${x.m.sender}：${x.m.subject}`,
+          schedule: { at: new Date(Date.now() + (45 + i * 110 + Math.random()*40) * 1000) },
+          extra: { page: 'email-list.html?open=' + x.idx },
+        }));
+    }catch(e){ console.error(e); }
+
+    const allScheduled = [...notifications, ...smsNotifications, ...emailNotifications];
+    if(allScheduled.length === 0){ showToast('暂时没有可以安排推送的内容'); return; }
+
+    await LocalNotifications.schedule({ notifications: allScheduled });
+    showToast(`已安排${allScheduled.length}条推送（测试模式，1分钟后开始弹出）`);
   }catch(e){
     console.error('推送安排失败', e);
     showToast('推送安排出错：' + (e.message || e));

@@ -320,7 +320,12 @@ try{ const s=JSON.parse(localStorage.getItem('lifeScript')||'{}'); if(s.hero&&s.
   el.addEventListener('mouseleave', cancel);
 })();
 
-initEmails();
+initEmails().then(()=>{
+  try{
+    const openIdx = new URLSearchParams(window.location.search).get('open');
+    if(openIdx !== null && allEmailItems[+openIdx]) openMailByIndex(+openIdx);
+  }catch(e){}
+});
 </script>
 </body>
 </html>
