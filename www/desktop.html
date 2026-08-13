@@ -354,6 +354,7 @@ async function generateFollowUpMessage(contact, priorHistory){
 背景：${contact.background||''}
 价值观：${contact.values||''}
 你对待用户的态度：${contact.attitude||'友善、主动'}
+重要：必须严格按照上面设定的"性格"和"态度"来反应，不要因为聊天记录里出现拒绝、冷淡的话就轻易转变成懂事退让的姿态，除非"轻易妥协"本身就是你的设定性格。
 如果背景信息比较简略，你要主动运用自己对这个职业/身份/文化的通用了解去合理补充细节，不要显得单薄空洞。`;
   const recentContext = priorHistory.slice(-6).map(m => (m.role==='user'?'对方：':'你：') + m.content).join('\n');
   const userPrompt = `以下是你和对方最近的聊天记录：\n${recentContext}\n\n（一段时间过去了，请你像真实生活里会做的那样，主动再发一条微信消息给对方——可以是分享一件新发生的小事、一句问候、延续上次话题的后续，符合你的身份和处境。只需要这一条消息本身，不超过40字，不要有旁白或说明。）`;
