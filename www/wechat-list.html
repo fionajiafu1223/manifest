@@ -442,21 +442,34 @@ async function init(){
 (function(){
   const el = document.getElementById('wxTitleLongPress');
   let timer = null;
-  const start = () => { timer = setTimeout(() => {
+  let startX = 0, startY = 0;
+  const MOVE_TOLERANCE = 14; // 允许的手指抖动范围，太严格会导致真实长按因为手指自然的轻微移动被误判取消
+
+  const doRegenerate = () => {
     if(confirm('重新生成这个世界里的联系人？\n（之前的聊天记录会被清空，重新根据剧本生成新的联系人）')){
       localStorage.removeItem('wechatContactsCache');
-      // 一并清掉每个联系人保存的聊天记录，避免新联系人顶着旧对话
       Object.keys(localStorage).filter(k=>k.startsWith('wechatHistory_')).forEach(k=>localStorage.removeItem(k));
       location.reload();
     }
-  }, 650); };
+  };
+  const start = (x, y) => { startX = x; startY = y; timer = setTimeout(doRegenerate, 650); };
   const cancel = () => { if(timer){ clearTimeout(timer); timer=null; } };
+  const checkMove = (x, y) => {
+    if(timer && (Math.abs(x - startX) > MOVE_TOLERANCE || Math.abs(y - startY) > MOVE_TOLERANCE)) cancel();
+  };
   // passive:false + preventDefault，彻底屏蔽iOS原生的长按菜单（复制/分享/存储到照片）
-  el.addEventListener('touchstart', (e)=>{ e.preventDefault(); start(); }, {passive:false});
+  el.addEventListener('touchstart', (e)=>{
+    e.preventDefault();
+    const t = e.touches[0];
+    if(t) start(t.clientX, t.clientY);
+  }, {passive:false});
   el.addEventListener('touchend', cancel);
-  el.addEventListener('touchmove', cancel);
+  el.addEventListener('touchmove', (e)=>{
+    const t = e.touches[0];
+    if(t) checkMove(t.clientX, t.clientY);
+  }, {passive:true});
   el.addEventListener('contextmenu', (e)=>{ e.preventDefault(); });
-  el.addEventListener('mousedown', start);
+  el.addEventListener('mousedown', (e)=> start(e.clientX, e.clientY));
   el.addEventListener('mouseup', cancel);
   el.addEventListener('mouseleave', cancel);
 })();
