@@ -367,7 +367,7 @@ async function getOrCreateEmails(script){
   const _t = new Date();
   const _tc = `当前时间：${_t.getFullYear()}年${_t.getMonth()+1}月${_t.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][_t.getDay()]} ${String(_t.getHours()).padStart(2,'0')}:${String(_t.getMinutes()).padStart(2,'0')}。`;
   const sysPrompt = _tc + '你是一个「已实现人生」邮件场景生成器。仔细阅读用户写下的每一个场景，虚构5封主角在这些场景中会收到的邮件。邮件类型必须由场景内容本身决定，不要预设任何特定主题——如果用户写的是学术场景，邮件可以是期刊约稿、学术会议邀请；如果是创作场景，可以是画廊展览邀约、出版社来信；请让内容真正贴合用户写下的具体文字。' + CONTACT_RULES;
-  const userPrompt = `${bg}\n请虚构5封邮件。严格按照如下格式输出，每封邮件占5行，用===分隔不同邮件，不要有其他内容：\n发件人（英文机构名）\n发件人邮箱\n主题\n预览摘要（不超过30字）\n正文（3-5句话，尊敬得体，符合身份）`;
+  const userPrompt = `${bg}\n请虚构5封邮件。严格按照如下格式输出，用===分隔不同邮件，不要有其他内容：\n第一行：发件人（英文机构名）||发件人邮箱||主题||预览摘要（不超过30字），四项之间用两个竖线||隔开\n从第二行开始是正文，必须是一封完整、规范的正式邮件，符合真实商务邮件的格式：以称呼开头（如"Dear Fiona,"或对应语言的得体称呼），正文分2-3个自然段，段落之间要空一行，内容具体、有细节支撑，结尾要有得体的结束语和签名（发件人姓名单独一行 + 职位单独一行）`;
 
   let emails = [];
   try{
@@ -375,9 +375,14 @@ async function getOrCreateEmails(script){
     const blocks = reply.split('===').map(b=>b.trim()).filter(b=>b);
     const times = ['9:24 AM','8:10 AM','昨天','昨天','周三'];
     emails = blocks.map((b,i)=>{
-      const lines = b.split('\n').map(l=>l.trim()).filter(l=>l);
-      if(lines.length<5) return null;
-      return { sender:lines[0], email:lines[1], subject:lines[2], snippet:lines[3], content:lines.slice(4).join('\n'),
+      const firstBreak = b.indexOf('\n');
+      if(firstBreak === -1) return null;
+      const headerLine = b.slice(0, firstBreak).trim();
+      const body = b.slice(firstBreak + 1).trim();
+      const parts = headerLine.split('||').map(s=>s.trim());
+      if(parts.length < 4 || !body) return null;
+      const [sender, email, subject, snippet] = parts;
+      return { sender, email, subject, snippet, content: body,
         time: times[i%times.length], unread: i<3, starred: i===0||i===3 };
     }).filter(x=>x);
   }catch(e){ console.error(e); }
