@@ -45,7 +45,7 @@ hr{border:none;border-top:1px solid #ddd;margin:1rem 0;}
 <script type="module">
 import { supabase } from "./js/supabaseClient.js";
 import { getCurrentUser, signOut } from "./js/services/authService.js";
-import { buildWorld } from "./js/services/worldService.js";
+import { buildWorld, clearIdempotencyKey } from "./js/services/worldService.js";
 
 const userBox = document.getElementById('userBox');
 const readBtn = document.getElementById('readBtn');
@@ -151,6 +151,8 @@ worldBtn.addEventListener('click', async () => {
   worldResult.textContent = '调用中，AI生成可能需要几十秒，请耐心等待...';
   verifyBox.textContent = '（等第2步成功后自动检查）';
   verifyDetail.style.display = 'none';
+  // 诊断页每次点击都当作全新的一次尝试，不复用上次（可能已失败）的幂等键
+  clearIdempotencyKey();
   try {
     const result = await buildWorld();
     worldResult.textContent = JSON.stringify(result, null, 2);
