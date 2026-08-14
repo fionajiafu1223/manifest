@@ -25,7 +25,24 @@ export async function buildWorld() {
       body: { idempotency_key }
     });
     if (error) {
-      return { success: false, error, data: null };
+      // FunctionsHttpError 的 error.context 是原始 Response 对象，
+      // 默认打印/序列化看不到内容，这里手动把响应体读出来
+      let detail = null;
+      let status = null;
+      try {
+        if (error.context && typeof error.context.text === 'function') {
+          status = error.context.status;
+          const rawText = await error.context.text();
+          try { detail = JSON.parse(rawText); } catch (_) { detail = rawText; }
+        }
+      } catch (readErr) {
+        detail = '（读取响应体失败：' + (readErr.message || readErr) + '）';
+      }
+      return {
+        success: false,
+        error: { name: error.name, message: error.message, status, detail },
+        data: null
+      };
     }
     // 明确成功后，这个 idempotency key 的使命完成，清掉方便下次是全新一轮
     if (data && data.success) {
