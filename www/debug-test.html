@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>连接测试（临时）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,sans-serif;background:#f4f4f0;color:#222;padding:1rem;padding-top:calc(env(safe-area-inset-top,20px) + 1rem);line-height:1.5;}
+h1{font-size:16px;margin-bottom:0.3rem;}
+.sub{font-size:12px;color:#888;margin-bottom:1rem;}
+.user-box{background:#fff;border-radius:10px;padding:0.8rem;margin-bottom:1rem;font-size:13px;border:1px solid #ddd;}
+button{display:block;width:100%;padding:0.8rem;margin-bottom:0.6rem;border-radius:10px;border:1px solid #ccc;background:#fff;font-size:14px;cursor:pointer;}
+button:disabled{opacity:0.5;}
+button.primary{background:#3a6b3a;color:#fff;border:none;}
+button.danger{background:#fff;color:#b03030;border:1px solid #b03030;}
+pre{background:#1a1a1a;color:#8fdf8f;padding:0.8rem;border-radius:8px;font-size:11px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;margin-bottom:1rem;max-height:280px;overflow-y:auto;}
+.label{font-size:12px;color:#666;margin:0.6rem 0 0.3rem;font-weight:600;}
+hr{border:none;border-top:1px solid #ddd;margin:1rem 0;}
+</style>
+</head>
+<body>
+
+<h1>后端连接测试（临时诊断页）</h1>
+<div class="sub">这个页面用来验证 Auth → 数据库读取 → Edge Function 整条链路，不是正式产品页面</div>
+
+<div class="user-box" id="userBox">检查登录状态中...</div>
+
+<button class="danger" id="signOutBtn">退出登录</button>
+
+<hr>
+
+<div class="label">1. 读取测试（main_characters + scenes）</div>
+<button id="readBtn">读取我的角色和场景</button>
+<pre id="readResult">（还没点）</pre>
+
+<div class="label">2. World Builder 测试（会真实调用 AI，请确认前置数据已存在）</div>
+<button class="primary" id="worldBtn">触发 world-builder</button>
+<pre id="worldResult">（还没点）</pre>
+
+<script type="module">
+import { supabase } from "./js/supabaseClient.js";
+import { getCurrentUser, signOut } from "./js/services/authService.js";
+import { buildWorld } from "./js/services/worldService.js";
+
+const userBox = document.getElementById('userBox');
+const readBtn = document.getElementById('readBtn');
+const readResult = document.getElementById('readResult');
+const worldBtn = document.getElementById('worldBtn');
+const worldResult = document.getElementById('worldResult');
+const signOutBtn = document.getElementById('signOutBtn');
+
+async function init(){
+  const user = await getCurrentUser();
+  if (!user) {
+    window.location.href = 'login.html';
+    return;
+  }
+  userBox.textContent = `已登录：${user.email}\nuser_id: ${user.id}`;
+}
+init();
+
+signOutBtn.addEventListener('click', async () => {
+  await signOut();
+  window.location.href = 'login.html';
+});
+
+readBtn.addEventListener('click', async () => {
+  readBtn.disabled = true;
+  readResult.textContent = '查询中...';
+  try {
+    const [charsRes, scenesRes] = await Promise.all([
+      supabase.from('main_characters').select('*'),
+      supabase.from('scenes').select('*')
+    ]);
+    readResult.textContent = JSON.stringify({
+      main_characters: charsRes,
+      scenes: scenesRes
+    }, null, 2);
+  } catch (err) {
+    readResult.textContent = '出错：' + (err.message || JSON.stringify(err));
+  } finally {
+    readBtn.disabled = false;
+  }
+});
+
+worldBtn.addEventListener('click', async () => {
+  worldBtn.disabled = true;
+  worldResult.textContent = '调用中，AI生成可能需要几十秒，请耐心等待...';
+  try {
+    const result = await buildWorld();
+    worldResult.textContent = JSON.stringify(result, null, 2);
+  } catch (err) {
+    worldResult.textContent = '出错：' + (err.message || JSON.stringify(err));
+  } finally {
+    worldBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
