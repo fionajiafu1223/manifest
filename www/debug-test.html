@@ -38,6 +38,10 @@ hr{border:none;border-top:1px solid #ddd;margin:1rem 0;}
 <button class="primary" id="worldBtn">触发 world-builder</button>
 <pre id="worldResult">（还没点）</pre>
 
+<div class="label">3. 数据完整性验证（自动在第2步成功后运行）</div>
+<div class="user-box" id="verifyBox">（等第2步成功后自动检查）</div>
+<pre id="verifyDetail" style="display:none;"></pre>
+
 <script type="module">
 import { supabase } from "./js/supabaseClient.js";
 import { getCurrentUser, signOut } from "./js/services/authService.js";
@@ -48,7 +52,65 @@ const readBtn = document.getElementById('readBtn');
 const readResult = document.getElementById('readResult');
 const worldBtn = document.getElementById('worldBtn');
 const worldResult = document.getElementById('worldResult');
+const verifyBox = document.getElementById('verifyBox');
+const verifyDetail = document.getElementById('verifyDetail');
 const signOutBtn = document.getElementById('signOutBtn');
+
+// 判断是不是"看起来有真实内容"的对象（不是null、不是空对象{}）
+function hasRealContent(val) {
+  if (val === null || val === undefined) return false;
+  if (typeof val !== 'object' || Array.isArray(val)) return false;
+  return Object.keys(val).length > 0;
+}
+
+async function verifyWorldBuilderOutput() {
+  verifyBox.textContent = '检查中...';
+  const [charsRes, relRes, eventsRes, stateRes] = await Promise.all([
+    supabase.from('characters').select('id, name, canon'),
+    supabase.from('relationships').select('id, relationship_type, state'),
+    supabase.from('world_events').select('id, event_type, payload'),
+    supabase.from('world_state').select('id, state_key, state_value')
+  ]);
+
+  const checks = [
+    { label: '1. 角色 canon 有实际内容', res: charsRes, field: 'canon' },
+    { label: '2. relationships.state 有实际内容', res: relRes, field: 'state' },
+    { label: '3. world_events.payload 有实际内容', res: eventsRes, field: 'payload' },
+    { label: '4. world_state.state_value 有实际内容（不是空对象）', res: stateRes, field: 'state_value' }
+  ];
+
+  let allPass = true;
+  const lines = [];
+  for (const check of checks) {
+    if (check.res.error) {
+      allPass = false;
+      lines.push(`❌ ${check.label} —— 查询出错：${check.res.error.message}`);
+      continue;
+    }
+    const rows = check.res.data || [];
+    if (rows.length === 0) {
+      allPass = false;
+      lines.push(`❌ ${check.label} —— 表里一条记录都没有`);
+      continue;
+    }
+    const withContent = rows.filter(r => hasRealContent(r[check.field]));
+    if (withContent.length === 0) {
+      allPass = false;
+      lines.push(`❌ ${check.label} —— 有${rows.length}条记录，但${check.field}全是空的`);
+    } else {
+      lines.push(`✅ ${check.label} —— ${withContent.length}/${rows.length}条有内容`);
+    }
+  }
+
+  verifyBox.textContent = (allPass ? '✅ 全部通过' : '⚠️ 有项目未通过') + '\n\n' + lines.join('\n');
+  verifyDetail.style.display = 'block';
+  verifyDetail.textContent = JSON.stringify({
+    characters: charsRes.data,
+    relationships: relRes.data,
+    world_events: eventsRes.data,
+    world_state: stateRes.data
+  }, null, 2);
+}
 
 async function init(){
   const user = await getCurrentUser();
@@ -87,9 +149,14 @@ readBtn.addEventListener('click', async () => {
 worldBtn.addEventListener('click', async () => {
   worldBtn.disabled = true;
   worldResult.textContent = '调用中，AI生成可能需要几十秒，请耐心等待...';
+  verifyBox.textContent = '（等第2步成功后自动检查）';
+  verifyDetail.style.display = 'none';
   try {
     const result = await buildWorld();
     worldResult.textContent = JSON.stringify(result, null, 2);
+    if (result.success) {
+      await verifyWorldBuilderOutput();
+    }
   } catch (err) {
     worldResult.textContent = '出错：' + (err.message || JSON.stringify(err));
   } finally {
