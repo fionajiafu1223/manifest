@@ -42,10 +42,24 @@ hr{border:none;border-top:1px solid #ddd;margin:1rem 0;}
 <div class="user-box" id="verifyBox">（等第2步成功后自动检查）</div>
 <pre id="verifyDetail" style="display:none;"></pre>
 
+<hr>
+
+<div class="label">4. Chat Character 测试（需要先有 world-builder 生成的角色）</div>
+<button id="loadCharsBtn">获取AI生成的角色列表</button>
+<select id="charSelect" style="width:100%;padding:0.6rem;margin-bottom:0.6rem;border-radius:8px;border:1px solid #ccc;display:none;"></select>
+<input type="text" id="chatContent" placeholder="测试消息，比如：你好，最近怎么样？" style="width:100%;padding:0.7rem;margin-bottom:0.6rem;border-radius:8px;border:1px solid #ccc;font-size:14px;" value="你好，最近怎么样？">
+<button class="primary" id="sendChatBtn" disabled>发送测试消息</button>
+<pre id="chatResult">（还没测）</pre>
+
+<div class="label">5. 聊天后关联数据检查（自动在第4步成功后运行）</div>
+<div class="user-box" id="chatVerifyBox">（等第4步成功后自动检查）</div>
+<pre id="chatVerifyDetail" style="display:none;"></pre>
+
 <script type="module">
 import { supabase } from "./js/supabaseClient.js";
 import { getCurrentUser, signOut } from "./js/services/authService.js";
 import { buildWorld, clearIdempotencyKey } from "./js/services/worldService.js";
+import { listAiCharacters, sendMessage } from "./js/services/chatService.js";
 
 const userBox = document.getElementById('userBox');
 const readBtn = document.getElementById('readBtn');
@@ -126,6 +140,97 @@ signOutBtn.addEventListener('click', async () => {
   await signOut();
   window.location.href = 'login.html';
 });
+
+// ===== Chat Character 测试 =====
+const loadCharsBtn = document.getElementById('loadCharsBtn');
+const charSelect = document.getElementById('charSelect');
+const chatContent = document.getElementById('chatContent');
+const sendChatBtn = document.getElementById('sendChatBtn');
+const chatResult = document.getElementById('chatResult');
+const chatVerifyBox = document.getElementById('chatVerifyBox');
+const chatVerifyDetail = document.getElementById('chatVerifyDetail');
+
+loadCharsBtn.addEventListener('click', async () => {
+  loadCharsBtn.disabled = true;
+  try {
+    const chars = await listAiCharacters();
+    if (!chars || chars.length === 0) {
+      alert('没有找到AI生成的角色，请先确认 world-builder 已经成功跑过一次');
+      return;
+    }
+    charSelect.innerHTML = chars.map(c =>
+      `<option value="${c.id}">${c.display_name || c.name}（${c.id.slice(0,8)}...）</option>`
+    ).join('');
+    charSelect.style.display = 'block';
+    sendChatBtn.disabled = false;
+  } catch (err) {
+    alert('读取角色列表失败：' + (err.message || err));
+  } finally {
+    loadCharsBtn.disabled = false;
+  }
+});
+
+sendChatBtn.addEventListener('click', async () => {
+  const characterId = charSelect.value;
+  const content = chatContent.value.trim();
+  if (!characterId || !content) {
+    alert('请先选择角色并填写消息内容');
+    return;
+  }
+  sendChatBtn.disabled = true;
+  chatResult.textContent = '调用中，请稍候...';
+  chatVerifyBox.textContent = '（等第4步成功后自动检查）';
+  chatVerifyDetail.style.display = 'none';
+  try {
+    const result = await sendMessage(characterId, null, content);
+    chatResult.textContent = JSON.stringify(result, null, 2);
+    if (result.success) {
+      await verifyChatOutput(characterId);
+    }
+  } catch (err) {
+    chatResult.textContent = '出错：' + (err.message || JSON.stringify(err));
+  } finally {
+    sendChatBtn.disabled = false;
+  }
+});
+
+async function verifyChatOutput(characterId) {
+  chatVerifyBox.textContent = '检查中...';
+  const [runsRes, messagesRes, relRes, eventsRes] = await Promise.all([
+    supabase.from('ai_runs').select('id, run_type, status, model, input_tokens, output_tokens, estimated_cost_usd, created_at').order('created_at', { ascending: false }).limit(3),
+    supabase.from('messages').select('id, channel, sender_type, content, created_at').order('created_at', { ascending: false }).limit(4),
+    supabase.from('relationships').select('id, character_id, relationship_type, status, state').eq('character_id', characterId),
+    supabase.from('world_events').select('id, event_type, description, created_at').order('created_at', { ascending: false }).limit(3)
+  ]);
+
+  const lines = [];
+  const latestRun = (runsRes.data || [])[0];
+  if (latestRun && latestRun.run_type && latestRun.status === 'succeeded') {
+    lines.push(`✅ 最新 ai_runs 记录：${latestRun.run_type}，状态 succeeded，model=${latestRun.model || '未知'}`);
+  } else {
+    lines.push(`⚠️ 最新 ai_runs 记录状态：${latestRun ? latestRun.status : '没查到记录'}`);
+  }
+
+  const msgs = messagesRes.data || [];
+  const hasUserMsg = msgs.some(m => m.sender_type === 'user');
+  const hasCharMsg = msgs.some(m => m.sender_type === 'character');
+  lines.push((hasUserMsg && hasCharMsg ? '✅' : '⚠️') + ` 最近消息里 用户消息${hasUserMsg ? '有' : '没有'}，AI回复${hasCharMsg ? '有' : '没有'}`);
+
+  const relRows = relRes.data || [];
+  lines.push((relRows.length > 0 ? '✅' : 'ℹ️') + ` relationships 表：${relRows.length}条该角色的关系记录`);
+
+  const eventRows = eventsRes.data || [];
+  lines.push(`ℹ️ 最近 world_events：${eventRows.length}条（不一定每次对话都会产生新事件）`);
+
+  chatVerifyBox.textContent = lines.join('\n');
+  chatVerifyDetail.style.display = 'block';
+  chatVerifyDetail.textContent = JSON.stringify({
+    ai_runs: runsRes.data,
+    messages: messagesRes.data,
+    relationships: relRes.data,
+    world_events: eventsRes.data
+  }, null, 2);
+}
 
 readBtn.addEventListener('click', async () => {
   readBtn.disabled = true;
