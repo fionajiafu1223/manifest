@@ -100,6 +100,8 @@ body{
 .editor-title{font-size:17px;color:#3a4a2a;letter-spacing:2px;font-weight:600;}
 .editor-save{padding:6px 16px;background:linear-gradient(135deg,#c8a04a,#e8c860);border:none;border-radius:10px;color:#4a3810;font-size:14px;cursor:pointer;font-family:'Noto Serif SC',serif;font-weight:600;}
 .editor-body{flex:1;overflow-y:auto;padding:0.5rem 1.4rem 2rem;}
+.spin{width:34px;height:34px;border-radius:50%;border:3px solid rgba(120,160,90,0.25);border-top-color:#c89030;animation:spin 0.9s linear infinite;margin:0 auto 1.4rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
@@ -142,6 +144,13 @@ body{
 
   <div class="hub-footer">
     <button class="btn btn-start" onclick="finishScript()">✦ 剧本开演</button>
+  </div>
+</div>
+
+<div class="screen" id="screenBuilding">
+  <div class="cover">
+    <div class="spin"></div>
+    <div class="cover-sub" id="buildingText">正在保存…</div>
   </div>
 </div>
 
@@ -259,9 +268,9 @@ let editingSceneIdx=-1;
 let editingPersonIdx=-1;
 let tempPersons=[];
 
-function hydrateFromExisting(){
+async function hydrateFromExisting(){
   let existing=null;
-  try{ existing=JSON.parse(localStorage.getItem('lifeScript')||'null'); }catch(e){}
+  try{ existing = await loadScript(); }catch(e){ console.error('读取剧本失败',e); }
   if(existing && existing.hero){
     scriptData = { hero:existing.hero||{}, scenes:existing.scenes||[] };
   }
@@ -271,6 +280,16 @@ function hydrateFromExisting(){
     document.getElementById('screenCover').classList.remove('active');
     document.getElementById('screenHub').classList.add('active');
   }
+}
+
+function showBuildingScreen(text){
+  document.getElementById('buildingText').textContent=text;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screenBuilding').classList.add('active');
+}
+function hideBuildingScreen(){
+  document.getElementById('screenBuilding').classList.remove('active');
+  document.getElementById('screenHub').classList.add('active');
 }
 
 function goToHub(){
@@ -508,13 +527,39 @@ function savePerson(){
   closePersonEditor();
 }
 
-function finishScript(){
+async function finishScript(){
   if(!scriptData.hero || !scriptData.hero.name){
     shake(document.getElementById('heroNameDisplay').closest('.hero-card'));
     alert('先点开"主角"卡片，填一下名字和性别吧');
     return;
   }
-  localStorage.setItem('lifeScript',JSON.stringify(scriptData));
+  showBuildingScreen('正在保存你的剧本…');
+  try{
+    await saveScript(scriptData);
+  }catch(err){
+    hideBuildingScreen();
+    alert('保存失败，请重试：'+(err.message||err));
+    return;
+  }
+
+  showBuildingScreen('正在为你构建这个世界…\n可能需要几十秒，请不要退出');
+  try{
+    clearIdempotencyKey();
+    const result = await buildWorld();
+    if(!result.success){
+      const innerDetail = result.error && result.error.detail && result.error.detail.detail;
+      if(innerDetail !== 'WORLD_ALREADY_BUILT'){
+        hideBuildingScreen();
+        alert('世界生成失败，请重试：'+(result.error && result.error.message || '未知错误'));
+        return;
+      }
+    }
+  }catch(err){
+    hideBuildingScreen();
+    alert('世界生成失败，请重试：'+(err.message||err));
+    return;
+  }
+
   document.body.style.transition='opacity 0.8s';
   document.body.style.opacity='0';
   setTimeout(()=>{ window.location.href='desktop.html'; },800);
@@ -524,7 +569,18 @@ const st=document.createElement('style');
 st.textContent='@keyframes shk{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}';
 document.head.appendChild(st);
 
-hydrateFromExisting();
+let requireUser, loadScript, saveScript, buildWorld, clearIdempotencyKey;
+
+(async function initModules(){
+  ({ requireUser } = await import('./js/services/authService.js'));
+  ({ loadScript, saveScript } = await import('./js/services/scriptService.js'));
+  ({ buildWorld, clearIdempotencyKey } = await import('./js/services/worldService.js'));
+
+  const user = await requireUser();
+  if(!user) return; // requireUser 内部已跳转登录页
+
+  await hydrateFromExisting();
+})();
 </script>
 </body>
 </html>
