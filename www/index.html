@@ -95,10 +95,6 @@ body{height:100dvh;position:fixed;inset:0;background:#eaf4ec;font-family:'Ma Sha
 </style>
 </head>
 <body>
-<script>
-// ===== 临时测试用跳转：验证Supabase登录链路，测试完成后会移除 =====
-window.location.replace('login.html');
-</script>
 <div class="world entering" id="world">
   <div class="garden" id="garden">
 
@@ -239,6 +235,16 @@ window.location.replace('login.html');
 </div>
 
 <script>
+(async function checkLogin(){
+  try{
+    const { getCurrentUser } = await import('./js/services/authService.js');
+    const user = await getCurrentUser();
+    if(!user){ window.location.replace('login.html'); return; }
+  }catch(e){
+    window.location.replace('login.html');
+  }
+})();
+
 setTimeout(()=>{ document.getElementById('world').classList.remove('entering'); }, 2400);
 
 function walkTo(feature, pos){
@@ -253,20 +259,23 @@ function walkTo(feature, pos){
   }
   garden.classList.add('walk-'+pos);
 
-  let dest;
   if(feature==='life-script'){
     // 已经写过剧本 -> 直接进桌面；没写过 -> 进入剧本创作流程
-    let hasScript = false;
-    try{
-      const s = JSON.parse(localStorage.getItem('lifeScript')||'null');
-      hasScript = !!(s && s.hero && s.hero.name);
-    }catch(e){}
-    dest = hasScript ? 'desktop.html' : 'life-script.html';
+    (async () => {
+      let hasScript = false;
+      try{
+        const { loadScript } = await import('./js/services/scriptService.js');
+        const s = await loadScript();
+        hasScript = !!(s && s.hero && s.hero.name);
+      }catch(e){ console.error(e); }
+      const dest = hasScript ? 'desktop.html' : 'life-script.html';
+      setTimeout(()=>{ window.location.href=dest; }, 1300);
+    })();
   } else {
     const map={ 'gratitude':'gratitude-journal.html','audio':'subliminal-studio.html','vision':'vision-board.html' };
-    dest = map[feature];
+    const dest = map[feature];
+    setTimeout(()=>{ window.location.href=dest; }, 1300);
   }
-  setTimeout(()=>{ window.location.href=dest; }, 1300);
 }
 </script>
 </body>

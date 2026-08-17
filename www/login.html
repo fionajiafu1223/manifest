@@ -85,7 +85,7 @@ function setBusy(busy){
   try {
     const user = await getCurrentUser();
     if (user) {
-      window.location.href = 'debug-test.html';
+      window.location.href = 'index.html';
     }
   } catch (e) {
     // 静默失败即可，留在登录页
@@ -104,7 +104,7 @@ loginBtn.addEventListener('click', async () => {
   try {
     await signIn(email, password);
     showMsg('登录成功', 'ok');
-    window.location.href = 'debug-test.html';
+    window.location.href = 'index.html';
   } catch (err) {
     showMsg('登录失败：' + (err.message || '未知错误'), 'error');
     setBusy(false);
@@ -128,7 +128,7 @@ signupBtn.addEventListener('click', async () => {
     const data = await signUp(email, password);
     if (data.session) {
       showMsg('注册成功', 'ok');
-      window.location.href = 'debug-test.html';
+      window.location.href = 'index.html';
     } else {
       showMsg('注册成功，请检查邮箱完成验证后再登录', 'ok');
       setBusy(false);
