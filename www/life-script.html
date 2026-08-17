@@ -29,6 +29,7 @@ body{
 .btn{padding:0.9rem;border-radius:14px;border:none;cursor:pointer;font-family:'Noto Serif SC',serif;font-size:15px;letter-spacing:2px;transition:transform 0.1s;}
 .btn:active{transform:scale(0.98);}
 .btn-start{width:100%;background:linear-gradient(135deg,#c8a04a,#e8c860);color:#4a3810;font-weight:600;padding:1rem;font-size:16px;}
+.btn-secondary{width:100%;background:rgba(255,255,255,0.55);color:#3a4a2a;border:1.5px solid rgba(120,160,90,0.35);padding:1rem;font-size:15px;margin-bottom:0.6rem;}
 
 .hub-head{padding:calc(env(safe-area-inset-top,44px) + 1.2rem) 1.4rem 0.3rem;text-align:center;flex-shrink:0;}
 .hub-title{font-family:'Ma Shan Zheng',serif;font-size:26px;color:#3a4a2a;letter-spacing:4px;}
@@ -143,6 +144,7 @@ body{
   </div>
 
   <div class="hub-footer">
+    <button class="btn btn-secondary" onclick="saveDraft()">保存草稿</button>
     <button class="btn btn-start" onclick="finishScript()">✦ 剧本开演</button>
   </div>
 </div>
@@ -527,12 +529,43 @@ function savePerson(){
   closePersonEditor();
 }
 
-async function finishScript(){
+function validateScriptComplete(){
   if(!scriptData.hero || !scriptData.hero.name){
     shake(document.getElementById('heroNameDisplay').closest('.hero-card'));
     alert('先点开"主角"卡片，填一下名字和性别吧');
+    return false;
+  }
+  const scenes = scriptData.scenes || [];
+  if(scenes.length===0){
+    alert('至少添加一个场景，故事才能开始');
+    return false;
+  }
+  const emptyScene = scenes.find(s => !s.persons || s.persons.length===0);
+  if(emptyScene){
+    alert('"'+(emptyScene.name||'未命名场景')+'"这个场景里还没有人物，至少加一个');
+    return false;
+  }
+  return true;
+}
+
+async function saveDraft(){
+  if(!scriptData.hero || !scriptData.hero.name){
+    shake(document.getElementById('heroNameDisplay').closest('.hero-card'));
+    alert('先点开"主角"卡片，填一下名字和性别吧，才能保存草稿');
     return;
   }
+  showBuildingScreen('正在保存草稿…');
+  try{
+    await saveScript(scriptData);
+    hideBuildingScreen();
+  }catch(err){
+    hideBuildingScreen();
+    alert('保存失败，请重试：'+(err.message||err));
+  }
+}
+
+async function finishScript(){
+  if(!validateScriptComplete()) return;
   showBuildingScreen('正在保存你的剧本…');
   try{
     await saveScript(scriptData);
