@@ -550,7 +550,9 @@ async function finishScript(){
       const innerDetail = result.error && result.error.detail && result.error.detail.detail;
       if(innerDetail !== 'WORLD_ALREADY_BUILT'){
         hideBuildingScreen();
-        alert('世界生成失败，请重试：'+(result.error && result.error.message || '未知错误'));
+        const detail = result.error && result.error.detail;
+        const detailText = typeof detail === 'string' ? detail : (detail ? JSON.stringify(detail) : '');
+        alert('世界生成失败，请重试：'+(detailText || (result.error && result.error.message) || '未知错误'));
         return;
       }
     }
