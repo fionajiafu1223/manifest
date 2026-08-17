@@ -247,7 +247,7 @@ body{
         <span id="pAvatarPlaceholder">＋</span>
         <img id="pAvatarPreview" style="display:none;">
       </div>
-      <div class="avatar-upload-hint">上传头像（可选）</div>
+      <div class="avatar-upload-hint">建议上传一张头像，让TA更真实</div>
       <input type="file" id="pAvatarInput" accept="image/*" style="display:none;">
     </div>
     <div class="field"><div class="field-label">姓名 / 称呼 <span class="req">*</span></div><input type="text" class="field-input" id="p_name" placeholder="这个人叫什么"></div>
@@ -522,6 +522,10 @@ function savePerson(){
   const g=id=>document.getElementById(id).value;
   const name=g('p_name').trim();
   if(!name){ shake(document.getElementById('p_name')); return; }
+  if(!tempPersonAvatar){
+    const skip = confirm('"'+name+'"还没有上传头像，要不要先传一张？\n\n点"取消"回去传照片，点"确定"先不传');
+    if(skip===false) return; // 用户选"取消" -> 留在编辑器里传照片
+  }
   const person={ name, role:g('p_role'), age:g('p_age'), gender:g('p_gender'), look:g('p_look'), character:g('p_character'), values:g('p_values'), background:g('p_background'), attitude:g('p_attitude'), avatar: tempPersonAvatar };
   if(editingPersonIdx>=0) tempPersons[editingPersonIdx]=person;
   else tempPersons.push(person);
