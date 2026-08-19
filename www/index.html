@@ -8,230 +8,106 @@
 @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{width:100%;height:100%;overflow:hidden;}
-body{height:100dvh;position:fixed;inset:0;background:#eaf4ec;font-family:'Ma Shan Zheng',serif;}
-
-.world{position:absolute;inset:0;overflow:hidden;perspective:1000px;}
-
-/* 会推进的场景容器 */
-.garden{
-  position:absolute;inset:0;
-  transform-origin:center 75%;
-  transition:transform 1.4s cubic-bezier(0.4,0,0.2,1),opacity 1.2s;
-}
-.garden.walk-1{transform:scale(2.6) translate(28%,-8%);opacity:0;}
-.garden.walk-2{transform:scale(2.6) translate(10%,-8%);opacity:0;}
-.garden.walk-3{transform:scale(2.6) translate(-10%,-8%);opacity:0;}
-.garden.walk-4{transform:scale(2.6) translate(-28%,-8%);opacity:0;}
-
-/* 天空晨光渐变 */
-.sky{position:absolute;top:0;left:0;width:100%;height:70%;
-  background:linear-gradient(180deg,#fdf0e4 0%,#f4f0d0 22%,#e4ecc0 48%,#cce4b0 72%,#b0d498 100%);}
-
-/* 晨曦光晕 */
-.dawn-glow{position:absolute;top:-15%;left:50%;transform:translateX(-50%);
-  width:120%;height:70%;
-  background:radial-gradient(ellipse at center top,rgba(255,240,210,0.85),rgba(255,235,200,0.3) 45%,transparent 72%);}
-
-/* 光束 */
-.ray{position:absolute;top:-10%;width:120px;height:85%;transform-origin:top center;
-  background:linear-gradient(180deg,rgba(255,245,215,0.4),transparent 75%);filter:blur(12px);}
-
-/* 地面 */
-.ground{position:absolute;bottom:0;left:0;width:100%;height:38%;
-  background:linear-gradient(180deg,#a8cc92 0%,#88b478 45%,#6a9a5e 100%);}
-
-/* 薄雾层 */
-.fog{position:absolute;left:0;width:130%;height:120px;
-  background:radial-gradient(ellipse,rgba(255,255,255,0.65),transparent 68%);
-  animation:fogDrift var(--fd) ease-in-out infinite alternate;}
-@keyframes fogDrift{0%{transform:translate(-10%,0);}100%{transform:translate(10%,-8px);}}
-
-/* 远树剪影 */
-.trees-far{position:absolute;bottom:30%;left:0;width:100%;opacity:0.4;}
-.trees-mid{position:absolute;bottom:32%;left:0;width:100%;opacity:0.6;}
-
-/* 前景植物 */
-.plants{position:absolute;bottom:0;width:100%;height:50%;}
-
-/* 蝴蝶 */
-.bfly{position:absolute;width:22px;height:22px;animation:flyPath var(--bd) ease-in-out infinite;}
-.bfly svg{width:100%;height:100%;}
-.bfly .w{transform-origin:center;animation:flap 0.28s ease-in-out infinite alternate;}
-@keyframes flap{0%{transform:scaleX(1);}100%{transform:scaleX(0.35);}}
-@keyframes flyPath{
-  0%{transform:translate(0,0) rotate(-6deg);}
-  30%{transform:translate(40px,-30px) rotate(6deg);}
-  60%{transform:translate(80px,-8px) rotate(-4deg);}
-  100%{transform:translate(130px,-24px) rotate(5deg);}
+body{
+  height:100dvh;position:fixed;inset:0;
+  background:#ffffff;
+  font-family:'Ma Shan Zheng',serif;
+  display:flex;flex-direction:column;
 }
 
-/* 花瓣/光尘飘落 */
-.petal{position:absolute;width:8px;height:8px;border-radius:50% 0 50% 50%;
-  background:rgba(255,210,225,0.8);animation:fall var(--pd) linear infinite;}
-@keyframes fall{
-  0%{transform:translateY(-20px) rotate(0);opacity:0;}
-  10%{opacity:1;}
-  90%{opacity:0.8;}
-  100%{transform:translateY(90vh) translateX(40px) rotate(360deg);opacity:0;}
+.title{
+  padding-top:calc(env(safe-area-inset-top,44px) + 18px);
+  padding-bottom:10px;
+  text-align:center;flex-shrink:0;
 }
+.title .t1{font-size:28px;color:#4a6a48;letter-spacing:8px;}
 
-/* 标题 */
-.title{position:absolute;top:calc(env(safe-area-inset-top,44px) + 6%);left:0;width:100%;
-  text-align:center;z-index:5;pointer-events:none;}
-.title .t1{font-size:32px;color:#5a7a58;letter-spacing:8px;text-shadow:0 2px 16px rgba(255,255,255,0.8);}
+.dock{
+  flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;
+  gap:14px;padding:14px 14px calc(env(safe-area-inset-bottom,16px) + 14px);
+}
+.dock-item{
+  cursor:pointer;border-radius:22px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  transition:transform 0.15s;
+  box-shadow:0 4px 18px rgba(0,0,0,0.08);
+}
+.dock-item:active{transform:scale(0.96);}
+.dock-item svg{width:36%;height:auto;max-width:110px;}
+.dock-label{font-size:22px;letter-spacing:4px;opacity:0.9;}
 
-/* 底部三个迷你物件 */
-.dock{position:absolute;bottom:calc(env(safe-area-inset-bottom,20px) + 6%);left:0;width:100%;
-  display:grid;grid-template-columns:repeat(2,1fr);gap:34px 26px;
-  padding:0 8%;z-index:10;}
-.dock-item{cursor:pointer;transition:transform 0.3s;display:flex;flex-direction:column;align-items:center;gap:6px;}
-.dock-item:active{transform:scale(0.9);}
-.dock-item svg{filter:drop-shadow(0 4px 12px rgba(60,90,50,0.3));animation:bob var(--bob) ease-in-out infinite alternate;}
-@keyframes bob{0%{transform:translateY(0);}100%{transform:translateY(-6px);}}
-.dock-label{font-size:16px;color:#4a6a48;letter-spacing:2px;text-shadow:0 1px 4px rgba(255,255,255,0.7);opacity:0.85;}
+.dock-item.c1{background:#fbeef0;}
+.dock-item.c1 .dock-label{color:#a04858;}
+.dock-item.c2{background:#f3ecf7;}
+.dock-item.c2 .dock-label{color:#6a4a78;}
+.dock-item.c3{background:#fbf1e2;}
+.dock-item.c3 .dock-label{color:#8a6a30;}
+.dock-item.c4{background:#eaf3ea;}
+.dock-item.c4 .dock-label{color:#4a7a4e;}
 
-.world.entering .garden{animation:wakeUp 2.4s ease-out;}
-@keyframes wakeUp{0%{opacity:0;filter:blur(24px) brightness(1.4);}100%{opacity:1;filter:blur(0) brightness(1);}}
+.dock.leaving{opacity:0;transition:opacity 0.4s;}
 </style>
 </head>
 <body>
-<div onclick="window.location.href='debug-test.html'" style="position:absolute;top:calc(env(safe-area-inset-top,44px) + 6px);right:16px;z-index:50;font-size:12px;color:rgba(90,120,90,0.55);padding:6px 10px;">诊断</div>
-<div class="world entering" id="world">
-  <div class="garden" id="garden">
+<div onclick="window.location.href='debug-test.html'" style="position:absolute;top:calc(env(safe-area-inset-top,44px) + 6px);right:16px;z-index:50;font-size:12px;color:rgba(90,90,90,0.4);padding:6px 10px;">诊断</div>
 
-    <div class="sky"></div>
-    <div class="dawn-glow"></div>
+<div class="title"><span class="t1">秘 境</span></div>
 
-    <div class="ray" style="left:18%;transform:rotate(10deg);"></div>
-    <div class="ray" style="left:44%;transform:rotate(-3deg);width:150px;"></div>
-    <div class="ray" style="left:72%;transform:rotate(7deg);"></div>
-
-    <div class="ground"></div>
-
-    <!-- 远树 -->
-    <svg class="trees-far" viewBox="0 0 400 120" preserveAspectRatio="xMidYMax meet" style="height:22%;">
-      <g fill="#7aa878">
-        <ellipse cx="50" cy="70" rx="40" ry="50"/><ellipse cx="130" cy="60" rx="50" ry="60"/>
-        <ellipse cx="280" cy="65" rx="45" ry="55"/><ellipse cx="360" cy="72" rx="40" ry="48"/>
-      </g>
+<div class="dock" id="dock">
+  <!-- 感恩日记本 -->
+  <div class="dock-item c1" onclick="walkTo('gratitude')">
+    <svg viewBox="0 0 58 58">
+      <rect x="14" y="16" width="30" height="34" rx="3" fill="#c86a7a"/>
+      <rect x="14" y="16" width="30" height="34" rx="3" fill="none" stroke="#e8b04a" stroke-width="1.5"/>
+      <rect x="17" y="19" width="24" height="28" rx="2" fill="none" stroke="#e8b04a" stroke-width="0.8" opacity="0.6"/>
+      <line x1="29" y1="16" x2="29" y2="50" stroke="#a04858" stroke-width="1"/>
+      <circle cx="29" cy="33" r="4" fill="#e8b04a"/>
+      <path d="M27 33 L28.5 35 L31 31" stroke="#fff" stroke-width="1" fill="none" stroke-linecap="round"/>
     </svg>
-    <svg class="trees-mid" viewBox="0 0 400 120" preserveAspectRatio="xMidYMax meet" style="height:26%;">
-      <g fill="#5a9060">
-        <ellipse cx="90" cy="70" rx="55" ry="58"/><ellipse cx="220" cy="62" rx="60" ry="64"/>
-        <ellipse cx="330" cy="70" rx="52" ry="56"/>
-      </g>
-    </svg>
-
-    <!-- 薄雾 -->
-    <div class="fog" style="bottom:34%;--fd:16s;"></div>
-    <div class="fog" style="bottom:28%;--fd:20s;opacity:0.7;"></div>
-    <div class="fog" style="bottom:40%;--fd:18s;opacity:0.5;"></div>
-
-    <!-- 前景植物 -->
-    <svg class="plants" viewBox="0 0 400 200" preserveAspectRatio="xMidYMax slice">
-      <defs>
-        <linearGradient id="lg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#4a8850"/><stop offset="100%" stop-color="#2e6238"/>
-        </linearGradient>
-      </defs>
-      <!-- 左丛 -->
-      <path d="M-10,200 Q10,120 5,70 Q30,110 40,150 Q50,90 75,120 Q68,165 90,200 Z" fill="url(#lg)"/>
-      <path d="M20,200 Q15,130 30,90 Q38,125 40,160 Q52,110 58,200 Z" fill="#357040"/>
-      <!-- 右丛 -->
-      <path d="M410,200 Q390,115 395,65 Q368,105 358,148 Q345,88 320,118 Q332,168 305,200 Z" fill="url(#lg)"/>
-      <path d="M380,200 Q385,128 370,88 Q362,124 360,160 Q348,108 342,200 Z" fill="#357040"/>
-      <!-- 花朵点缀 -->
-      <g transform="translate(350,120)">
-        <g fill="#f0a8c8"><ellipse cx="0" cy="-11" rx="5" ry="8"/><ellipse cx="10" cy="-3" rx="5" ry="8" transform="rotate(72,10,-3)"/><ellipse cx="6" cy="9" rx="5" ry="8" transform="rotate(144,6,9)"/><ellipse cx="-6" cy="9" rx="5" ry="8" transform="rotate(216,-6,9)"/><ellipse cx="-10" cy="-3" rx="5" ry="8" transform="rotate(288,-10,-3)"/></g>
-        <circle cx="0" cy="0" r="4.5" fill="#fff0b8"/>
-      </g>
-      <g transform="translate(55,135) scale(0.85)">
-        <g fill="#f5c090"><ellipse cx="0" cy="-11" rx="5" ry="8"/><ellipse cx="10" cy="-3" rx="5" ry="8" transform="rotate(72,10,-3)"/><ellipse cx="6" cy="9" rx="5" ry="8" transform="rotate(144,6,9)"/><ellipse cx="-6" cy="9" rx="5" ry="8" transform="rotate(216,-6,9)"/><ellipse cx="-10" cy="-3" rx="5" ry="8" transform="rotate(288,-10,-3)"/></g>
-        <circle cx="0" cy="0" r="4.5" fill="#fff0b8"/>
-      </g>
-    </svg>
-
-    <!-- 蝴蝶 -->
-    <div class="bfly" style="top:38%;left:16%;--bd:14s;">
-      <svg viewBox="0 0 24 24"><g class="w"><ellipse cx="8" cy="9" rx="6" ry="8" fill="#f0a0c0" opacity="0.9"/><ellipse cx="8" cy="16" rx="5" ry="6" fill="#e080a8" opacity="0.9"/></g><g class="w"><ellipse cx="16" cy="9" rx="6" ry="8" fill="#f0a0c0" opacity="0.9"/><ellipse cx="16" cy="16" rx="5" ry="6" fill="#e080a8" opacity="0.9"/></g><rect x="11.5" y="6" width="1.5" height="14" rx="0.75" fill="#5a3040"/></svg>
-    </div>
-    <div class="bfly" style="top:52%;right:22%;--bd:17s;animation-direction:reverse;">
-      <svg viewBox="0 0 24 24"><g class="w"><ellipse cx="8" cy="9" rx="6" ry="8" fill="#f5d070" opacity="0.9"/><ellipse cx="8" cy="16" rx="5" ry="6" fill="#e8b850" opacity="0.9"/></g><g class="w"><ellipse cx="16" cy="9" rx="6" ry="8" fill="#f5d070" opacity="0.9"/><ellipse cx="16" cy="16" rx="5" ry="6" fill="#e8b850" opacity="0.9"/></g><rect x="11.5" y="6" width="1.5" height="14" rx="0.75" fill="#6a4820"/></svg>
-    </div>
-
-    <!-- 飘落花瓣 -->
-    <div class="petal" style="left:20%;--pd:9s;animation-delay:0s;"></div>
-    <div class="petal" style="left:45%;--pd:11s;animation-delay:2s;background:rgba(255,225,180,0.8);"></div>
-    <div class="petal" style="left:65%;--pd:10s;animation-delay:4s;"></div>
-    <div class="petal" style="left:80%;--pd:12s;animation-delay:1s;background:rgba(255,235,200,0.8);"></div>
-    <div class="petal" style="left:33%;--pd:13s;animation-delay:5s;"></div>
-
+    <div class="dock-label">日记</div>
   </div>
 
-  <!-- 底部四宫格功能图标 -->
-  <div class="dock" id="dock">
-    <!-- 感恩日记本 -->
-    <div class="dock-item" onclick="walkTo('gratitude',1)">
-      <svg width="102" height="102" viewBox="0 0 58 58" style="--bob:3.5s;">
-        <ellipse cx="29" cy="52" rx="18" ry="3" fill="rgba(60,90,50,0.2)"/>
-        <rect x="14" y="16" width="30" height="34" rx="3" fill="#c86a7a"/>
-        <rect x="14" y="16" width="30" height="34" rx="3" fill="none" stroke="#e8b04a" stroke-width="1.5"/>
-        <rect x="17" y="19" width="24" height="28" rx="2" fill="none" stroke="#e8b04a" stroke-width="0.8" opacity="0.6"/>
-        <line x1="29" y1="16" x2="29" y2="50" stroke="#a04858" stroke-width="1"/>
-        <circle cx="29" cy="33" r="4" fill="#e8b04a"/>
-        <path d="M27 33 L28.5 35 L31 31" stroke="#fff" stroke-width="1" fill="none" stroke-linecap="round"/>
-      </svg>
-      <div class="dock-label">日记</div>
-    </div>
+  <!-- 剧院 -->
+  <div class="dock-item c2" onclick="walkTo('life-script')">
+    <svg viewBox="0 0 64 64">
+      <path d="M12 24 L32 12 L52 24 Z" fill="#d4a84a"/>
+      <rect x="16" y="24" width="32" height="28" fill="#8a5088"/>
+      <rect x="16" y="24" width="32" height="28" fill="none" stroke="#d4a84a" stroke-width="1.5"/>
+      <path d="M20 24 Q32 20 44 24 L44 30 Q32 26 20 30 Z" fill="#c04858"/>
+      <path d="M20 30 Q26 34 26 44 L20 44 Z" fill="#a03848" opacity="0.7"/>
+      <path d="M44 30 Q38 34 38 44 L44 44 Z" fill="#a03848" opacity="0.7"/>
+      <rect x="28" y="38" width="8" height="14" fill="#5a2858"/>
+      <circle cx="32" cy="18" r="2.5" fill="#f0d060"/>
+    </svg>
+    <div class="dock-label">剧场</div>
+  </div>
 
-    <!-- 剧院 -->
-    <div class="dock-item" onclick="walkTo('life-script',2)">
-      <svg width="112" height="112" viewBox="0 0 64 64" style="--bob:4s;">
-        <ellipse cx="32" cy="56" rx="22" ry="3" fill="rgba(60,90,50,0.2)"/>
-        <path d="M12 24 L32 12 L52 24 Z" fill="#d4a84a"/>
-        <rect x="16" y="24" width="32" height="28" fill="#8a5088"/>
-        <rect x="16" y="24" width="32" height="28" fill="none" stroke="#d4a84a" stroke-width="1.5"/>
-        <path d="M20 24 Q32 20 44 24 L44 30 Q32 26 20 30 Z" fill="#c04858"/>
-        <path d="M20 30 Q26 34 26 44 L20 44 Z" fill="#a03848" opacity="0.7"/>
-        <path d="M44 30 Q38 34 38 44 L44 44 Z" fill="#a03848" opacity="0.7"/>
-        <rect x="28" y="38" width="8" height="14" fill="#5a2858"/>
-        <circle cx="32" cy="18" r="2.5" fill="#f0d060"/>
-      </svg>
-      <div class="dock-label">剧场</div>
-    </div>
+  <!-- 留声机 -->
+  <div class="dock-item c3" onclick="walkTo('audio')">
+    <svg viewBox="0 0 58 58">
+      <rect x="20" y="38" width="18" height="12" rx="2" fill="#8a5838"/>
+      <rect x="20" y="38" width="18" height="12" rx="2" fill="none" stroke="#d4a84a" stroke-width="1"/>
+      <circle cx="29" cy="44" r="1.5" fill="#d4a84a"/>
+      <line x1="29" y1="38" x2="29" y2="20" stroke="#b08040" stroke-width="1.5"/>
+      <path d="M29 20 Q20 14 14 20 Q12 26 22 28 Q30 26 29 20 Z" fill="#e8b04a"/>
+      <path d="M29 20 Q20 15 15 20 Q14 24 22 26 Q28 24 29 20 Z" fill="#f0c860"/>
+      <circle cx="29" cy="20" r="2" fill="#b08040"/>
+    </svg>
+    <div class="dock-label">留声</div>
+  </div>
 
-    <!-- 留声机 -->
-    <div class="dock-item" onclick="walkTo('audio',3)">
-      <svg width="102" height="102" viewBox="0 0 58 58" style="--bob:3.8s;">
-        <ellipse cx="29" cy="52" rx="16" ry="3" fill="rgba(60,90,50,0.2)"/>
-        <rect x="20" y="38" width="18" height="12" rx="2" fill="#8a5838"/>
-        <rect x="20" y="38" width="18" height="12" rx="2" fill="none" stroke="#d4a84a" stroke-width="1"/>
-        <circle cx="29" cy="44" r="1.5" fill="#d4a84a"/>
-        <line x1="29" y1="38" x2="29" y2="20" stroke="#b08040" stroke-width="1.5"/>
-        <path d="M29 20 Q20 14 14 20 Q12 26 22 28 Q30 26 29 20 Z" fill="#e8b04a"/>
-        <path d="M29 20 Q20 15 15 20 Q14 24 22 26 Q28 24 29 20 Z" fill="#f0c860"/>
-        <circle cx="29" cy="20" r="2" fill="#b08040"/>
-      </svg>
-      <div class="dock-label">留声</div>
-    </div>
-
-    <!-- 愿景之画 -->
-    <div class="dock-item" onclick="walkTo('vision',4)">
-      <svg width="102" height="102" viewBox="0 0 58 58" style="--bob:3.6s;">
-        <ellipse cx="29" cy="52" rx="16" ry="3" fill="rgba(60,90,50,0.2)"/>
-        <!-- 画框 -->
-        <rect x="14" y="16" width="30" height="34" rx="2" fill="#c8a04a"/>
-        <rect x="17" y="19" width="24" height="28" rx="1" fill="#eae0d0"/>
-        <!-- 画面：日出山水 -->
-        <rect x="17" y="19" width="24" height="28" rx="1" fill="#bcdcec"/>
-        <path d="M17 38 Q23 30 29 34 Q35 38 41 32 L41 47 L17 47 Z" fill="#8ac088"/>
-        <circle cx="34" cy="27" r="4" fill="#f5c86a"/>
-        <path d="M17 44 Q29 40 41 44 L41 47 L17 47 Z" fill="#6aa868"/>
-        <!-- 画框高光 -->
-        <rect x="14" y="16" width="30" height="34" rx="2" fill="none" stroke="#e8c86a" stroke-width="1"/>
-      </svg>
-      <div class="dock-label">愿景</div>
-    </div>
+  <!-- 愿景之画 -->
+  <div class="dock-item c4" onclick="walkTo('vision')">
+    <svg viewBox="0 0 58 58">
+      <rect x="14" y="16" width="30" height="34" rx="2" fill="#c8a04a"/>
+      <rect x="17" y="19" width="24" height="28" rx="1" fill="#eae0d0"/>
+      <rect x="17" y="19" width="24" height="28" rx="1" fill="#bcdcec"/>
+      <path d="M17 38 Q23 30 29 34 Q35 38 41 32 L41 47 L17 47 Z" fill="#8ac088"/>
+      <circle cx="34" cy="27" r="4" fill="#f5c86a"/>
+      <path d="M17 44 Q29 40 41 44 L41 47 L17 47 Z" fill="#6aa868"/>
+      <rect x="14" y="16" width="30" height="34" rx="2" fill="none" stroke="#e8c86a" stroke-width="1"/>
+    </svg>
+    <div class="dock-label">愿景</div>
   </div>
 </div>
 
@@ -246,19 +122,9 @@ body{height:100dvh;position:fixed;inset:0;background:#eaf4ec;font-family:'Ma Sha
   }
 })();
 
-setTimeout(()=>{ document.getElementById('world').classList.remove('entering'); }, 2400);
-
-function walkTo(feature, pos){
-  const garden = document.getElementById('garden');
+function walkTo(feature){
   const dock = document.getElementById('dock');
-  const title = document.querySelector('.title');
-  dock.style.transition='opacity 0.5s';
-  dock.style.opacity='0';
-  if(title){
-    title.style.transition='opacity 0.5s';
-    title.style.opacity='0';
-  }
-  garden.classList.add('walk-'+pos);
+  dock.classList.add('leaving');
 
   if(feature==='life-script'){
     // 已经写过剧本 -> 直接进桌面；没写过 -> 进入剧本创作流程
@@ -270,12 +136,12 @@ function walkTo(feature, pos){
         hasScript = !!(s && s.hero && s.hero.name);
       }catch(e){ console.error(e); }
       const dest = hasScript ? 'desktop.html' : 'life-script.html';
-      setTimeout(()=>{ window.location.href=dest; }, 1300);
+      setTimeout(()=>{ window.location.href=dest; }, 350);
     })();
   } else {
     const map={ 'gratitude':'gratitude-journal.html','audio':'subliminal-studio.html','vision':'vision-board.html' };
     const dest = map[feature];
-    setTimeout(()=>{ window.location.href=dest; }, 1300);
+    setTimeout(()=>{ window.location.href=dest; }, 350);
   }
 }
 </script>
