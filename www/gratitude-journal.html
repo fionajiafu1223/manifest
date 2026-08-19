@@ -7,6 +7,11 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=Ma+Shan+Zheng&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  /* 书本/日历/日记页统一宽度：同时被屏幕宽度和高度约束（88vh按3:4比例换算成等效宽度），
+     取较小值，保证在各种手机屏幕比例下都能尽量撑满又不会超出屏幕、不变形 */
+  --book-w: min(94vw, calc(88vh * 0.75));
+}
 body{font-family:'Noto Serif SC',serif;background:linear-gradient(180deg,#f0ecd8 0%,#e4ecc8 25%,#d0e4b8 55%,#b8d8a0 80%,#a0cc90 100%);width:100vw;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;}
 
 .bubbles{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden;transition:opacity 1s;}
@@ -23,10 +28,10 @@ body{font-family:'Noto Serif SC',serif;background:linear-gradient(180deg,#f0ecd8
 .screen{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:1;transition:opacity 0.5s;}
 .screen.hidden{opacity:0;pointer-events:none;visibility:hidden;}
 
-/* 书本SVG直接撑满，居中 */
+/* 书本SVG：宽度用统一变量，aspect-ratio精确匹配viewBox的360:480(3:4)比例，不再有留白 */
 .book-svg{
-  width:min(360px, 92vw);
-  height:min(540px, calc(92vw * 1.5));
+  width:var(--book-w);
+  aspect-ratio:3/4;
   display:block;
   filter:drop-shadow(0 10px 40px rgba(80,40,160,0.7));
   cursor:pointer;
@@ -35,17 +40,17 @@ body{font-family:'Noto Serif SC',serif;background:linear-gradient(180deg,#f0ecd8
 @keyframes claspFlip{0%{opacity:1;}100%{opacity:0;transform:scale(1.05);}}
 
 .open-hint{
-  position:absolute;bottom:calc(50% - min(270px, calc(46vw * 1.5)) - 28px);
+  position:absolute;bottom:calc(50% - (var(--book-w) * 1.3333 / 2) - 28px);
   left:50%;transform:translateX(-50%);
   font-size:12px;color:#a07840;letter-spacing:3px;white-space:nowrap;
   animation:pulse 2s infinite;font-family:'Noto Serif SC',serif;
 }
 @keyframes pulse{0%,100%{opacity:0.4;}50%{opacity:1;}}
 
-/* 日历和日记：和书一样大 */
+/* 日历和日记：和书本用同一个尺寸变量+同一个比例，翻开后页面大小、位置和封面完全一致，像真的书一样 */
 .cal-container,.journal-container{
-  width:min(360px,92vw);
-  height:min(540px,calc(92vw*1.5));
+  width:var(--book-w);
+  aspect-ratio:3/4;
   background:rgba(245,238,220,0.97);
   border:1.5px solid #c8a870;
   border-radius:10px;
