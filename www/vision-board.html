@@ -26,8 +26,6 @@ body{
 .back-btn{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#4a3828;}
 .back-btn svg{width:20px;height:20px;}
 .topbar-title{font-size:17px;letter-spacing:3px;color:#4a3828;}
-.mode-toggle{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#4a3828;}
-.mode-toggle svg{width:20px;height:20px;}
 
 /* 拼贴模式 */
 .collage{
@@ -39,26 +37,26 @@ body{
 .collage-item{
   break-inside:avoid;margin-bottom:10px;border-radius:14px;overflow:hidden;
   position:relative;box-shadow:0 4px 16px rgba(0,0,0,0.3);
-  animation:popIn 0.4s ease-out;
+  animation:popIn 0.4s ease-out;cursor:pointer;background:#00000010;
 }
 @keyframes popIn{from{opacity:0;transform:scale(0.9);}to{opacity:1;transform:scale(1);}}
 .collage-item img{width:100%;display:block;}
-.collage-item .del{
-  position:absolute;top:6px;right:6px;
-  width:24px;height:24px;border-radius:50%;
-  background:rgba(0,0,0,0.5);color:#fff;border:none;
-  display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;
-  opacity:0;transition:opacity 0.2s;
+.collage-item .cap{
+  padding:8px 10px 10px;font-size:12px;line-height:1.5;color:#4a3828;
+  background:rgba(255,255,255,0.55);
 }
-.collage-item:hover .del{opacity:1;}
 
-/* 空状态 */
-.empty{
+/* 空状态 / 加载 / 出错 */
+.empty,.loading,.errbox{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
   text-align:center;color:#9a8878;width:80%;
 }
 .empty-icon{font-size:52px;margin-bottom:16px;opacity:0.6;}
-.empty-text{font-size:14px;line-height:2;letter-spacing:1px;}
+.empty-text,.loading-text,.errbox-text{font-size:14px;line-height:2;letter-spacing:1px;}
+.errbox button{
+  margin-top:14px;padding:8px 20px;border-radius:20px;border:none;
+  background:#4a3828;color:#fff;font-size:13px;letter-spacing:2px;
+}
 
 /* 添加按钮 */
 .fab{
@@ -69,29 +67,56 @@ body{
   box-shadow:0 6px 20px rgba(200,150,60,0.5);cursor:pointer;z-index:20;
   color:#fff;font-size:28px;
 }
+.fab.disabled{opacity:0.5;pointer-events:none;}
 
-/* 幻灯片模式 */
-.slideshow{
-  position:absolute;inset:0;background:#000;z-index:30;
-  display:none;overflow:hidden;
+/* 底部弹层（新增详情 / 编辑详情共用） */
+.sheet-mask{
+  position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:40;
+  display:none;
 }
-.slideshow.active{display:block;}
-.slide-track{
-  position:absolute;inset:0;
-  transition:transform 0.35s cubic-bezier(0.2,0.8,0.2,1);
-  will-change:transform;
+.sheet-mask.active{display:block;}
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;z-index:41;
+  background:#faf6e8;border-radius:20px 20px 0 0;
+  padding:18px 18px calc(env(safe-area-inset-bottom,16px) + 18px);
+  max-height:80vh;overflow-y:auto;
+  transform:translateY(100%);transition:transform 0.3s ease-out;
 }
-.slide-track.dragging{transition:none;}
-.slide-frame{
-  position:absolute;left:0;width:100%;
-  display:flex;align-items:center;justify-content:center;
+.sheet-mask.active .sheet{transform:translateY(0);}
+.sheet-preview{width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-bottom:14px;display:block;}
+.sheet label{display:block;font-size:12px;color:#9a8878;letter-spacing:1px;margin-bottom:6px;margin-top:14px;}
+.sheet textarea{
+  width:100%;border:1px solid #e0d8c0;border-radius:10px;padding:10px;
+  font-family:inherit;font-size:14px;color:#4a3828;background:#fff;resize:none;min-height:60px;
 }
-.slide-frame img{max-width:100%;max-height:100%;object-fit:contain;}
-.slide-close{position:absolute;top:calc(env(safe-area-inset-top,44px) + 12px);right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;cursor:pointer;z-index:32;}
-.slide-hint{position:absolute;top:calc(env(safe-area-inset-top,44px) + 22px);left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.5);font-size:11px;letter-spacing:2px;z-index:32;pointer-events:none;transition:opacity 0.4s;}
-.slide-dots{position:absolute;bottom:calc(env(safe-area-inset-bottom,20px) + 20px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;z-index:32;max-height:120px;overflow:hidden;}
-.slide-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.3);flex-shrink:0;transition:all 0.3s;}
-.slide-dot.active{background:#fff;height:16px;border-radius:3px;}
+.sheet select{
+  width:100%;border:1px solid #e0d8c0;border-radius:10px;padding:10px;
+  font-family:inherit;font-size:14px;color:#4a3828;background:#fff;
+}
+.intent-toggle{display:flex;gap:8px;}
+.intent-btn{
+  flex:1;padding:10px;text-align:center;border-radius:10px;border:1px solid #e0d8c0;
+  font-size:13px;color:#9a8878;background:#fff;cursor:pointer;
+}
+.intent-btn.active{background:#4a3828;color:#fff;border-color:#4a3828;}
+.sheet-actions{display:flex;gap:10px;margin-top:20px;}
+.sheet-actions button{
+  flex:1;padding:12px;border-radius:10px;border:none;font-size:14px;letter-spacing:2px;
+  font-family:inherit;
+}
+.btn-cancel{background:#eee4cc;color:#9a8878;}
+.btn-save{background:#4a3828;color:#fff;}
+.btn-danger{background:#c85a4a;color:#fff;}
+
+/* 详情大图区 */
+.detail-img{width:100%;max-height:38vh;object-fit:contain;border-radius:12px;margin-bottom:6px;background:#000;}
+
+/* toast */
+#uploadToast{
+  position:fixed;bottom:calc(env(safe-area-inset-bottom,20px) + 90px);left:50%;transform:translateX(-50%);
+  background:rgba(40,30,20,0.88);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:999;
+  white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.25);opacity:0;transition:opacity 0.3s;
+}
 </style>
 </head>
 <body>
@@ -101,235 +126,273 @@ body{
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>
   <div class="topbar-title">愿 景 板</div>
-  <div class="mode-toggle" onclick="startSlideshow()" id="slideBtn">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z" fill="currentColor"/></svg>
-  </div>
+  <div style="width:38px;"></div>
 </div>
 
-<div class="collage" id="collage"></div>
-
-<div class="empty" id="empty">
+<div class="collage" id="collage" style="display:none;"></div>
+<div class="empty" id="empty" style="display:none;">
   <div class="empty-icon">✨</div>
   <div class="empty-text">把你向往的生活收藏进来<br>那些图片，是你正在成为的模样</div>
 </div>
-
-<div class="fab" onclick="document.getElementById('fileInput').click()">＋</div>
-<input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
-
-<!-- 幻灯片：上下滑动浏览 -->
-<div class="slideshow" id="slideshow">
-  <div class="slide-close" onclick="closeSlideshow()">✕</div>
-  <div class="slide-hint" id="slideHint">向上滑动 · 查看下一张</div>
-  <div class="slide-track" id="slideTrack"></div>
-  <div class="slide-dots" id="slideDots"></div>
+<div class="loading" id="loading">
+  <div class="loading-text">加载中…</div>
+</div>
+<div class="errbox" id="errbox" style="display:none;">
+  <div class="errbox-text">加载失败，请重试</div>
+  <button onclick="init()">重试</button>
 </div>
 
-<script>
-let images=[];
-try{ images=JSON.parse(localStorage.getItem('visionBoard')||'[]'); }catch(e){ images=[]; }
+<div class="fab" id="fab" onclick="document.getElementById('fileInput').click()">＋</div>
+<input type="file" id="fileInput" accept="image/*" style="display:none;">
 
-function save(){
-  try{
-    localStorage.setItem('visionBoard',JSON.stringify(images));
-    return true;
-  }catch(e){
-    // 存储空间已满：撤销刚加的这一张，避免数据丢失或崩溃
-    return false;
-  }
-}
+<!-- 新增：填写描述 / 场景 / 意图 -->
+<div class="sheet-mask" id="addSheetMask">
+  <div class="sheet">
+    <img class="sheet-preview" id="addPreview" src="">
+    <label>这张图对你来说是什么？</label>
+    <textarea id="addDesc" placeholder="例如：这是我想要的车"></textarea>
+    <label id="addSceneLabel" style="display:none;">关联到我的生活场景（可选）</label>
+    <select id="addScene" style="display:none;"></select>
+    <label>这张图，你想……</label>
+    <div class="intent-toggle">
+      <div class="intent-btn active" id="addIntentFuture" onclick="setAddIntent('future')">放进未来</div>
+      <div class="intent-btn" id="addIntentScript" onclick="setAddIntent('script')">写进我的人生</div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" onclick="cancelAdd()">取消</button>
+      <button class="btn-save" onclick="confirmAdd()">保存</button>
+    </div>
+  </div>
+</div>
 
-function render(){
-  const collage=document.getElementById('collage');
-  const empty=document.getElementById('empty');
-  collage.innerHTML='';
-  if(images.length===0){ empty.style.display='block'; return; }
-  empty.style.display='none';
-  images.forEach((src,i)=>{
-    const item=document.createElement('div');
-    item.className='collage-item';
-    item.innerHTML=`<img src="${src}" onclick="openSlideshow(${i})"><button class="del" onclick="event.stopPropagation();delImage(${i})">✕</button>`;
-    collage.appendChild(item);
-  });
-}
+<!-- 详情 / 编辑 -->
+<div class="sheet-mask" id="detailSheetMask">
+  <div class="sheet">
+    <img class="detail-img" id="detailImg" src="">
+    <label>这张图对你来说是什么？</label>
+    <textarea id="detailDesc" placeholder="例如：这是我想要的车"></textarea>
+    <label id="detailSceneLabel" style="display:none;">关联到我的生活场景（可选）</label>
+    <select id="detailScene" style="display:none;"></select>
+    <label>这张图，你想……</label>
+    <div class="intent-toggle">
+      <div class="intent-btn" id="detailIntentFuture" onclick="setDetailIntent('future')">放进未来</div>
+      <div class="intent-btn" id="detailIntentScript" onclick="setDetailIntent('script')">写进我的人生</div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" onclick="closeDetail()">关闭</button>
+      <button class="btn-save" onclick="saveDetail()">保存修改</button>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-danger" style="flex:none;width:100%;" onclick="deleteDetail()">删除这张愿景</button>
+    </div>
+  </div>
+</div>
 
-// 把单个文件处理成压缩后的图片，失败会reject但不会卡住其他文件
-function processFile(file){
-  return new Promise((resolve, reject)=>{
-    if(!file.type || !file.type.startsWith('image/')){
-      reject('不是图片格式'); return;
-    }
-    const reader = new FileReader();
-    reader.onerror = () => reject('读取文件失败');
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onerror = () => reject('图片解码失败（可能是不支持的格式）');
-      img.onload = () => {
-        try{
-          const canvas = document.createElement('canvas');
-          const maxW = 800;
-          const scale = Math.min(1, maxW / img.width);
-          canvas.width = Math.max(1, Math.round(img.width * scale));
-          canvas.height = Math.max(1, Math.round(img.height * scale));
-          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL('image/jpeg', 0.75));
-        }catch(e){ reject('图片压缩失败'); }
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
+<div id="uploadToast"></div>
+
+<script type="module">
+import { requireUser } from "./js/services/authService.js";
+import {
+  getVisionAssets, createVisionAsset, updateVisionAsset, deleteVisionAsset,
+  uploadVisionImage, deleteVisionImageQuiet, getScenesForPicker
+} from "./js/services/visionBoardService.js";
+
+let assets = [];
+let scenes = [];
+let pendingUpload = null; // { url, path }
+let addIntent = 'future';
+let detailIntent = 'future';
+let activeDetailId = null;
 
 function showToast(text){
-  let t = document.getElementById('uploadToast');
-  if(!t){
-    t = document.createElement('div');
-    t.id = 'uploadToast';
-    t.style.cssText = 'position:fixed;bottom:calc(env(safe-area-inset-bottom,20px) + 90px);left:50%;transform:translateX(-50%);background:rgba(40,30,20,0.88);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.25);';
-    document.body.appendChild(t);
-  }
+  const t = document.getElementById('uploadToast');
   t.textContent = text;
   t.style.opacity = '1';
   clearTimeout(t._timer);
   t._timer = setTimeout(()=>{ t.style.opacity='0'; }, 2600);
 }
 
-document.getElementById('fileInput').onchange = async (e) => {
-  const files = [...e.target.files];
-  e.target.value = ''; // 允许重复选择同一张图
-  if(files.length === 0) return;
+function esc(s){
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
 
-  let successCount = 0;
-  let failCount = 0;
-  let quotaFull = false;
+function fillSceneSelect(selectEl, selectedId){
+  selectEl.innerHTML = '<option value="">不关联</option>' +
+    scenes.map(s => `<option value="${s.id}"${s.id===selectedId?' selected':''}>${esc(s.name)}</option>`).join('');
+}
 
-  for(const file of files){
-    try{
-      const dataUrl = await processFile(file);
-      images.push(dataUrl);
-      const ok = save();
-      if(ok){
-        successCount++;
-      } else {
-        images.pop(); // 撤销这一张，存储空间不够了
-        quotaFull = true;
-        failCount++;
-        break; // 空间已满，后面的也不用再试了
-      }
-    }catch(err){
-      failCount++;
-    }
+function render(){
+  const collage = document.getElementById('collage');
+  const empty = document.getElementById('empty');
+  if(assets.length === 0){
+    collage.style.display = 'none';
+    empty.style.display = 'block';
+    return;
   }
+  empty.style.display = 'none';
+  collage.style.display = 'block';
+  collage.innerHTML = assets.map(a => `
+    <div class="collage-item" onclick="openDetail('${a.id}')">
+      <img src="${esc(a.image_url)}" loading="lazy">
+      ${a.description ? `<div class="cap">${esc(a.description)}</div>` : ''}
+    </div>
+  `).join('');
+}
 
-  render();
-
-  if(quotaFull){
-    showToast(`存储空间已满，成功添加${successCount}张。请删除一些图片后再试`);
-  } else if(failCount > 0 && successCount > 0){
-    showToast(`成功添加${successCount}张，${failCount}张上传失败`);
-  } else if(failCount > 0 && successCount === 0){
-    showToast(`上传失败，请检查图片格式`);
-  } else if(successCount > 0){
-    showToast(`已添加${successCount}张`);
+window.init = async function init(){
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('errbox').style.display = 'none';
+  document.getElementById('collage').style.display = 'none';
+  document.getElementById('empty').style.display = 'none';
+  try{
+    const user = await requireUser();
+    if(!user) return;
+    const [a, s] = await Promise.all([getVisionAssets(), getScenesForPicker()]);
+    assets = a;
+    scenes = s;
+    document.getElementById('loading').style.display = 'none';
+    if(scenes.length > 0){
+      document.getElementById('addSceneLabel').style.display = 'block';
+      document.getElementById('addScene').style.display = 'block';
+      document.getElementById('detailSceneLabel').style.display = 'block';
+      document.getElementById('detailScene').style.display = 'block';
+    }
+    render();
+  }catch(e){
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('errbox').style.display = 'block';
   }
 };
 
-function delImage(i){ images.splice(i,1); save(); render(); }
-
-/* ── 幻灯片：上下滑动浏览（类似Stories/Reels）── */
-let slideIdx = 0;
-let dragStartY = 0;
-let dragDeltaY = 0;
-let isDragging = false;
-const FRAME_H = () => window.innerHeight;
-
-function buildSlides(){
-  const track = document.getElementById('slideTrack');
-  track.innerHTML = '';
-  images.forEach((src, i) => {
-    const frame = document.createElement('div');
-    frame.className = 'slide-frame';
-    frame.style.top = (i * 100 / images.length) + '%';
-    frame.style.height = (100 / images.length) + '%';
-    frame.innerHTML = `<img src="${src}">`;
-    track.appendChild(frame);
-  });
-  track.style.height = (images.length * 100) + '%';
-}
-
-function startSlideshow(){ if(images.length===0)return; openSlideshow(0); }
-
-function openSlideshow(i){
-  slideIdx = i;
-  buildSlides();
-  positionTrack(false);
-  updateDots();
-  document.getElementById('slideshow').classList.add('active');
-  const hint = document.getElementById('slideHint');
-  hint.style.opacity = '1';
-  setTimeout(()=>{ hint.style.opacity='0'; }, 2200);
-}
-
-function positionTrack(animate){
-  const track = document.getElementById('slideTrack');
-  track.classList.toggle('dragging', !animate);
-  const offsetPercent = -(slideIdx * 100) / images.length;
-  const dragPercent = animate ? 0 : (dragDeltaY / FRAME_H()) * (100 / images.length);
-  track.style.transform = `translateY(${offsetPercent + dragPercent}%)`;
-}
-
-function updateDots(){
-  const dots = document.getElementById('slideDots');
-  dots.innerHTML = '';
-  const maxDots = 8;
-  const total = images.length;
-  images.forEach((_, i) => {
-    if(total > maxDots && Math.abs(i - slideIdx) > 3) return; // 太多图时只显示附近的点
-    const d = document.createElement('div');
-    d.className = 'slide-dot' + (i === slideIdx ? ' active' : '');
-    dots.appendChild(d);
-  });
-}
-
-function goToSlide(i){
-  if(i < 0 || i >= images.length) return;
-  slideIdx = i;
-  positionTrack(true);
-  updateDots();
-}
-function nextSlide(){ goToSlide(slideIdx + 1); }
-function prevSlide(){ goToSlide(slideIdx - 1); }
-function closeSlideshow(){ document.getElementById('slideshow').classList.remove('active'); }
-
-const slideshowEl = document.getElementById('slideshow');
-slideshowEl.addEventListener('touchstart', (e) => {
-  if(e.target.closest('.slide-close')) return;
-  dragStartY = e.touches[0].clientY;
-  dragDeltaY = 0;
-  isDragging = true;
-}, {passive:true});
-
-slideshowEl.addEventListener('touchmove', (e) => {
-  if(!isDragging) return;
-  dragDeltaY = e.touches[0].clientY - dragStartY;
-  // 在首末张时，往外拖拽增加阻尼感
-  if((slideIdx===0 && dragDeltaY>0) || (slideIdx===images.length-1 && dragDeltaY<0)){
-    dragDeltaY *= 0.35;
+/* ── 新增流程 ── */
+document.getElementById('fileInput').onchange = async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  if(!file.type || !file.type.startsWith('image/')){
+    showToast('请选择图片文件');
+    return;
   }
-  positionTrack(false);
-}, {passive:true});
 
-slideshowEl.addEventListener('touchend', () => {
-  if(!isDragging) return;
-  isDragging = false;
-  const threshold = FRAME_H() * 0.15;
-  if(dragDeltaY < -threshold){ nextSlide(); }
-  else if(dragDeltaY > threshold){ prevSlide(); }
-  else { positionTrack(true); }
-  dragDeltaY = 0;
-});
+  const fab = document.getElementById('fab');
+  fab.classList.add('disabled');
+  showToast('上传中…');
+  try{
+    const { url, path } = await uploadVisionImage(file);
+    pendingUpload = { url, path };
+    openAddSheet(url);
+  }catch(err){
+    showToast('图片上传失败，请重试');
+  }finally{
+    fab.classList.remove('disabled');
+  }
+};
 
-render();
+function openAddSheet(url){
+  document.getElementById('addPreview').src = url;
+  document.getElementById('addDesc').value = '';
+  fillSceneSelect(document.getElementById('addScene'), '');
+  setAddIntent('future');
+  document.getElementById('addSheetMask').classList.add('active');
+}
+
+window.setAddIntent = function(v){
+  addIntent = v;
+  document.getElementById('addIntentFuture').classList.toggle('active', v==='future');
+  document.getElementById('addIntentScript').classList.toggle('active', v==='script');
+};
+
+window.cancelAdd = async function(){
+  document.getElementById('addSheetMask').classList.remove('active');
+  if(pendingUpload){
+    deleteVisionImageQuiet(pendingUpload.path);
+    pendingUpload = null;
+  }
+};
+
+window.confirmAdd = async function(){
+  if(!pendingUpload) return;
+  const description = document.getElementById('addDesc').value.trim();
+  const sceneSel = document.getElementById('addScene');
+  const scene_id = sceneSel.style.display !== 'none' ? (sceneSel.value || null) : null;
+  try{
+    const row = await createVisionAsset({
+      image_url: pendingUpload.url,
+      description,
+      scene_id,
+      intent_type: addIntent
+    });
+    assets.unshift(row);
+    render();
+    document.getElementById('addSheetMask').classList.remove('active');
+    pendingUpload = null;
+    showToast('已添加');
+  }catch(err){
+    showToast('保存失败，请重试');
+    if(pendingUpload){
+      deleteVisionImageQuiet(pendingUpload.path);
+      pendingUpload = null;
+    }
+  }
+};
+
+/* ── 详情 / 编辑 / 删除 ── */
+window.openDetail = function(id){
+  const a = assets.find(x => x.id === id);
+  if(!a) return;
+  activeDetailId = id;
+  document.getElementById('detailImg').src = a.image_url;
+  document.getElementById('detailDesc').value = a.description || '';
+  fillSceneSelect(document.getElementById('detailScene'), a.scene_id || '');
+  setDetailIntent(a.intent_type === 'script' ? 'script' : 'future');
+  document.getElementById('detailSheetMask').classList.add('active');
+};
+
+window.setDetailIntent = function(v){
+  detailIntent = v;
+  document.getElementById('detailIntentFuture').classList.toggle('active', v==='future');
+  document.getElementById('detailIntentScript').classList.toggle('active', v==='script');
+};
+
+window.closeDetail = function(){
+  document.getElementById('detailSheetMask').classList.remove('active');
+  activeDetailId = null;
+};
+
+window.saveDetail = async function(){
+  if(!activeDetailId) return;
+  const description = document.getElementById('detailDesc').value.trim();
+  const sceneSel = document.getElementById('detailScene');
+  const scene_id = sceneSel.style.display !== 'none' ? (sceneSel.value || null) : null;
+  try{
+    const updated = await updateVisionAsset(activeDetailId, { description, scene_id, intent_type: detailIntent });
+    const idx = assets.findIndex(x => x.id === activeDetailId);
+    if(idx >= 0) assets[idx] = updated;
+    render();
+    closeDetail();
+    showToast('已保存');
+  }catch(err){
+    showToast('保存失败，请重试');
+  }
+};
+
+window.deleteDetail = async function(){
+  if(!activeDetailId) return;
+  const id = activeDetailId;
+  try{
+    await deleteVisionAsset(id);
+    assets = assets.filter(x => x.id !== id);
+    render();
+    closeDetail();
+    showToast('已删除');
+  }catch(err){
+    showToast('删除失败，请重试');
+  }
+};
+
+init();
 </script>
 </body>
 </html>
