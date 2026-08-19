@@ -14,7 +14,7 @@ body{
   padding:calc(env(safe-area-inset-top,44px) + 1rem) 1.2rem 4rem;
 }
 .wrap{max-width:460px;margin:0 auto;}
-.header{text-align:center;margin-bottom:2rem;}
+.header{text-align:center;margin-bottom:1.4rem;}
 .header h1{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:400;color:#c89030;letter-spacing:4px;margin-bottom:6px;}
 .header p{font-size:12px;color:#8a7868;letter-spacing:2px;}
 
@@ -27,7 +27,24 @@ body{
 .card-title{font-family:'Noto Serif SC',serif;font-size:15px;color:#3a4a2a;letter-spacing:2px;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
 .step-num{background:linear-gradient(135deg,#5a9060,#3a7048);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0;}
 
-/* 录音区 */
+.lib-btn-row{display:flex;justify-content:center;margin-bottom:1rem;}
+.lib-btn{
+  background:rgba(255,255,255,0.7);border:1px solid rgba(200,150,70,0.45);
+  border-radius:20px;padding:9px 20px;font-size:13px;color:#8a6838;cursor:pointer;
+  font-family:'Noto Sans SC',sans-serif;display:flex;align-items:center;gap:6px;
+}
+
+.mode-tabs{display:flex;gap:6px;margin-bottom:1.2rem;background:rgba(255,255,255,0.45);border-radius:14px;padding:4px;}
+.mode-tab{flex:1;padding:10px 4px;border-radius:10px;border:none;background:transparent;color:#5a6a48;font-size:13px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;transition:all .2s;}
+.mode-tab.selected{background:linear-gradient(135deg,#5a9060,#3a7048);color:#fff;font-weight:600;}
+
+.bg-subtabs{display:flex;gap:8px;margin-bottom:10px;}
+.bg-subtab{flex:1;padding:7px 4px;border-radius:8px;border:1px solid rgba(150,175,110,0.35);background:rgba(255,255,255,0.4);color:#8a9878;font-size:11px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;}
+.bg-subtab.selected{background:rgba(90,144,96,0.18);border-color:#5a9060;color:#3a7048;font-weight:600;}
+
+.headphone-hint{font-size:11px;color:#c89030;text-align:center;margin-top:8px;background:rgba(232,176,74,0.14);border-radius:8px;padding:7px;display:none;}
+.headphone-hint.show{display:block;}
+
 .record-area{display:flex;flex-direction:column;align-items:center;gap:14px;}
 .record-btn{
   width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;
@@ -54,7 +71,6 @@ body{
   font-size:11px;color:#8a6838;line-height:1.7;margin-bottom:12px;
 }
 
-/* 滑块 */
 .slider-row{margin-bottom:1.2rem;}
 .slider-label{display:flex;justify-content:space-between;font-size:13px;color:#3a4a2a;margin-bottom:8px;}
 .slider-value{color:#c89030;font-family:'Noto Serif SC',serif;}
@@ -70,9 +86,9 @@ input[type=range]::-webkit-slider-thumb{
 
 .btn-row{display:flex;gap:10px;margin-top:8px;}
 
-.bg-type-row{display:flex;gap:8px;margin-bottom:4px;}
+.bg-type-row{display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;}
 .bg-type-btn{
-  flex:1;padding:9px 4px;border-radius:10px;border:1px solid rgba(150,175,110,0.4);
+  flex:1;min-width:70px;padding:9px 4px;border-radius:10px;border:1px solid rgba(150,175,110,0.4);
   background:rgba(255,255,255,0.6);color:#5a6a48;font-size:12px;cursor:pointer;
   font-family:'Noto Sans SC',sans-serif;transition:all 0.2s;
 }
@@ -91,6 +107,33 @@ input[type=range]::-webkit-slider-thumb{
 
 .processing{display:none;text-align:center;padding:1rem;color:#8a6838;font-size:13px;}
 .processing.show{display:block;}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(30,40,20,0.45);z-index:10000;display:flex;align-items:flex-end;justify-content:center;}
+.modal-overlay.center{align-items:center;}
+.modal-card{background:#f4f0dc;width:100%;max-width:460px;max-height:78vh;border-radius:20px 20px 0 0;padding:1.3rem;overflow-y:auto;}
+.modal-card.small{border-radius:16px;max-height:none;margin:0 1.2rem;}
+.modal-header{font-family:'Noto Serif SC',serif;font-size:16px;color:#3a4a2a;display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.modal-close{cursor:pointer;color:#8a7868;font-size:16px;padding:4px 8px;}
+.modal-tabs{display:flex;gap:8px;margin-bottom:1rem;}
+.modal-tab{flex:1;padding:8px;border-radius:10px;border:1px solid rgba(150,175,110,0.35);background:rgba(255,255,255,0.55);color:#5a6a48;font-size:12px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;}
+.modal-tab.selected{background:rgba(90,144,96,0.18);border-color:#5a9060;color:#3a7048;font-weight:600;}
+
+.lib-item{background:rgba(255,255,255,0.65);border-radius:12px;padding:10px 12px;margin-bottom:8px;}
+.lib-item-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.lib-item-info{flex:1;min-width:0;}
+.lib-item-name{font-size:13px;color:#3a4a2a;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lib-item-date{font-size:10px;color:#9a8878;margin-top:2px;}
+.lib-item-btns{display:flex;gap:6px;flex-shrink:0;}
+.lib-icon-btn{width:32px;height:32px;border-radius:50%;border:none;background:rgba(90,144,96,0.15);color:#3a7048;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.lib-icon-btn.del{background:rgba(200,60,60,0.12);color:#a03030;}
+.lib-item audio{width:100%;margin-top:8px;display:none;}
+.lib-item audio.show{display:block;}
+.lib-empty{text-align:center;color:#9a8878;font-size:12px;padding:2.4rem 0;}
+
+#nameInput{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(150,175,110,0.4);font-size:14px;margin-bottom:1rem;font-family:'Noto Sans SC',sans-serif;box-sizing:border-box;background:#fff;}
+.modal-btn-row{display:flex;gap:10px;}
+.modal-btn-row button{flex:1;padding:10px;border-radius:10px;border:none;font-size:13px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;}
+#nameCancelBtn{background:rgba(0,0,0,0.06);color:#5a6a48;}
 </style>
 </head>
 <body>
@@ -102,73 +145,134 @@ input[type=range]::-webkit-slider-thumb{
     <p>SUBLIMINAL STUDIO</p>
   </div>
 
-  <!-- 步骤1：录制 -->
-  <div class="card">
-    <div class="card-title"><span class="step-num">1</span>录制你的肯定语</div>
-    <div class="guide-tip">💫 用「现在时」和「肯定句」，仿佛已经拥有：<br>"我值得被爱" · "金钱源源不断流向我" · "我是自信而闪耀的"</div>
-    <div class="record-area">
-      <button class="record-btn" id="recordBtn">🎙️</button>
-      <div class="record-timer" id="recordTimer">00:00</div>
-      <div class="record-status" id="recordStatus">点击开始录制</div>
-    </div>
-    <div class="upload-zone" id="uploadZone">
-      或点击上传已有音频文件
-      <input type="file" id="fileInput" accept="audio/*" style="display:none;">
-    </div>
+  <div class="lib-btn-row">
+    <button class="lib-btn" id="openLibraryBtn">🎵 我的音频库</button>
   </div>
 
-  <!-- 步骤2：处理 -->
-  <div class="card">
-    <div class="card-title"><span class="step-num">2</span>调节潜意识参数</div>
+  <div class="mode-tabs">
+    <button class="mode-tab selected" data-mode="immersive">沉浸模式</button>
+    <button class="mode-tab" data-mode="ambient">生活背景音</button>
+  </div>
 
-    <div class="slider-row">
-      <div class="slider-label"><span>语速倍数</span><span class="slider-value" id="speedVal">1.0x</span></div>
-      <input type="range" id="speedSlider" min="1" max="10" step="0.5" value="1">
-    </div>
-
-    <div class="slider-row">
-      <div class="slider-label"><span>人声音量</span><span class="slider-value" id="voiceVal">100%</span></div>
-      <input type="range" id="voiceSlider" min="0" max="100" step="5" value="100">
-    </div>
-
-    <div class="slider-row">
-      <div class="slider-label"><span>背景音量</span><span class="slider-value" id="bgVal">50%</span></div>
-      <input type="range" id="bgSlider" min="0" max="100" step="5" value="50">
-    </div>
-
-    <div class="slider-row">
-      <div class="slider-label"><span>背景音类型</span></div>
-      <div class="bg-type-row" id="bgTypeRow">
-        <button class="bg-type-btn selected" data-type="none">无</button>
-        <button class="bg-type-btn" data-type="white">白噪音</button>
-        <button class="bg-type-btn" data-type="pink">粉噪音</button>
-        <button class="bg-type-btn" data-type="brown">深海低频</button>
+  <div id="immersiveMode">
+    <div class="card">
+      <div class="card-title"><span class="step-num">1</span>录制你的肯定语</div>
+      <div class="guide-tip">💫 用「现在时」和「肯定句」，仿佛已经拥有：<br>"我值得被爱" · "金钱源源不断流向我" · "我是自信而闪耀的"</div>
+      <div class="record-area">
+        <button class="record-btn" id="recordBtn">🎙️</button>
+        <div class="record-timer" id="recordTimer">00:00</div>
+        <div class="record-status" id="recordStatus">点击开始录制</div>
+      </div>
+      <div class="upload-zone" id="uploadZone">
+        或点击上传已有音频文件
+        <input type="file" id="fileInput" accept="audio/*" style="display:none;">
       </div>
     </div>
 
-    <div class="btn-row">
-      <button class="btn btn-play" id="previewBtn" disabled>▶ 试听效果</button>
+    <div class="card">
+      <div class="card-title"><span class="step-num">2</span>调节潜意识参数</div>
+
+      <div class="slider-row">
+        <div class="slider-label"><span>语速倍数</span><span class="slider-value" id="speedVal">1.0x</span></div>
+        <input type="range" id="speedSlider" min="1" max="10" step="0.5" value="1">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label"><span>人声音量</span><span class="slider-value" id="voiceVal">100%</span></div>
+        <input type="range" id="voiceSlider" min="0" max="100" step="5" value="100">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label"><span>背景音量</span><span class="slider-value" id="bgVal">50%</span></div>
+        <input type="range" id="bgSlider" min="0" max="100" step="5" value="50">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label"><span>背景音类型</span></div>
+        <div class="bg-subtabs">
+          <button class="bg-subtab selected" data-subtab="noise">噪音类</button>
+          <button class="bg-subtab" data-subtab="beat">节拍类</button>
+        </div>
+        <div class="bg-type-row" id="noiseTypeRow">
+          <button class="bg-type-btn selected" data-type="none">无</button>
+          <button class="bg-type-btn" data-type="white">白噪音</button>
+          <button class="bg-type-btn" data-type="pink">粉噪音</button>
+          <button class="bg-type-btn" data-type="brown">深海低频</button>
+        </div>
+        <div class="bg-type-row" id="beatTypeRow" style="display:none;">
+          <button class="bg-type-btn" data-type="delta">Delta 深度睡眠</button>
+          <button class="bg-type-btn" data-type="theta">Theta 冥想接入</button>
+          <button class="bg-type-btn" data-type="alpha">Alpha 放松专注</button>
+          <button class="bg-type-btn" data-type="beta">Beta 清醒行动力</button>
+        </div>
+        <div class="headphone-hint" id="headphoneHint">🎧 需佩戴耳机才有效果</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-play" id="previewBtn" disabled>▶ 试听效果</button>
+      </div>
+      <div class="hint">变速不变调 · 人声可调至极低融入背景，潜意识仍能接收</div>
     </div>
-    <div class="hint">变速不变调 · 人声可调至极低融入背景，潜意识仍能接收</div>
+
+    <div class="card">
+      <div class="card-title"><span class="step-num">3</span>合成并保存</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="exportBtn" disabled>✦ 合成潜意识音频</button>
+      </div>
+      <div class="processing" id="processing">正在合成中…</div>
+      <div class="hint" id="exportHint" style="display:none;">合成完成！可以直接在下方播放，长按可循环播放一整晚</div>
+      <audio id="exportPlayer" controls loop style="display:none;width:100%;margin-top:12px;"></audio>
+    </div>
   </div>
 
-  <!-- 步骤3：保存 -->
-  <div class="card">
-    <div class="card-title"><span class="step-num">3</span>合成并保存</div>
-    <div class="btn-row">
-      <button class="btn btn-primary" id="exportBtn" disabled>✦ 合成潜意识音频</button>
+  <div id="ambientMode" style="display:none;">
+    <div class="card">
+      <div class="card-title">生活背景音</div>
+      <div class="hint" style="margin-top:0;margin-bottom:12px;">适合家务、运动等外放场景，无需耳机，无需人声</div>
+      <div class="bg-type-row" id="ambientTypeRow">
+        <button class="bg-type-btn selected" data-type="white">白噪音</button>
+        <button class="bg-type-btn" data-type="pink">粉噪音</button>
+        <button class="bg-type-btn" data-type="brown">深海低频</button>
+      </div>
+      <div class="slider-row" style="margin-top:1.2rem;">
+        <div class="slider-label"><span>音量</span><span class="slider-value" id="ambientVolVal">60%</span></div>
+        <input type="range" id="ambientVolSlider" min="0" max="100" step="5" value="60">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-play" id="ambientPlayBtn">▶ 播放</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="ambientSaveBtn">✦ 保存到音频库</button>
+      </div>
     </div>
-    <div class="processing" id="processing">正在合成中…</div>
-    <div class="hint" id="exportHint" style="display:none;">合成完成！可以直接在下方播放，长按可循环播放一整晚</div>
-    <audio id="exportPlayer" controls loop style="display:none;width:100%;margin-top:12px;"></audio>
   </div>
 </div>
 
-<!-- SoundTouch.js 变速不变调库 -->
-<script src="https://unpkg.com/soundtouchjs@0.1.30/dist/soundtouch.js"></script>
+<div class="modal-overlay" id="libraryModal" style="display:none;">
+  <div class="modal-card">
+    <div class="modal-header">我的音频库 <span class="modal-close" id="closeLibraryBtn">✕</span></div>
+    <div class="modal-tabs">
+      <button class="modal-tab selected" data-libcat="immersive">沉浸音频</button>
+      <button class="modal-tab" data-libcat="ambient">生活背景音</button>
+    </div>
+    <div id="libraryList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay center" id="nameModal" style="display:none;">
+  <div class="modal-card small">
+    <div class="modal-header">保存音频</div>
+    <input type="text" id="nameInput" placeholder="给这段音频起个名字" maxlength="30">
+    <div class="modal-btn-row">
+      <button id="nameCancelBtn">取消</button>
+      <button id="nameConfirmBtn" class="btn-primary">保存</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let audioCtx = null;
-let recordedBuffer = null;      // 录制/上传的原始音频
+let recordedBuffer = null;
 let mediaRecorder = null;
 let recordChunks = [];
 let recordTimerSec = 0;
@@ -178,10 +282,168 @@ let previewBgSource = null;
 let previewGain = null;
 let previewBgGain = null;
 let isPreviewPlaying = false;
+let pendingSaveBlob = null;
+let pendingSaveCategory = null;
 
 function getCtx(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
 
-// ─── 录音 ───
+/* ══════════════════ IndexedDB 音频库 ══════════════════ */
+const DB_NAME = 'subliminalStudioDB';
+const STORE_NAME = 'audioLibrary';
+let dbPromise = null;
+function openLibraryDB(){
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+        store.createIndex('category', 'category', { unique: false });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return dbPromise;
+}
+async function saveToLibrary(name, category, blob){
+  const db = await openLibraryDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).add({ name, category, blob, createdAt: Date.now() });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function listLibrary(category){
+  const db = await openLibraryDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const idx = tx.objectStore(STORE_NAME).index('category');
+    const req = idx.getAll(category);
+    req.onsuccess = () => resolve(req.result.sort((a,b)=>b.createdAt-a.createdAt));
+    req.onerror = () => reject(req.error);
+  });
+}
+async function deleteFromLibrary(id){
+  const db = await openLibraryDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/* ══════════════════ 命名弹层 ══════════════════ */
+function openNameModal(blob, category){
+  pendingSaveBlob = blob;
+  pendingSaveCategory = category;
+  document.getElementById('nameInput').value = '';
+  document.getElementById('nameModal').style.display = 'flex';
+}
+document.getElementById('nameCancelBtn').onclick = () => {
+  document.getElementById('nameModal').style.display = 'none';
+  pendingSaveBlob = null;
+};
+document.getElementById('nameConfirmBtn').onclick = async () => {
+  const name = document.getElementById('nameInput').value.trim();
+  if (!name) { alert('请输入名字'); return; }
+  if (!pendingSaveBlob) return;
+  try {
+    await saveToLibrary(name, pendingSaveCategory, pendingSaveBlob);
+    document.getElementById('nameModal').style.display = 'none';
+    pendingSaveBlob = null;
+    alert('已保存到音频库！');
+  } catch(err) {
+    alert('保存失败：' + err.message);
+  }
+};
+
+/* ══════════════════ 音频库弹层 ══════════════════ */
+let currentLibCat = 'immersive';
+document.getElementById('openLibraryBtn').onclick = () => {
+  document.getElementById('libraryModal').style.display = 'flex';
+  renderLibrary();
+};
+document.getElementById('closeLibraryBtn').onclick = () => {
+  document.getElementById('libraryModal').style.display = 'none';
+};
+document.querySelectorAll('.modal-tab').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.modal-tab').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    currentLibCat = btn.dataset.libcat;
+    renderLibrary();
+  };
+});
+async function renderLibrary(){
+  const listEl = document.getElementById('libraryList');
+  listEl.innerHTML = '<div class="lib-empty">加载中…</div>';
+  let items;
+  try { items = await listLibrary(currentLibCat); } catch(err) { items = []; }
+  if (!items.length) {
+    listEl.innerHTML = '<div class="lib-empty">还没有保存的音频</div>';
+    return;
+  }
+  listEl.innerHTML = '';
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'lib-item';
+    const dateStr = new Date(item.createdAt).toLocaleDateString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+    div.innerHTML =
+      '<div class="lib-item-top">' +
+        '<div class="lib-item-info">' +
+          '<div class="lib-item-name"></div>' +
+          '<div class="lib-item-date"></div>' +
+        '</div>' +
+        '<div class="lib-item-btns">' +
+          '<button class="lib-icon-btn play-btn">▶</button>' +
+          '<button class="lib-icon-btn del del-btn">✕</button>' +
+        '</div>' +
+      '</div>' +
+      '<audio controls loop></audio>';
+    div.querySelector('.lib-item-name').textContent = item.name;
+    div.querySelector('.lib-item-date').textContent = dateStr;
+    const audioEl = div.querySelector('audio');
+    const playBtn = div.querySelector('.play-btn');
+    playBtn.onclick = () => {
+      if (!audioEl.src) audioEl.src = URL.createObjectURL(item.blob);
+      audioEl.classList.add('show');
+      audioEl.play();
+    };
+    div.querySelector('.del-btn').onclick = async () => {
+      if (!confirm('确定删除「' + item.name + '」吗？')) return;
+      await deleteFromLibrary(item.id);
+      renderLibrary();
+    };
+    listEl.appendChild(div);
+  });
+}
+
+/* ══════════════════ 模式切换 ══════════════════ */
+document.querySelectorAll('.mode-tab').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.mode-tab').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    const mode = btn.dataset.mode;
+    document.getElementById('immersiveMode').style.display = (mode === 'immersive') ? 'block' : 'none';
+    document.getElementById('ambientMode').style.display = (mode === 'ambient') ? 'block' : 'none';
+    stopAllPlayback();
+  };
+});
+function stopAllPlayback(){
+  try { if (previewSource) previewSource.stop(); } catch(e){}
+  try { if (previewBgSource) previewBgSource.stop(); } catch(e){}
+  isPreviewPlaying = false;
+  document.getElementById('previewBtn').textContent = '▶ 试听效果';
+  try { if (ambientSource) ambientSource.stop(); } catch(e){}
+  isAmbientPlaying = false;
+  document.getElementById('ambientPlayBtn').textContent = '▶ 播放';
+}
+
+/* ══════════════════ 录音 ══════════════════ */
 const recordBtn = document.getElementById('recordBtn');
 const recordTimer = document.getElementById('recordTimer');
 const recordStatus = document.getElementById('recordStatus');
@@ -191,7 +453,6 @@ recordBtn.onclick = async () => {
     mediaRecorder.stop();
     return;
   }
-  // 已经录过一次了，再点这个按钮是要重新录制——先确认，避免误触覆盖掉之前的录音
   if (recordedBuffer && !confirm('重新录制会覆盖之前的录音，确定吗？')) return;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -203,7 +464,6 @@ recordBtn.onclick = async () => {
       clearInterval(recordInterval);
       const blob = new Blob(recordChunks, { type: mediaRecorder.mimeType });
       const arrayBuf = await blob.arrayBuffer();
-      // 用一个临时的AudioContext解码，不影响播放用的那个
       const decodeCtx = new (window.AudioContext || window.webkitAudioContext)();
       recordedBuffer = await decodeCtx.decodeAudioData(arrayBuf);
       decodeCtx.close();
@@ -223,14 +483,13 @@ recordBtn.onclick = async () => {
       recordTimerSec++;
       const m = String(Math.floor(recordTimerSec/60)).padStart(2,'0');
       const s = String(recordTimerSec%60).padStart(2,'0');
-      recordTimer.textContent = `${m}:${s}`;
+      recordTimer.textContent = m + ':' + s;
     }, 1000);
   } catch(err) {
     recordStatus.textContent = '无法访问麦克风：' + err.message;
   }
 };
 
-// ─── 上传 ───
 const uploadZone = document.getElementById('uploadZone');
 const fileInput = document.getElementById('fileInput');
 uploadZone.onclick = () => fileInput.click();
@@ -247,7 +506,6 @@ fileInput.onchange = async (e) => {
   enableControls();
 };
 
-// ─── 滑块 ───
 const speedSlider = document.getElementById('speedSlider');
 const voiceSlider = document.getElementById('voiceSlider');
 const bgSlider = document.getElementById('bgSlider');
@@ -257,7 +515,6 @@ const bgVal = document.getElementById('bgVal');
 
 speedSlider.oninput = () => {
   speedVal.textContent = parseFloat(speedSlider.value).toFixed(1) + 'x';
-  // 语速涉及重新处理音频，不能像音量一样实时调节，正在试听时自动重新开始播放以应用新语速
   if(isPreviewPlaying) startPreview();
 };
 voiceSlider.oninput = () => {
@@ -269,17 +526,38 @@ bgSlider.oninput = () => {
   if(isPreviewPlaying && previewBgGain) previewBgGain.gain.value = parseInt(bgSlider.value) / 100;
 };
 
-// ─── 背景音类型 ───
 let bgType = 'none';
-document.querySelectorAll('.bg-type-btn').forEach(btn=>{
+const BEAT_TYPES = new Set(['delta','theta','alpha','beta']);
+
+document.querySelectorAll('.bg-subtab').forEach(btn=>{
   btn.onclick = () => {
-    document.querySelectorAll('.bg-type-btn').forEach(b=>b.classList.remove('selected'));
+    document.querySelectorAll('.bg-subtab').forEach(b=>b.classList.remove('selected'));
     btn.classList.add('selected');
-    bgType = btn.dataset.type;
+    const sub = btn.dataset.subtab;
+    document.getElementById('noiseTypeRow').style.display = (sub === 'noise') ? 'flex' : 'none';
+    document.getElementById('beatTypeRow').style.display = (sub === 'beat') ? 'flex' : 'none';
+    const firstBtn = (sub === 'noise') ? document.querySelector('#noiseTypeRow .bg-type-btn') : document.querySelector('#beatTypeRow .bg-type-btn');
+    selectBgType(firstBtn);
   };
 });
+function selectBgType(btn){
+  if (!btn) return;
+  document.querySelectorAll('#noiseTypeRow .bg-type-btn, #beatTypeRow .bg-type-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  bgType = btn.dataset.type;
+  document.getElementById('headphoneHint').classList.toggle('show', BEAT_TYPES.has(bgType));
+}
+document.querySelectorAll('#noiseTypeRow .bg-type-btn, #beatTypeRow .bg-type-btn').forEach(btn=>{
+  btn.onclick = () => selectBgType(btn);
+});
 
-// 现场生成噪音背景音(不需要外部音频文件)：白噪音/粉噪音/褐噪音(更低沉，接近深海/引擎低鸣的感觉)
+const BINAURAL_PRESETS = {
+  delta: { diff: 2,  carrier: 200 },
+  theta: { diff: 6,  carrier: 250 },
+  alpha: { diff: 10, carrier: 235 },
+  beta:  { diff: 20, carrier: 200 },
+};
+
 function generateNoiseBuffer(type, lengthInSamples, sampleRate){
   const ctx = getCtx();
   const buffer = ctx.createBuffer(2, lengthInSamples, sampleRate);
@@ -288,7 +566,6 @@ function generateNoiseBuffer(type, lengthInSamples, sampleRate){
     if(type === 'white'){
       for(let i=0;i<lengthInSamples;i++) data[i] = (Math.random()*2-1) * 0.35;
     } else if(type === 'pink'){
-      // Paul Kellet 的简化粉噪音算法
       let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
       for(let i=0;i<lengthInSamples;i++){
         const white = Math.random()*2-1;
@@ -303,7 +580,6 @@ function generateNoiseBuffer(type, lengthInSamples, sampleRate){
         data[i] = pink * 0.08;
       }
     } else if(type === 'brown'){
-      // 布朗噪音：白噪音积分，声音更低沉厚重
       let last = 0;
       for(let i=0;i<lengthInSamples;i++){
         const white = Math.random()*2-1;
@@ -311,9 +587,29 @@ function generateNoiseBuffer(type, lengthInSamples, sampleRate){
         data[i] = last * 3.5;
       }
     }
-    // type === 'none' 时保持全0（静音），上层会直接跳过混音
   }
   return buffer;
+}
+
+function generateBinauralBuffer(presetKey, lengthInSamples, sampleRate){
+  const ctx = getCtx();
+  const preset = BINAURAL_PRESETS[presetKey];
+  const buffer = ctx.createBuffer(2, lengthInSamples, sampleRate);
+  const left = buffer.getChannelData(0);
+  const right = buffer.getChannelData(1);
+  const leftFreq = preset.carrier;
+  const rightFreq = preset.carrier + preset.diff;
+  for(let i=0;i<lengthInSamples;i++){
+    const t = i / sampleRate;
+    left[i]  = Math.sin(2*Math.PI*leftFreq*t)  * 0.25;
+    right[i] = Math.sin(2*Math.PI*rightFreq*t) * 0.25;
+  }
+  return buffer;
+}
+
+function generateBgBuffer(type, lengthInSamples, sampleRate){
+  if (BEAT_TYPES.has(type)) return generateBinauralBuffer(type, lengthInSamples, sampleRate);
+  return generateNoiseBuffer(type, lengthInSamples, sampleRate);
 }
 
 function enableControls(){
@@ -321,80 +617,56 @@ function enableControls(){
   document.getElementById('exportBtn').disabled = false;
 }
 
-// ─── 变速不变调处理（SoundTouch）───
-function processAudio(buffer, speed) {
-  const numChannels = buffer.numberOfChannels;
-  const left = buffer.getChannelData(0);
-  const right = numChannels > 1 ? buffer.getChannelData(1) : left;
-  const totalFrames = buffer.length;
-
-  // SoundTouchJS 的 WebAudio 命名空间
-  const ST = window.soundtouch || window.SoundTouch || {};
-  const SoundTouchClass = ST.SoundTouch;
-  const SimpleFilterClass = ST.SimpleFilter;
-
-  if (!SoundTouchClass || !SimpleFilterClass) {
-    console.error('SoundTouch未加载');
-    return buffer;
-  }
-
-  const st = new SoundTouchClass();
-  st.tempo = speed;      // 变速不变调
-  st.pitch = 1;
-  st.rate = 1;
-
-  // source：交错的立体声样本
-  let readPos = 0;
-  const source = {
-    extract: function(target, numFrames) {
-      const remaining = totalFrames - readPos;
-      const toRead = Math.min(numFrames, remaining);
-      for (let i = 0; i < toRead; i++) {
-        target[i * 2] = left[readPos + i];
-        target[i * 2 + 1] = right[readPos + i];
-      }
-      readPos += toRead;
-      return toRead;
+function hannWindow(N){
+  const w = new Float32Array(N);
+  for(let i=0;i<N;i++) w[i] = 0.5 - 0.5*Math.cos(2*Math.PI*i/(N-1));
+  return w;
+}
+function timeStretchChannel(input, speed, N, window_){
+  const Hs = Math.floor(N/4);
+  const Ha = Math.max(1, Math.round(Hs*speed));
+  const inLen = input.length;
+  const outLen = Math.ceil(inLen/Ha)*Hs + N;
+  const output = new Float32Array(outLen);
+  const winSum = new Float32Array(outLen);
+  let inPos = 0, outPos = 0;
+  while(inPos + N <= inLen){
+    for(let i=0;i<N;i++){
+      const w = window_[i];
+      output[outPos+i] += input[inPos+i]*w;
+      winSum[outPos+i] += w*w;
     }
-  };
-
-  const filter = new SimpleFilterClass(source, st);
-
-  // 输出收集
-  const outFrames = Math.ceil(totalFrames / speed) + 4096;
-  const outL = new Float32Array(outFrames);
-  const outR = new Float32Array(outFrames);
-
-  const BLOCK = 4096;
-  const samples = new Float32Array(BLOCK * 2);
-  let writePos = 0;
-  let extracted;
-  let guard = 0;
-  while ((extracted = filter.extract(samples, BLOCK)) > 0) {
-    for (let i = 0; i < extracted; i++) {
-      if (writePos + i < outFrames) {
-        outL[writePos + i] = samples[i * 2];
-        outR[writePos + i] = samples[i * 2 + 1];
-      }
-    }
-    writePos += extracted;
-    if (++guard > 100000) break; // 防死循环
+    inPos += Ha;
+    outPos += Hs;
   }
-
-  const outBuffer = getCtx().createBuffer(2, writePos || 1, buffer.sampleRate);
-  outBuffer.copyToChannel(outL.subarray(0, writePos), 0);
-  outBuffer.copyToChannel(outR.subarray(0, writePos), 1);
+  const finalLen = Math.max(outPos, 1);
+  for(let i=0;i<finalLen;i++){
+    if (winSum[i] > 1e-4) output[i] /= Math.max(winSum[i], 0.35);
+  }
+  return output.subarray(0, finalLen);
+}
+function processAudio(buffer, speed){
+  if (speed === 1) return buffer;
+  const numCh = buffer.numberOfChannels;
+  const N = 2048;
+  const window_ = hannWindow(N);
+  const outChannels = [];
+  let minLen = Infinity;
+  for(let ch=0; ch<numCh; ch++){
+    const stretched = timeStretchChannel(buffer.getChannelData(ch), speed, N, window_);
+    outChannels.push(stretched);
+    minLen = Math.min(minLen, stretched.length);
+  }
+  const outBuffer = getCtx().createBuffer(numCh, minLen, buffer.sampleRate);
+  for(let ch=0; ch<numCh; ch++) outBuffer.copyToChannel(outChannels[ch].subarray(0, minLen), ch);
   return outBuffer;
 }
 
-// ─── 试听 ───
 async function startPreview(){
   const btn = document.getElementById('previewBtn');
-  // 先停掉正在播的（比如语速滑块联动重启时）
   try { if (previewSource) previewSource.stop(); } catch(e){}
   try { if (previewBgSource) previewBgSource.stop(); } catch(e){}
 
-  // iOS上AudioContext可能处于suspended状态，强制新建一个确保能播放
   try {
     if(audioCtx && audioCtx.state !== 'closed') { audioCtx.close(); }
   } catch(e){}
@@ -409,8 +681,7 @@ async function startPreview(){
   btn.textContent = '处理中…';
 
   try {
-    // 处理人声（变速不变调）
-    const processed = (speed === 1) ? recordedBuffer : processAudio(recordedBuffer, speed);
+    const processed = processAudio(recordedBuffer, speed);
 
     previewSource = ctx.createBufferSource();
     previewSource.buffer = processed;
@@ -421,10 +692,9 @@ async function startPreview(){
     previewSource.loop = true;
     previewSource.start();
 
-    // 混入背景音（如果选了类型且音量大于0）
     let bgSource = null;
     if(bgType !== 'none' && bgVol > 0){
-      const bgBuffer = generateNoiseBuffer(bgType, processed.length, processed.sampleRate);
+      const bgBuffer = generateBgBuffer(bgType, processed.length, processed.sampleRate);
       bgSource = ctx.createBufferSource();
       bgSource.buffer = bgBuffer;
       const bgGain = ctx.createGain();
@@ -466,7 +736,6 @@ document.getElementById('previewBtn').onclick = async () => {
   await startPreview();
 };
 
-// ─── 合成导出 ───
 document.getElementById('exportBtn').onclick = async () => {
   if (!recordedBuffer) return;
   const proc = document.getElementById('processing');
@@ -477,7 +746,7 @@ document.getElementById('exportBtn').onclick = async () => {
   const bgVol = parseInt(bgSlider.value) / 100;
 
     try {
-      const processed = (speed === 1) ? recordedBuffer : processAudio(recordedBuffer, speed);
+      const processed = processAudio(recordedBuffer, speed);
 
       const offline = new OfflineAudioContext(2, processed.length, processed.sampleRate);
       const src = offline.createBufferSource();
@@ -487,9 +756,8 @@ document.getElementById('exportBtn').onclick = async () => {
       src.connect(gain).connect(offline.destination);
       src.start();
 
-      // 混入背景音（导出的文件也要包含背景音，不只是试听时有）
       if(bgType !== 'none' && bgVol > 0){
-        const bgBuffer = generateNoiseBuffer(bgType, processed.length, processed.sampleRate);
+        const bgBuffer = generateBgBuffer(bgType, processed.length, processed.sampleRate);
         const bgSrc = offline.createBufferSource();
         bgSrc.buffer = bgBuffer;
         const bgGain = offline.createGain();
@@ -504,24 +772,15 @@ document.getElementById('exportBtn').onclick = async () => {
       const blob = new Blob([wav], { type: 'audio/wav' });
       const url = URL.createObjectURL(blob);
 
-      // 关键修复：之前只做了浏览器下载链接，但在真机App(WKWebView)里这种下载方式经常静默失败，
-      // 文件"下载"了但用户根本找不到、也没有任何地方能播放。
-      // 现在直接把生成好的音频装进页面里的<audio>播放器，loop已开启，用户可以直接原地循环播放。
       const player = document.getElementById('exportPlayer');
       player.src = url;
       player.style.display = 'block';
       player.loop = true;
 
-      // 仍然尝试提供下载链接作为备选（网页预览环境里这个是有效的）
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = '潜意识音频.wav';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
       proc.classList.remove('show');
       document.getElementById('exportHint').style.display = 'block';
+
+      openNameModal(blob, 'immersive');
     } catch(err) {
       console.error(err);
       proc.classList.remove('show');
@@ -529,7 +788,73 @@ document.getElementById('exportBtn').onclick = async () => {
     }
 };
 
-// WAV编码
+let ambientType = 'white';
+let ambientSource = null;
+let ambientGain = null;
+let isAmbientPlaying = false;
+
+document.querySelectorAll('#ambientTypeRow .bg-type-btn').forEach(btn=>{
+  btn.onclick = () => {
+    document.querySelectorAll('#ambientTypeRow .bg-type-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    ambientType = btn.dataset.type;
+    if (isAmbientPlaying) startAmbientPlayback();
+  };
+});
+const ambientVolSlider = document.getElementById('ambientVolSlider');
+const ambientVolVal = document.getElementById('ambientVolVal');
+ambientVolSlider.oninput = () => {
+  ambientVolVal.textContent = ambientVolSlider.value + '%';
+  if (isAmbientPlaying && ambientGain) ambientGain.gain.value = parseInt(ambientVolSlider.value)/100;
+};
+
+function startAmbientPlayback(){
+  try { if (ambientSource) ambientSource.stop(); } catch(e){}
+  try {
+    if(audioCtx && audioCtx.state !== 'closed') { audioCtx.close(); }
+  } catch(e){}
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const ctx = audioCtx;
+  ctx.resume();
+  const buffer = generateNoiseBuffer(ambientType, ctx.sampleRate*30, ctx.sampleRate);
+  ambientSource = ctx.createBufferSource();
+  ambientSource.buffer = buffer;
+  ambientSource.loop = true;
+  ambientGain = ctx.createGain();
+  ambientGain.gain.value = parseInt(ambientVolSlider.value)/100;
+  ambientSource.connect(ambientGain).connect(ctx.destination);
+  ambientSource.start();
+  isAmbientPlaying = true;
+  document.getElementById('ambientPlayBtn').textContent = '⏹ 停止';
+}
+document.getElementById('ambientPlayBtn').onclick = () => {
+  if (isAmbientPlaying) {
+    try { if (ambientSource) ambientSource.stop(); } catch(e){}
+    isAmbientPlaying = false;
+    document.getElementById('ambientPlayBtn').textContent = '▶ 播放';
+    return;
+  }
+  startAmbientPlayback();
+};
+
+document.getElementById('ambientSaveBtn').onclick = async () => {
+  try {
+    const sr = 44100;
+    const buffer = generateNoiseBuffer(ambientType, sr*30, sr);
+    const offline = new OfflineAudioContext(2, sr*30, sr);
+    const src = offline.createBufferSource();
+    src.buffer = buffer;
+    src.connect(offline.destination);
+    src.start();
+    const rendered = await offline.startRendering();
+    const wav = bufferToWav(rendered);
+    const blob = new Blob([wav], { type: 'audio/wav' });
+    openNameModal(blob, 'ambient');
+  } catch(err) {
+    alert('保存出错：' + err.message);
+  }
+};
+
 function bufferToWav(buffer) {
   const numCh = buffer.numberOfChannels;
   const len = buffer.length * numCh * 2 + 44;
