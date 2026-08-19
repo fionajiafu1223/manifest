@@ -191,19 +191,7 @@ const MOODS=[{e:'🩷'},{e:'💜'},{e:'💙'},{e:'🩵'},{e:'💚'},{e:'🧡'},{
 let curY,curM,selDay=null,selMood=0;
 const today=new Date();
 
-const bubblesEl=document.getElementById('bubbles');
-// 金色光尘：暖金/琥珀单一色系，缓缓向上飘散淡出，像烛光或萤火虫，呼应书本的烫金封面
-for(let i=0;i<22;i++){
-  const b=document.createElement('div');b.className='bubble';
-  const size=2+Math.random()*5;
-  const maxOp=(0.25+Math.random()*0.45).toFixed(2);
-  const fy=-(40+Math.random()*80)+'px';
-  const fx=((-1+Math.random()*2)*20)+'px';
-  const dur=6+Math.random()*8;
-  const delay=-(Math.random()*dur);
-  b.style.cssText=`width:${size}px;height:${size}px;top:${40+Math.random()*60}%;left:${Math.random()*100}%;--dur:${dur}s;--delay:${delay}s;--fy:${fy};--fx:${fx};--maxOp:${maxOp};background:radial-gradient(circle,rgba(255,224,150,0.95) 0%,rgba(212,168,67,0.5) 45%,rgba(212,168,67,0) 75%);box-shadow:0 0 ${(size*2).toFixed(1)}px rgba(240,208,96,0.6);`;
-  bubblesEl.appendChild(b);
-}
+// 背景不放任何飘浮粒子元素，#bubbles容器保留空壳，只是为了不破坏下面dimmed显隐逻辑的调用
 
 function key(y,m,d){return`gj_${y}_${m}_${d}`;}
 function getEntry(y,m,d){try{return JSON.parse(localStorage.getItem(key(y,m,d))||'null');}catch{return null;}}
