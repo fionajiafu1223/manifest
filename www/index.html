@@ -14,10 +14,13 @@ body{height:100dvh;position:fixed;inset:0;background:#f4f8f0;font-family:sans-se
 /* 会推进的场景容器：剪纸花园背景图 */
 .garden{
   position:absolute;inset:0;
-  background-image:url('assets/backgrounds/garden-home.jpg');
+  background-image:url('assets/backgrounds/garden-home-portrait.jpg');
   background-size:cover;background-position:center top;
   transform-origin:center 75%;
   transition:transform 1.4s cubic-bezier(0.4,0,0.2,1),opacity 1.2s;
+}
+@media (orientation:landscape){
+  .garden{background-image:url('assets/backgrounds/garden-home-landscape.jpg');}
 }
 .garden.walk-1{transform:scale(2.6) translate(28%,-8%);opacity:0;}
 .garden.walk-2{transform:scale(2.6) translate(10%,-8%);opacity:0;}
