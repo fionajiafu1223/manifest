@@ -27,31 +27,20 @@ body{height:100dvh;position:fixed;inset:0;background:#f4f8f0;font-family:sans-se
   background-image:url('assets/backgrounds/layers/1-sky-gradient.webp');
   background-size:cover;background-position:center top;}
 
-/* 2/3. 山丘：横向拉满不留白，用object-fit:cover保比例不失真地填满指定高度 */
-.layer-hills-back{position:absolute;left:-6%;width:112%;overflow:hidden;z-index:1;
-  height:17dvh;bottom:28dvh;}
-.layer-hills-front{position:absolute;left:-6%;width:112%;overflow:hidden;z-index:2;
-  height:22dvh;bottom:16dvh;}
+/* 2/3. 山丘：横向拉满不留白，用object-fit:cover保比例不失真地填满指定高度（高度由JS按实测像素设置） */
+.layer-hills-back{position:absolute;left:-6%;width:112%;overflow:hidden;z-index:1;}
+.layer-hills-front{position:absolute;left:-6%;width:112%;overflow:hidden;z-index:2;}
 .layer-hills-back img,.layer-hills-front img{width:100%;height:100%;object-fit:cover;object-position:bottom center;display:block;}
 
-/* 4/5. 左右两棵树：固定贴左右下角，用dvh避免iOS工具栏导致的高度跳动 */
-.layer-tree-left{position:absolute;left:-2%;bottom:0;height:35dvh;width:auto;z-index:3;}
+/* 4/5. 左右两棵树：固定贴左右下角（高度由JS按实测像素设置，不依赖不可靠的vh/dvh） */
+.layer-tree-left{position:absolute;left:-2%;bottom:0;width:auto;z-index:3;}
 .layer-tree-left img{height:100%;width:auto;display:block;}
-.layer-tree-right{position:absolute;right:-2%;bottom:0;height:33dvh;width:auto;z-index:3;}
+.layer-tree-right{position:absolute;right:-2%;bottom:0;width:auto;z-index:3;}
 .layer-tree-right img{height:100%;width:auto;display:block;}
 
 /* 6. 前景花草：横向拉满，贴底，压住山丘下缘 */
-.layer-plants{position:absolute;left:-6%;width:112%;bottom:0;height:24dvh;overflow:hidden;z-index:4;}
+.layer-plants{position:absolute;left:-6%;width:112%;bottom:0;overflow:hidden;z-index:4;}
 .layer-plants img{width:100%;height:100%;object-fit:cover;object-position:bottom center;display:block;}
-
-/* iPad横屏比例调整 */
-@media (orientation:landscape){
-  .layer-hills-back{height:16dvh;bottom:24dvh;}
-  .layer-hills-front{height:20dvh;bottom:14dvh;}
-  .layer-tree-left{height:46dvh;}
-  .layer-tree-right{height:44dvh;}
-  .layer-plants{height:25dvh;}
-}
 
 /* 7/8. 蝴蝶：各自独立飘动，竖屏/横屏各有自己的位置和大小 */
 .bfly{position:absolute;width:9vw;max-width:60px;height:auto;animation:flyPath var(--bd) ease-in-out infinite;z-index:5;}
@@ -64,20 +53,14 @@ body{height:100dvh;position:fixed;inset:0;background:#f4f8f0;font-family:sans-se
   75%{transform:translate(30px,-30px) rotate(3deg);}
   100%{transform:translate(0,0) rotate(-4deg);}
 }
-#bfly1{top:52%;left:36%;width:9vw;max-width:35px;}
-#bfly2{top:69%;left:72%;width:10vw;max-width:39px;}
-@media (orientation:landscape){
-  #bfly1{top:43%;left:29%;width:4.5vw;max-width:53px;}
-  #bfly2{top:68%;left:78%;width:5vw;max-width:59px;}
-}
+#bfly1{width:9vw;max-width:35px;}
+#bfly2{width:10vw;max-width:39px;}
 
-/* 底部四宫格功能区：占屏幕上方约38%（横屏30%），下方留给花园 */
-.dock{position:absolute;top:calc(env(safe-area-inset-top,20px) + 2dvh);left:0;width:100%;height:38dvh;
+/* 底部四宫格功能区：高度由JS按实测像素设置；横屏宽屏幕上收窄居中，避免图标离得太远 */
+.dock{position:absolute;top:calc(env(safe-area-inset-top,20px) + 2dvh);left:50%;transform:translateX(-50%);
+  width:100%;max-width:640px;
   display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);
   gap:14px;padding:0 5%;z-index:10;}
-@media (orientation:landscape){
-  .dock{height:30dvh;}
-}
 .dock-item{
   cursor:pointer;transition:transform 0.2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
 }
@@ -150,6 +133,55 @@ body{height:100dvh;position:fixed;inset:0;background:#f4f8f0;font-family:sans-se
 })();
 
 setTimeout(()=>{ document.getElementById('world').classList.remove('entering'); }, 2400);
+
+/* 用JS实测屏幕像素高度来布局花园各图层，
+   不依赖dvh/vh这些在iOS Safari上不可靠的单位 */
+function applyGardenLayout(){
+  const world = document.getElementById('world');
+  const H = world.clientHeight;
+  const W = world.clientWidth;
+  const landscape = W > H;
+
+  const spec = landscape ? {
+    dockH:0.30,
+    hillsBackH:0.16, hillsBackBottom:0.24,
+    hillsFrontH:0.20, hillsFrontBottom:0.14,
+    treeLeftH:0.46, treeRightH:0.44,
+    plantsH:0.25,
+    bfly1:{top:0.43,left:0.29}, bfly2:{top:0.68,left:0.78}
+  } : {
+    dockH:0.38,
+    hillsBackH:0.17, hillsBackBottom:0.28,
+    hillsFrontH:0.22, hillsFrontBottom:0.16,
+    treeLeftH:0.35, treeRightH:0.33,
+    plantsH:0.24,
+    bfly1:{top:0.52,left:0.36}, bfly2:{top:0.69,left:0.72}
+  };
+
+  document.getElementById('dock').style.height = Math.round(H*spec.dockH)+'px';
+
+  const hillsBack = document.querySelector('.layer-hills-back');
+  hillsBack.style.height = Math.round(H*spec.hillsBackH)+'px';
+  hillsBack.style.bottom = Math.round(H*spec.hillsBackBottom)+'px';
+
+  const hillsFront = document.querySelector('.layer-hills-front');
+  hillsFront.style.height = Math.round(H*spec.hillsFrontH)+'px';
+  hillsFront.style.bottom = Math.round(H*spec.hillsFrontBottom)+'px';
+
+  document.querySelector('.layer-tree-left').style.height = Math.round(H*spec.treeLeftH)+'px';
+  document.querySelector('.layer-tree-right').style.height = Math.round(H*spec.treeRightH)+'px';
+  document.querySelector('.layer-plants').style.height = Math.round(H*spec.plantsH)+'px';
+
+  const b1 = document.getElementById('bfly1');
+  b1.style.top = Math.round(H*spec.bfly1.top)+'px';
+  b1.style.left = Math.round(W*spec.bfly1.left)+'px';
+  const b2 = document.getElementById('bfly2');
+  b2.style.top = Math.round(H*spec.bfly2.top)+'px';
+  b2.style.left = Math.round(W*spec.bfly2.left)+'px';
+}
+applyGardenLayout();
+window.addEventListener('resize', applyGardenLayout);
+window.addEventListener('orientationchange', ()=>setTimeout(applyGardenLayout,80));
 
 function walkTo(feature, pos){
   const garden = document.getElementById('garden');
