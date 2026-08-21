@@ -3,883 +3,1124 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>潜意识音频工作室</title>
+<title>潜意识沟通室</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=Noto+Sans+SC:wght@300;400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=Noto+Sans+SC:wght@300;400;600&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 body{
   font-family:'Noto Sans SC',sans-serif;
   background:linear-gradient(180deg,#f0ecd8 0%,#e4ecc8 25%,#d0e4b8 55%,#b8d8a0 80%,#a0cc90 100%);
-  min-height:100vh;color:#4a3828;
-  padding:calc(env(safe-area-inset-top,44px) + 1rem) 1.2rem 4rem;
+  min-height:100vh;color:#4a3828;overflow:hidden;
 }
+.view{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:calc(env(safe-area-inset-top,44px) + 1rem) 1.2rem calc(env(safe-area-inset-bottom,20px) + 2rem);
+  display:none;}
+.view.active{display:block;}
 .wrap{max-width:460px;margin:0 auto;}
-.header{text-align:center;margin-bottom:1.4rem;}
-.header h1{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:400;color:#c89030;letter-spacing:4px;margin-bottom:6px;}
-.header p{font-size:12px;color:#8a7868;letter-spacing:2px;}
 
-.card{
-  background:rgba(255,255,255,0.85);
-  border:1px solid rgba(120,160,90,0.3);
-  border-radius:20px;padding:1.4rem;margin-bottom:1.2rem;
-  backdrop-filter:blur(10px);
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4rem;}
+.topbar h1{font-family:'Noto Serif SC',serif;font-size:19px;font-weight:400;color:#3a4a2a;letter-spacing:3px;}
+.icon-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.6);border:1px solid rgba(120,160,90,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#3a4a2a;flex-shrink:0;}
+.text-btn{background:rgba(255,255,255,0.55);border:1px solid rgba(200,150,70,0.35);border-radius:16px;padding:7px 14px;font-size:12px;color:#8a6838;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;}
+
+/* 听室：Now Playing */
+.now-playing{
+  background:linear-gradient(135deg,rgba(58,112,72,0.92),rgba(30,74,50,0.92));
+  border-radius:20px;padding:1.3rem 1.4rem;margin-bottom:1.6rem;color:#f0ecd8;
+  box-shadow:0 8px 30px rgba(30,74,50,0.35);position:relative;overflow:hidden;
 }
-.card-title{font-family:'Noto Serif SC',serif;font-size:15px;color:#3a4a2a;letter-spacing:2px;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
-.step-num{background:linear-gradient(135deg,#5a9060,#3a7048);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0;}
+.now-playing::before{content:'';position:absolute;top:-30%;right:-20%;width:60%;height:160%;
+  background:radial-gradient(circle,rgba(240,208,96,0.18),transparent 70%);}
+.np-eyebrow{font-size:10px;letter-spacing:3px;opacity:0.6;margin-bottom:6px;}
+.np-name{font-family:'Noto Serif SC',serif;font-size:19px;letter-spacing:1px;margin-bottom:4px;}
+.np-meta{font-size:11px;opacity:0.75;margin-bottom:1rem;}
+.np-play-btn{background:rgba(240,208,96,0.92);color:#2a4020;border:none;border-radius:14px;
+  padding:10px 20px;font-size:13px;font-family:'Noto Serif SC',serif;letter-spacing:1px;cursor:pointer;
+  display:flex;align-items:center;gap:6px;}
 
-.lib-btn-row{display:flex;justify-content:center;margin-bottom:1rem;}
-.lib-btn{
-  background:rgba(255,255,255,0.7);border:1px solid rgba(200,150,70,0.45);
-  border-radius:20px;padding:9px 20px;font-size:13px;color:#8a6838;cursor:pointer;
-  font-family:'Noto Sans SC',sans-serif;display:flex;align-items:center;gap:6px;
+.section-title{font-size:13px;color:#5a6a48;letter-spacing:2px;margin-bottom:0.9rem;font-family:'Noto Serif SC',serif;}
+
+.track-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:1.6rem;}
+.track-card{
+  background:rgba(255,255,255,0.82);border:1px solid rgba(120,160,90,0.25);border-radius:16px;
+  padding:0.9rem 1rem;display:flex;align-items:center;gap:12px;cursor:pointer;
 }
+.track-cover{width:46px;height:46px;border-radius:12px;flex-shrink:0;
+  background:linear-gradient(135deg,#e8b04a,#c88828);display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:#fff;}
+.track-info{flex:1;min-width:0;}
+.track-name{font-size:14px;color:#3a4a2a;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.track-meta{font-size:11px;color:#9a8878;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.track-more{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#9a8878;flex-shrink:0;font-size:16px;}
 
-.mode-tabs{display:flex;gap:6px;margin-bottom:1.2rem;background:rgba(255,255,255,0.45);border-radius:14px;padding:4px;}
-.mode-tab{flex:1;padding:10px 4px;border-radius:10px;border:none;background:transparent;color:#5a6a48;font-size:13px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;transition:all .2s;}
-.mode-tab.selected{background:linear-gradient(135deg,#5a9060,#3a7048);color:#fff;font-weight:600;}
+.empty-room{text-align:center;padding:2.4rem 1rem;color:#8a9878;}
+.empty-room-icon{font-size:34px;margin-bottom:10px;opacity:0.6;}
+.empty-room p{font-size:13px;line-height:1.7;margin-bottom:1.2rem;}
 
-.bg-subtabs{display:flex;gap:8px;margin-bottom:10px;}
-.bg-subtab{flex:1;padding:7px 4px;border-radius:8px;border:1px solid rgba(150,175,110,0.35);background:rgba(255,255,255,0.4);color:#8a9878;font-size:11px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;}
-.bg-subtab.selected{background:rgba(90,144,96,0.18);border-color:#5a9060;color:#3a7048;font-weight:600;}
+.fab-row{display:flex;justify-content:center;margin-top:0.6rem;}
+.fab-btn{background:rgba(255,255,255,0.55);border:1px dashed rgba(180,140,90,0.5);border-radius:20px;
+  padding:10px 22px;font-size:12px;color:#8a6838;cursor:pointer;font-family:'Noto Sans SC',sans-serif;}
 
-.headphone-hint{font-size:11px;color:#c89030;text-align:center;margin-top:8px;background:rgba(232,176,74,0.14);border-radius:8px;padding:7px;display:none;}
-.headphone-hint.show{display:block;}
+/* 播放器 */
+#playerView .wrap{display:flex;flex-direction:column;min-height:calc(100vh - env(safe-area-inset-top,44px) - env(safe-area-inset-bottom,20px) - 3rem);justify-content:center;}
+.player-art{width:220px;height:220px;border-radius:50%;margin:0 auto 2rem;
+  background:radial-gradient(circle at 38% 35%,#e8b04a,#8a5838);
+  display:flex;align-items:center;justify-content:center;font-size:52px;
+  box-shadow:0 20px 50px rgba(80,60,20,0.3);}
+.player-name{font-family:'Noto Serif SC',serif;font-size:20px;color:#3a4a2a;text-align:center;margin-bottom:6px;}
+.player-meta{font-size:12px;color:#8a9878;text-align:center;margin-bottom:2rem;letter-spacing:1px;}
+.progress-row{display:flex;align-items:center;gap:10px;margin-bottom:1.6rem;}
+.progress-time{font-size:11px;color:#8a9878;width:38px;flex-shrink:0;}
+.progress-time.end{text-align:right;}
+.progress-bar{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(120,90,60,0.2);outline:none;}
+.progress-bar::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#c89030;box-shadow:0 2px 6px rgba(180,140,60,0.5);}
+.player-controls{display:flex;align-items:center;justify-content:center;gap:28px;margin-bottom:1.8rem;}
+.ctrl-btn{background:none;border:none;color:#4a6a48;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.ctrl-btn.play-pause{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#5a9060,#3a7048);color:#fff;box-shadow:0 8px 24px rgba(58,112,72,0.4);}
+.ctrl-btn.small{opacity:0.7;}
+.player-bottom{display:flex;justify-content:center;}
 
-.record-area{display:flex;flex-direction:column;align-items:center;gap:14px;}
-.record-btn{
-  width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;font-size:1.9rem;
+/* 制作室入口 */
+.studio-entry-card{
+  background:rgba(255,255,255,0.82);border:1px solid rgba(120,160,90,0.25);border-radius:18px;
+  padding:1.3rem;margin-bottom:1rem;display:flex;align-items:center;gap:14px;cursor:pointer;
+}
+.studio-entry-card.disabled{opacity:0.55;cursor:default;}
+.entry-icon{width:48px;height:48px;border-radius:14px;background:rgba(90,144,96,0.15);
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.entry-text-title{font-size:14px;color:#3a4a2a;font-weight:600;margin-bottom:3px;}
+.entry-text-sub{font-size:11px;color:#9a8878;line-height:1.5;}
+.entry-badge{font-size:10px;color:#c89030;background:rgba(232,176,74,0.15);border-radius:8px;padding:2px 7px;margin-left:6px;}
+
+/* 内容台/声音台 通用 */
+.card{background:rgba(255,255,255,0.85);border:1px solid rgba(120,160,90,0.25);border-radius:18px;padding:1.2rem;margin-bottom:1rem;}
+.sentence-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(120,160,90,0.15);}
+.sentence-row:last-child{border-bottom:none;}
+.sentence-text{flex:1;font-size:13px;color:#3a4a2a;line-height:1.6;}
+.sentence-actions{display:flex;gap:6px;flex-shrink:0;}
+.mini-btn{background:rgba(90,144,96,0.12);border:none;border-radius:8px;padding:5px 8px;font-size:11px;color:#3a7048;cursor:pointer;}
+.mini-btn.del{background:rgba(200,60,60,0.1);color:#a03030;}
+.mini-btn.rec{background:rgba(200,60,60,0.14);color:#a03030;}
+.mini-btn.ok{background:rgba(90,144,96,0.18);color:#2a6038;}
+.add-sentence-row{display:flex;gap:8px;margin-top:10px;}
+.add-sentence-row input{flex:1;padding:9px 12px;border-radius:10px;border:1px solid rgba(150,175,110,0.4);font-size:13px;font-family:'Noto Sans SC',sans-serif;background:#fff;}
+.add-sentence-row button{background:linear-gradient(135deg,#5a9060,#3a7048);color:#fff;border:none;border-radius:10px;padding:0 16px;font-size:13px;cursor:pointer;}
+
+.voice-progress{font-size:11px;color:#8a9878;margin-bottom:0.8rem;}
+
+.freeform-record-area{display:flex;flex-direction:column;align-items:center;gap:14px;padding:1rem 0;}
+.record-btn-big{width:76px;height:76px;border-radius:50%;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:2rem;
   background:radial-gradient(circle at 38% 35%,rgba(255,120,120,0.85),rgba(180,30,30,0.75));
-  box-shadow:0 4px 18px rgba(180,30,30,0.4);transition:transform 0.18s;
-}
-.record-btn:hover{transform:scale(1.06);}
-.record-btn.recording{background:radial-gradient(circle at 38% 35%,rgba(255,60,60,0.9),rgba(160,10,10,0.85));animation:recPulse 1.4s infinite;}
-.record-btn.has-recording{background:radial-gradient(circle at 38% 35%,rgba(80,180,120,0.88),rgba(20,100,60,0.78));}
+  box-shadow:0 4px 18px rgba(180,30,30,0.4);}
+.record-btn-big.recording{animation:recPulse 1.4s infinite;}
+.record-btn-big.done{background:radial-gradient(circle at 38% 35%,rgba(80,180,120,0.88),rgba(20,100,60,0.78));}
 @keyframes recPulse{0%,100%{box-shadow:0 4px 18px rgba(180,30,30,0.4),0 0 0 0 rgba(220,60,60,0.35);}50%{box-shadow:0 4px 24px rgba(220,30,30,0.6),0 0 0 14px rgba(220,60,60,0);}}
-.record-timer{font-family:'Noto Serif SC',serif;font-size:1.4rem;color:#4a3828;letter-spacing:0.1em;}
-.record-status{font-size:12px;color:#8a7868;letter-spacing:1px;text-align:center;}
+.record-timer-big{font-family:'Noto Serif SC',serif;font-size:1.3rem;color:#4a3828;}
 
-.upload-zone{
-  border:1.5px dashed rgba(180,140,90,0.4);border-radius:14px;
-  padding:14px;text-align:center;cursor:pointer;transition:all 0.2s;
-  margin-top:12px;font-size:12px;color:#8a7868;
-}
-.upload-zone:hover{border-color:rgba(200,150,70,0.7);background:rgba(255,255,255,0.3);}
+/* 混音台 */
+.mix-layer{background:rgba(255,255,255,0.85);border:1px solid rgba(120,160,90,0.25);border-radius:16px;padding:1.1rem;margin-bottom:0.9rem;}
+.mix-layer.locked{opacity:0.5;}
+.mix-layer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.7rem;}
+.mix-layer-title{font-size:13px;color:#3a4a2a;font-weight:600;letter-spacing:1px;display:flex;align-items:center;gap:6px;}
+.toggle-switch{width:38px;height:22px;border-radius:11px;background:rgba(150,150,150,0.3);position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;}
+.toggle-switch.on{background:#5a9060;}
+.toggle-switch::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+.toggle-switch.on::after{left:18px;}
+.chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:0.7rem;}
+.chip{padding:7px 12px;border-radius:10px;border:1px solid rgba(150,175,110,0.4);background:rgba(255,255,255,0.6);
+  color:#5a6a48;font-size:12px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;}
+.chip.selected{background:rgba(232,176,74,0.25);border-color:#e8b04a;color:#4a3810;font-weight:600;}
+.chip.soon{opacity:0.5;cursor:default;}
+.mix-vol-row{display:flex;align-items:center;gap:10px;}
+.mix-vol-row input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(120,90,60,0.2);outline:none;}
+.mix-vol-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:linear-gradient(135deg,#e8b04a,#c89030);cursor:pointer;}
+.soon-note{font-size:11px;color:#b09878;}
 
-.guide-tip{
-  background:rgba(232,176,74,0.15);border-radius:10px;padding:10px 12px;
-  font-size:11px;color:#8a6838;line-height:1.7;margin-bottom:12px;
-}
+.btn{width:100%;padding:13px;border-radius:14px;border:none;cursor:pointer;
+  font-family:'Noto Serif SC',serif;font-size:14px;letter-spacing:1px;margin-top:0.4rem;}
+.btn-primary{background:linear-gradient(135deg,#5a9060,#3a7048);color:#fff;}
+.btn-secondary{background:rgba(232,176,74,0.22);color:#8a6838;border:1px solid rgba(200,150,70,0.4);}
+.btn:disabled{opacity:0.4;}
 
-.slider-row{margin-bottom:1.2rem;}
-.slider-label{display:flex;justify-content:space-between;font-size:13px;color:#3a4a2a;margin-bottom:8px;}
-.slider-value{color:#c89030;font-family:'Noto Serif SC',serif;}
-input[type=range]{
-  width:100%;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;
-  background:rgba(120,90,60,0.2);outline:none;cursor:pointer;
-}
-input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
-  background:linear-gradient(135deg,#e8b04a,#c89030);
-  box-shadow:0 2px 8px rgba(180,140,60,0.5);cursor:pointer;
-}
-
-.btn-row{display:flex;gap:10px;margin-top:8px;}
-
-.bg-type-row{display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;}
-.bg-type-btn{
-  flex:1;min-width:70px;padding:9px 4px;border-radius:10px;border:1px solid rgba(150,175,110,0.4);
-  background:rgba(255,255,255,0.6);color:#5a6a48;font-size:12px;cursor:pointer;
-  font-family:'Noto Sans SC',sans-serif;transition:all 0.2s;
-}
-.bg-type-btn.selected{background:rgba(232,176,74,0.25);border-color:#e8b04a;color:#4a3810;font-weight:600;}
-.btn{
-  flex:1;padding:12px;border-radius:12px;border:none;cursor:pointer;
-  font-family:'Noto Serif SC',serif;font-size:13px;letter-spacing:1px;
-  transition:opacity 0.2s,transform 0.1s;
-}
-.btn:active{transform:scale(0.98);}
-.btn-play{background:rgba(232,176,74,0.25);color:#8a6838;border:1px solid rgba(200,150,70,0.4);}
-.btn-primary{background:linear-gradient(135deg,#d89838,#c88828);color:#fff;}
-.btn:disabled{opacity:0.4;cursor:not-allowed;}
-
-.hint{font-size:11px;text-align:center;margin-top:10px;line-height:1.6;color:#9a8878;}
-
-.processing{display:none;text-align:center;padding:1rem;color:#8a6838;font-size:13px;}
-.processing.show{display:block;}
-
-.modal-overlay{position:fixed;inset:0;background:rgba(30,40,20,0.45);z-index:10000;display:flex;align-items:flex-end;justify-content:center;}
+/* 弹层 */
+.modal-overlay{position:fixed;inset:0;background:rgba(20,30,15,0.5);z-index:10000;display:flex;align-items:flex-end;justify-content:center;}
 .modal-overlay.center{align-items:center;}
 .modal-card{background:#f4f0dc;width:100%;max-width:460px;max-height:78vh;border-radius:20px 20px 0 0;padding:1.3rem;overflow-y:auto;}
 .modal-card.small{border-radius:16px;max-height:none;margin:0 1.2rem;}
-.modal-header{font-family:'Noto Serif SC',serif;font-size:16px;color:#3a4a2a;display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
-.modal-close{cursor:pointer;color:#8a7868;font-size:16px;padding:4px 8px;}
-.modal-tabs{display:flex;gap:8px;margin-bottom:1rem;}
-.modal-tab{flex:1;padding:8px;border-radius:10px;border:1px solid rgba(150,175,110,0.35);background:rgba(255,255,255,0.55);color:#5a6a48;font-size:12px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;}
-.modal-tab.selected{background:rgba(90,144,96,0.18);border-color:#5a9060;color:#3a7048;font-weight:600;}
-
-.lib-item{background:rgba(255,255,255,0.65);border-radius:12px;padding:10px 12px;margin-bottom:8px;}
-.lib-item-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.lib-item-info{flex:1;min-width:0;}
-.lib-item-name{font-size:13px;color:#3a4a2a;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.lib-item-date{font-size:10px;color:#9a8878;margin-top:2px;}
-.lib-item-btns{display:flex;gap:6px;flex-shrink:0;}
-.lib-icon-btn{width:32px;height:32px;border-radius:50%;border:none;background:rgba(90,144,96,0.15);color:#3a7048;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.lib-icon-btn.del{background:rgba(200,60,60,0.12);color:#a03030;}
-.lib-item audio{width:100%;margin-top:8px;display:none;}
-.lib-item audio.show{display:block;}
-.lib-empty{text-align:center;color:#9a8878;font-size:12px;padding:2.4rem 0;}
-
-#nameInput{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(150,175,110,0.4);font-size:14px;margin-bottom:1rem;font-family:'Noto Sans SC',sans-serif;box-sizing:border-box;background:#fff;}
+.modal-header{font-family:'Noto Serif SC',serif;font-size:16px;color:#3a4a2a;margin-bottom:1rem;}
+#trackNameInput{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(150,175,110,0.4);font-size:14px;margin-bottom:1rem;background:#fff;box-sizing:border-box;}
 .modal-btn-row{display:flex;gap:10px;}
-.modal-btn-row button{flex:1;padding:10px;border-radius:10px;border:none;font-size:13px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;}
-#nameCancelBtn{background:rgba(0,0,0,0.06);color:#5a6a48;}
+.modal-btn-row button{flex:1;padding:10px;border-radius:10px;border:none;font-size:13px;cursor:pointer;}
+.sheet-action{padding:14px 4px;font-size:14px;color:#3a4a2a;border-bottom:1px solid rgba(120,160,90,0.15);cursor:pointer;}
+.sheet-action.danger{color:#a03030;}
+.sheet-action:last-child{border-bottom:none;}
+.toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,20px) + 30px);left:50%;transform:translateX(-50%);
+  background:rgba(40,50,30,0.9);color:#f0ecd8;padding:10px 18px;border-radius:12px;font-size:12px;z-index:20000;
+  opacity:0;transition:opacity 0.3s;pointer-events:none;}
+.toast.show{opacity:1;}
 </style>
 </head>
 <body>
-<div id="back-to-garden" style="position:fixed;top:calc(env(safe-area-inset-top,44px) + 12px);left:16px;z-index:9999;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.6);border:1px solid rgba(120,160,90,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#3a4a2a;" onclick="window.location.href='index.html'"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
 
-<div class="wrap">
-  <div class="header">
-    <h1>潜意识音频</h1>
-    <p>SUBLIMINAL STUDIO</p>
+<!-- ══════════ 听室（默认入口） ══════════ -->
+<div class="view active" id="roomView">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="icon-btn" onclick="window.location.href='index.html'">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1 style="flex:1;text-align:center;">潜意识沟通室</h1>
+      <button class="text-btn" id="toStudioBtn">制作室</button>
+    </div>
+
+    <div id="nowPlayingSlot"></div>
+
+    <div class="section-title">我的沟通音频</div>
+    <div class="track-grid" id="trackGrid"></div>
+
+    <div class="fab-row">
+      <button class="fab-btn" id="newTrackBtn">＋ 制作新的沟通</button>
+    </div>
   </div>
+</div>
 
-  <div class="lib-btn-row">
-    <button class="lib-btn" id="openLibraryBtn">🎵 我的音频库</button>
+<!-- ══════════ 播放器 ══════════ -->
+<div class="view" id="playerView">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="icon-btn" id="playerCloseBtn">✕</button>
+      <span style="flex:1;"></span>
+      <button class="icon-btn" id="playerMoreBtn">⋯</button>
+    </div>
+    <div class="player-art" id="playerArt">🎧</div>
+    <div class="player-name" id="playerName"></div>
+    <div class="player-meta" id="playerMeta"></div>
+    <div class="progress-row">
+      <span class="progress-time" id="playerCur">0:00</span>
+      <input type="range" class="progress-bar" id="playerSeek" min="0" max="100" value="0">
+      <span class="progress-time end" id="playerDur">0:00</span>
+    </div>
+    <div class="player-controls">
+      <button class="ctrl-btn small" id="playerPrevBtn">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+      </button>
+      <button class="ctrl-btn play-pause" id="playerPlayBtn">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" id="playerPlayIcon"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button class="ctrl-btn small" id="playerNextBtn">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 6v12l8.5-6z"/></svg>
+      </button>
+    </div>
+    <div class="player-bottom">
+      <button class="text-btn" id="playerStopBtn">结束播放</button>
+    </div>
   </div>
+</div>
 
-  <div class="mode-tabs">
-    <button class="mode-tab selected" data-mode="immersive">沉浸模式</button>
-    <button class="mode-tab" data-mode="ambient">生活背景音</button>
-  </div>
+<!-- ══════════ 制作室入口 ══════════ -->
+<div class="view" id="studioEntryView">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="icon-btn" id="entryBackBtn">←</button>
+      <h1>制作室</h1>
+      <span style="width:36px;"></span>
+    </div>
 
-  <div id="immersiveMode">
-    <div class="card">
-      <div class="card-title"><span class="step-num">1</span>录制你的肯定语</div>
-      <div class="guide-tip">💫 用「现在时」和「肯定句」，仿佛已经拥有：<br>"我值得被爱" · "金钱源源不断流向我" · "我是自信而闪耀的"</div>
-      <div class="record-area">
-        <button class="record-btn" id="recordBtn">🎙️</button>
-        <div class="record-timer" id="recordTimer">00:00</div>
-        <div class="record-status" id="recordStatus">点击开始录制</div>
-      </div>
-      <div class="upload-zone" id="uploadZone">
-        或点击上传已有音频文件
-        <input type="file" id="fileInput" accept="audio/*" style="display:none;">
+    <div class="studio-entry-card disabled" id="fromLifeBtn">
+      <div class="entry-icon">📖</div>
+      <div style="flex:1;">
+        <div class="entry-text-title">从我的人生开始<span class="entry-badge">敬请期待</span></div>
+        <div class="entry-text-sub">根据人生剧本、感恩日记自动生成沟通内容</div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title"><span class="step-num">2</span>调节潜意识参数</div>
-
-      <div class="slider-row">
-        <div class="slider-label"><span>语速倍数</span><span class="slider-value" id="speedVal">1.0x</span></div>
-        <input type="range" id="speedSlider" min="1" max="10" step="0.5" value="1">
+    <div class="studio-entry-card" id="writeSelfBtn">
+      <div class="entry-icon">✍️</div>
+      <div style="flex:1;">
+        <div class="entry-text-title">自己写</div>
+        <div class="entry-text-sub">输入你想说给自己的句子，逐句录音</div>
       </div>
-
-      <div class="slider-row">
-        <div class="slider-label"><span>人声音量</span><span class="slider-value" id="voiceVal">100%</span></div>
-        <input type="range" id="voiceSlider" min="0" max="100" step="5" value="100">
-      </div>
-
-      <div class="slider-row">
-        <div class="slider-label"><span>背景音量</span><span class="slider-value" id="bgVal">50%</span></div>
-        <input type="range" id="bgSlider" min="0" max="100" step="5" value="50">
-      </div>
-
-      <div class="slider-row">
-        <div class="slider-label"><span>背景音类型</span></div>
-        <div class="bg-subtabs">
-          <button class="bg-subtab selected" data-subtab="noise">噪音类</button>
-          <button class="bg-subtab" data-subtab="beat">节拍类</button>
-        </div>
-        <div class="bg-type-row" id="noiseTypeRow">
-          <button class="bg-type-btn selected" data-type="none">无</button>
-          <button class="bg-type-btn" data-type="white">白噪音</button>
-          <button class="bg-type-btn" data-type="pink">粉噪音</button>
-          <button class="bg-type-btn" data-type="brown">深海低频</button>
-        </div>
-        <div class="bg-type-row" id="beatTypeRow" style="display:none;">
-          <button class="bg-type-btn" data-type="delta">Delta 深度睡眠</button>
-          <button class="bg-type-btn" data-type="theta">Theta 冥想接入</button>
-          <button class="bg-type-btn" data-type="alpha">Alpha 放松专注</button>
-          <button class="bg-type-btn" data-type="beta">Beta 清醒行动力</button>
-        </div>
-        <div class="headphone-hint" id="headphoneHint">🎧 需佩戴耳机才有效果</div>
-      </div>
-
-      <div class="btn-row">
-        <button class="btn btn-play" id="previewBtn" disabled>▶ 试听效果</button>
-      </div>
-      <div class="hint">变速不变调 · 人声可调至极低融入背景，潜意识仍能接收</div>
     </div>
 
-    <div class="card">
-      <div class="card-title"><span class="step-num">3</span>合成并保存</div>
-      <div class="btn-row">
-        <button class="btn btn-primary" id="exportBtn" disabled>✦ 合成潜意识音频</button>
-      </div>
-      <div class="processing" id="processing">正在合成中…</div>
-      <div class="hint" id="exportHint" style="display:none;">合成完成！可以直接在下方播放，长按可循环播放一整晚</div>
-      <audio id="exportPlayer" controls loop style="display:none;width:100%;margin-top:12px;"></audio>
-    </div>
-  </div>
-
-  <div id="ambientMode" style="display:none;">
-    <div class="card">
-      <div class="card-title">生活背景音</div>
-      <div class="hint" style="margin-top:0;margin-bottom:12px;">适合家务、运动等外放场景，无需耳机，无需人声</div>
-      <div class="bg-type-row" id="ambientTypeRow">
-        <button class="bg-type-btn selected" data-type="white">白噪音</button>
-        <button class="bg-type-btn" data-type="pink">粉噪音</button>
-        <button class="bg-type-btn" data-type="brown">深海低频</button>
-      </div>
-      <div class="slider-row" style="margin-top:1.2rem;">
-        <div class="slider-label"><span>音量</span><span class="slider-value" id="ambientVolVal">60%</span></div>
-        <input type="range" id="ambientVolSlider" min="0" max="100" step="5" value="60">
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-play" id="ambientPlayBtn">▶ 播放</button>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-primary" id="ambientSaveBtn">✦ 保存到音频库</button>
+    <div class="studio-entry-card" id="freeRecordBtn">
+      <div class="entry-icon">🎙️</div>
+      <div style="flex:1;">
+        <div class="entry-text-title">直接录</div>
+        <div class="entry-text-sub">不用写文字，录一段自由的自我对话</div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="modal-overlay" id="libraryModal" style="display:none;">
-  <div class="modal-card">
-    <div class="modal-header">我的音频库 <span class="modal-close" id="closeLibraryBtn">✕</span></div>
-    <div class="modal-tabs">
-      <button class="modal-tab selected" data-libcat="immersive">沉浸音频</button>
-      <button class="modal-tab" data-libcat="ambient">生活背景音</button>
+<!-- ══════════ 内容台 ══════════ -->
+<div class="view" id="contentView">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="icon-btn" id="contentBackBtn">←</button>
+      <h1>内容台</h1>
+      <span style="width:36px;"></span>
     </div>
-    <div id="libraryList"></div>
+    <div class="card">
+      <div id="sentenceList"></div>
+      <div class="add-sentence-row">
+        <input type="text" id="newSentenceInput" placeholder="写一句想对自己说的话" maxlength="60">
+        <button id="addSentenceBtn">添加</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="toVoiceBtn" disabled>下一步：录音 →</button>
   </div>
 </div>
 
+<!-- ══════════ 声音台（逐句） ══════════ -->
+<div class="view" id="voiceView">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="icon-btn" id="voiceBackBtn">←</button>
+      <h1>声音台</h1>
+      <span style="width:36px;"></span>
+    </div>
+    <div class="card">
+      <div class="voice-progress" id="voiceProgress"></div>
+      <div id="voiceSentenceList"></div>
+    </div>
+    <div class="card" style="opacity:0.55;">
+      <div class="sentence-row" style="border:none;padding:0;">
+        <div class="sentence-text">🔊 系统声音<span class="entry-badge">敬请期待</span></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="toMixFromVoiceBtn" disabled>下一步：混音 →</button>
+  </div>
+</div>
+
+<!-- ══════════ 自由录音 ══════════ -->
+<div class="view" id="freeRecordView">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="icon-btn" id="freeRecordBackBtn">←</button>
+      <h1>直接录</h1>
+      <span style="width:36px;"></span>
+    </div>
+    <div class="card">
+      <div class="freeform-record-area">
+        <button class="record-btn-big" id="freeRecBtn">🎙️</button>
+        <div class="record-timer-big" id="freeRecTimer">00:00</div>
+        <div style="font-size:12px;color:#8a7868;" id="freeRecStatus">点击开始录制，想说多久都可以</div>
+      </div>
+    </div>
+    <button class="btn btn-secondary" id="freePreviewBtn" disabled>▶ 试听</button>
+    <button class="btn btn-primary" id="toMixFromFreeBtn" disabled>下一步：混音 →</button>
+  </div>
+</div>
+
+<!-- ══════════ 混音台 ══════════ -->
+<div class="view" id="mixView">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="icon-btn" id="mixBackBtn">←</button>
+      <h1>混音台</h1>
+      <span style="width:36px;"></span>
+    </div>
+
+    <div class="mix-layer">
+      <div class="mix-layer-head"><span class="mix-layer-title">🗣️ VOICE · 我的声音</span></div>
+      <div class="chip-row" id="voiceLevelChips">
+        <button class="chip selected" data-level="clear">清晰</button>
+        <button class="chip" data-level="soft">轻声</button>
+        <button class="chip" data-level="faint">很轻</button>
+      </div>
+    </div>
+
+    <div class="mix-layer" id="ambienceLayer">
+      <div class="mix-layer-head">
+        <span class="mix-layer-title">🌧️ AMBIENCE · 背景</span>
+        <div class="toggle-switch" id="ambienceToggle"></div>
+      </div>
+      <div id="ambienceBody" style="display:none;">
+        <div class="chip-row" id="ambienceChips">
+          <button class="chip" data-type="rain">雨声</button>
+          <button class="chip" data-type="ocean">海浪</button>
+          <button class="chip soon" data-type="fireplace">壁炉<span style="font-size:9px;">·待推出</span></button>
+          <button class="chip soon" data-type="forest">森林<span style="font-size:9px;">·待推出</span></button>
+          <button class="chip soon" data-type="cafe">咖啡馆<span style="font-size:9px;">·待推出</span></button>
+        </div>
+        <div class="mix-vol-row">
+          <span style="font-size:11px;color:#8a9878;">音量</span>
+          <input type="range" id="ambienceVolSlider" min="0" max="100" value="50">
+        </div>
+      </div>
+    </div>
+
+    <div class="mix-layer locked">
+      <div class="mix-layer-head">
+        <span class="mix-layer-title">🎵 MUSIC · 音乐</span>
+        <div class="toggle-switch"></div>
+      </div>
+      <div class="soon-note">敬请期待 · ambient / piano / soft / dream</div>
+    </div>
+
+    <div class="mix-layer" id="binauralLayer">
+      <div class="mix-layer-head">
+        <span class="mix-layer-title">✨ BINAURAL · 节拍</span>
+        <div class="toggle-switch" id="binauralToggle"></div>
+      </div>
+      <div id="binauralBody" style="display:none;">
+        <div class="chip-row" id="binauralChips">
+          <button class="chip" data-type="delta">Delta 深睡</button>
+          <button class="chip" data-type="theta">Theta 冥想</button>
+          <button class="chip" data-type="alpha">Alpha 放松</button>
+          <button class="chip" data-type="beta">Beta 行动力</button>
+        </div>
+        <div style="font-size:11px;color:#c89030;margin-bottom:8px;">🎧 需佩戴耳机才有效果</div>
+        <div class="mix-vol-row">
+          <span style="font-size:11px;color:#8a9878;">音量</span>
+          <input type="range" id="binauralVolSlider" min="0" max="100" value="35">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-secondary" id="mixPreviewBtn">▶ 试听混音效果</button>
+    <button class="btn btn-primary" id="mixSaveBtn">保存到聆听室</button>
+  </div>
+</div>
+
+<!-- 命名弹层 -->
 <div class="modal-overlay center" id="nameModal" style="display:none;">
   <div class="modal-card small">
-    <div class="modal-header">保存音频</div>
-    <input type="text" id="nameInput" placeholder="给这段音频起个名字" maxlength="30">
+    <div class="modal-header">给这段沟通起个名字</div>
+    <input type="text" id="trackNameInput" placeholder="例如：我的财富与自由" maxlength="24">
     <div class="modal-btn-row">
-      <button id="nameCancelBtn">取消</button>
-      <button id="nameConfirmBtn" class="btn-primary">保存</button>
+      <button id="nameCancelBtn" style="background:rgba(0,0,0,0.06);color:#5a6a48;">取消</button>
+      <button id="nameConfirmBtn" class="btn-primary" style="color:#fff;">保存</button>
     </div>
   </div>
 </div>
 
+<!-- 更多操作弹层 -->
+<div class="modal-overlay" id="moreSheet" style="display:none;">
+  <div class="modal-card">
+    <div class="modal-header" id="moreSheetTitle"></div>
+    <div class="sheet-action" id="sheetRename">重命名</div>
+    <div class="sheet-action" id="sheetEdit">编辑句子与录音</div>
+    <div class="sheet-action" id="sheetMix">调整混音</div>
+    <div class="sheet-action danger" id="sheetDelete">删除</div>
+    <div class="sheet-action" id="sheetCancel">取消</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-let audioCtx = null;
-let recordedBuffer = null;
-let mediaRecorder = null;
-let recordChunks = [];
-let recordTimerSec = 0;
-let recordInterval = null;
-let previewSource = null;
-let previewBgSource = null;
-let previewGain = null;
-let previewBgGain = null;
-let isPreviewPlaying = false;
-let pendingSaveBlob = null;
-let pendingSaveCategory = null;
+/* ══════════════════ 视图切换 ══════════════════ */
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t=setTimeout(()=>t.classList.remove('show'),1800);
+}
 
-function getCtx(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
-
-/* ══════════════════ IndexedDB 音频库 ══════════════════ */
-const DB_NAME = 'subliminalStudioDB';
-const STORE_NAME = 'audioLibrary';
-let dbPromise = null;
-function openLibraryDB(){
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-        store.createIndex('category', 'category', { unique: false });
-      }
+/* ══════════════════ IndexedDB ══════════════════ */
+const DB_NAME='subconsciousRoomDB', STORE_NAME='tracks';
+let dbPromise=null;
+function openDB(){
+  if(dbPromise) return dbPromise;
+  dbPromise=new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DB_NAME,1);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME,{keyPath:'id',autoIncrement:true});
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
   });
   return dbPromise;
 }
-async function saveToLibrary(name, category, blob){
-  const db = await openLibraryDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    tx.objectStore(STORE_NAME).add({ name, category, blob, createdAt: Date.now() });
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+async function dbPut(track){
+  const db=await openDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(STORE_NAME,'readwrite');
+    const req=tx.objectStore(STORE_NAME).put(track);
+    req.onsuccess=()=>resolve(req.result);
+    tx.onerror=()=>reject(tx.error);
   });
 }
-async function listLibrary(category){
-  const db = await openLibraryDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const idx = tx.objectStore(STORE_NAME).index('category');
-    const req = idx.getAll(category);
-    req.onsuccess = () => resolve(req.result.sort((a,b)=>b.createdAt-a.createdAt));
-    req.onerror = () => reject(req.error);
+async function dbGetAll(){
+  const db=await openDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(STORE_NAME,'readonly');
+    const req=tx.objectStore(STORE_NAME).getAll();
+    req.onsuccess=()=>resolve(req.result.sort((a,b)=>b.updatedAt-a.updatedAt));
+    req.onerror=()=>reject(req.error);
   });
 }
-async function deleteFromLibrary(id){
-  const db = await openLibraryDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
+async function dbGet(id){
+  const db=await openDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(STORE_NAME,'readonly');
+    const req=tx.objectStore(STORE_NAME).get(id);
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function dbDelete(id){
+  const db=await openDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(STORE_NAME,'readwrite');
     tx.objectStore(STORE_NAME).delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error);
   });
 }
+function lastPlayedGet(){ try{ return JSON.parse(localStorage.getItem('scr_lastPlayed')||'null'); }catch(e){ return null; } }
+function lastPlayedSet(obj){ localStorage.setItem('scr_lastPlayed', JSON.stringify(obj)); }
 
-/* ══════════════════ 命名弹层 ══════════════════ */
-function openNameModal(blob, category){
-  pendingSaveBlob = blob;
-  pendingSaveCategory = category;
-  document.getElementById('nameInput').value = '';
-  document.getElementById('nameModal').style.display = 'flex';
-}
-document.getElementById('nameCancelBtn').onclick = () => {
-  document.getElementById('nameModal').style.display = 'none';
-  pendingSaveBlob = null;
+/* ══════════════════ 音频生成：噪音(雨声/海浪) + 双耳节拍 —— 沿用之前验证过的实现 ══════════════════ */
+let audioCtx=null;
+function getCtx(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+
+const BINAURAL_PRESETS={
+  delta:{diff:2,carrier:200,label:'Delta 深睡'},
+  theta:{diff:6,carrier:250,label:'Theta 冥想'},
+  alpha:{diff:10,carrier:235,label:'Alpha 放松'},
+  beta:{diff:20,carrier:200,label:'Beta 行动力'},
 };
-document.getElementById('nameConfirmBtn').onclick = async () => {
-  const name = document.getElementById('nameInput').value.trim();
-  if (!name) { alert('请输入名字'); return; }
-  if (!pendingSaveBlob) return;
-  try {
-    await saveToLibrary(name, pendingSaveCategory, pendingSaveBlob);
-    document.getElementById('nameModal').style.display = 'none';
-    pendingSaveBlob = null;
-    alert('已保存到音频库！');
-  } catch(err) {
-    alert('保存失败：' + err.message);
-  }
-};
-
-/* ══════════════════ 音频库弹层 ══════════════════ */
-let currentLibCat = 'immersive';
-document.getElementById('openLibraryBtn').onclick = () => {
-  document.getElementById('libraryModal').style.display = 'flex';
-  renderLibrary();
-};
-document.getElementById('closeLibraryBtn').onclick = () => {
-  document.getElementById('libraryModal').style.display = 'none';
-};
-document.querySelectorAll('.modal-tab').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('.modal-tab').forEach(b=>b.classList.remove('selected'));
-    btn.classList.add('selected');
-    currentLibCat = btn.dataset.libcat;
-    renderLibrary();
-  };
-});
-async function renderLibrary(){
-  const listEl = document.getElementById('libraryList');
-  listEl.innerHTML = '<div class="lib-empty">加载中…</div>';
-  let items;
-  try { items = await listLibrary(currentLibCat); } catch(err) { items = []; }
-  if (!items.length) {
-    listEl.innerHTML = '<div class="lib-empty">还没有保存的音频</div>';
-    return;
-  }
-  listEl.innerHTML = '';
-  items.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'lib-item';
-    const dateStr = new Date(item.createdAt).toLocaleDateString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
-    div.innerHTML =
-      '<div class="lib-item-top">' +
-        '<div class="lib-item-info">' +
-          '<div class="lib-item-name"></div>' +
-          '<div class="lib-item-date"></div>' +
-        '</div>' +
-        '<div class="lib-item-btns">' +
-          '<button class="lib-icon-btn play-btn">▶</button>' +
-          '<button class="lib-icon-btn del del-btn">✕</button>' +
-        '</div>' +
-      '</div>' +
-      '<audio controls loop></audio>';
-    div.querySelector('.lib-item-name').textContent = item.name;
-    div.querySelector('.lib-item-date').textContent = dateStr;
-    const audioEl = div.querySelector('audio');
-    const playBtn = div.querySelector('.play-btn');
-    playBtn.onclick = () => {
-      if (!audioEl.src) audioEl.src = URL.createObjectURL(item.blob);
-      audioEl.classList.add('show');
-      audioEl.play();
-    };
-    div.querySelector('.del-btn').onclick = async () => {
-      if (!confirm('确定删除「' + item.name + '」吗？')) return;
-      await deleteFromLibrary(item.id);
-      renderLibrary();
-    };
-    listEl.appendChild(div);
-  });
-}
-
-/* ══════════════════ 模式切换 ══════════════════ */
-document.querySelectorAll('.mode-tab').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('.mode-tab').forEach(b=>b.classList.remove('selected'));
-    btn.classList.add('selected');
-    const mode = btn.dataset.mode;
-    document.getElementById('immersiveMode').style.display = (mode === 'immersive') ? 'block' : 'none';
-    document.getElementById('ambientMode').style.display = (mode === 'ambient') ? 'block' : 'none';
-    stopAllPlayback();
-  };
-});
-function stopAllPlayback(){
-  try { if (previewSource) previewSource.stop(); } catch(e){}
-  try { if (previewBgSource) previewBgSource.stop(); } catch(e){}
-  isPreviewPlaying = false;
-  document.getElementById('previewBtn').textContent = '▶ 试听效果';
-  try { if (ambientSource) ambientSource.stop(); } catch(e){}
-  isAmbientPlaying = false;
-  document.getElementById('ambientPlayBtn').textContent = '▶ 播放';
-}
-
-/* ══════════════════ 录音 ══════════════════ */
-const recordBtn = document.getElementById('recordBtn');
-const recordTimer = document.getElementById('recordTimer');
-const recordStatus = document.getElementById('recordStatus');
-
-recordBtn.onclick = async () => {
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.stop();
-    return;
-  }
-  if (recordedBuffer && !confirm('重新录制会覆盖之前的录音，确定吗？')) return;
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    recordChunks = [];
-    mediaRecorder.ondataavailable = e => recordChunks.push(e.data);
-    mediaRecorder.onstop = async () => {
-      stream.getTracks().forEach(t => t.stop());
-      clearInterval(recordInterval);
-      const blob = new Blob(recordChunks, { type: mediaRecorder.mimeType });
-      const arrayBuf = await blob.arrayBuffer();
-      const decodeCtx = new (window.AudioContext || window.webkitAudioContext)();
-      recordedBuffer = await decodeCtx.decodeAudioData(arrayBuf);
-      decodeCtx.close();
-      recordBtn.classList.remove('recording');
-      recordBtn.classList.add('has-recording');
-      recordBtn.textContent = '✓';
-      recordStatus.textContent = '录制完成！调节下方参数试听';
-      enableControls();
-    };
-    mediaRecorder.start();
-    recordBtn.classList.add('recording');
-    recordBtn.textContent = '⏹';
-    recordStatus.textContent = '正在录制…再次点击停止';
-    recordTimerSec = 0;
-    recordTimer.textContent = '00:00';
-    recordInterval = setInterval(() => {
-      recordTimerSec++;
-      const m = String(Math.floor(recordTimerSec/60)).padStart(2,'0');
-      const s = String(recordTimerSec%60).padStart(2,'0');
-      recordTimer.textContent = m + ':' + s;
-    }, 1000);
-  } catch(err) {
-    recordStatus.textContent = '无法访问麦克风：' + err.message;
-  }
-};
-
-const uploadZone = document.getElementById('uploadZone');
-const fileInput = document.getElementById('fileInput');
-uploadZone.onclick = () => fileInput.click();
-fileInput.onchange = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const arrayBuf = await file.arrayBuffer();
-  const decodeCtx = new (window.AudioContext || window.webkitAudioContext)();
-  recordedBuffer = await decodeCtx.decodeAudioData(arrayBuf);
-  decodeCtx.close();
-  recordBtn.classList.add('has-recording');
-  recordBtn.textContent = '✓';
-  recordStatus.textContent = '已导入音频！调节下方参数试听';
-  enableControls();
-};
-
-const speedSlider = document.getElementById('speedSlider');
-const voiceSlider = document.getElementById('voiceSlider');
-const bgSlider = document.getElementById('bgSlider');
-const speedVal = document.getElementById('speedVal');
-const voiceVal = document.getElementById('voiceVal');
-const bgVal = document.getElementById('bgVal');
-
-speedSlider.oninput = () => {
-  speedVal.textContent = parseFloat(speedSlider.value).toFixed(1) + 'x';
-  if(isPreviewPlaying) startPreview();
-};
-voiceSlider.oninput = () => {
-  voiceVal.textContent = voiceSlider.value + '%';
-  if(isPreviewPlaying && previewGain) previewGain.gain.value = parseInt(voiceSlider.value) / 100;
-};
-bgSlider.oninput = () => {
-  bgVal.textContent = bgSlider.value + '%';
-  if(isPreviewPlaying && previewBgGain) previewBgGain.gain.value = parseInt(bgSlider.value) / 100;
-};
-
-let bgType = 'none';
-const BEAT_TYPES = new Set(['delta','theta','alpha','beta']);
-
-document.querySelectorAll('.bg-subtab').forEach(btn=>{
-  btn.onclick = () => {
-    document.querySelectorAll('.bg-subtab').forEach(b=>b.classList.remove('selected'));
-    btn.classList.add('selected');
-    const sub = btn.dataset.subtab;
-    document.getElementById('noiseTypeRow').style.display = (sub === 'noise') ? 'flex' : 'none';
-    document.getElementById('beatTypeRow').style.display = (sub === 'beat') ? 'flex' : 'none';
-    const firstBtn = (sub === 'noise') ? document.querySelector('#noiseTypeRow .bg-type-btn') : document.querySelector('#beatTypeRow .bg-type-btn');
-    selectBgType(firstBtn);
-  };
-});
-function selectBgType(btn){
-  if (!btn) return;
-  document.querySelectorAll('#noiseTypeRow .bg-type-btn, #beatTypeRow .bg-type-btn').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected');
-  bgType = btn.dataset.type;
-  document.getElementById('headphoneHint').classList.toggle('show', BEAT_TYPES.has(bgType));
-}
-document.querySelectorAll('#noiseTypeRow .bg-type-btn, #beatTypeRow .bg-type-btn').forEach(btn=>{
-  btn.onclick = () => selectBgType(btn);
-});
-
-const BINAURAL_PRESETS = {
-  delta: { diff: 2,  carrier: 200 },
-  theta: { diff: 6,  carrier: 250 },
-  alpha: { diff: 10, carrier: 235 },
-  beta:  { diff: 20, carrier: 200 },
-};
-
-function generateNoiseBuffer(type, lengthInSamples, sampleRate){
-  const ctx = getCtx();
-  const buffer = ctx.createBuffer(2, lengthInSamples, sampleRate);
-  for(let ch=0; ch<2; ch++){
-    const data = buffer.getChannelData(ch);
-    if(type === 'white'){
-      for(let i=0;i<lengthInSamples;i++) data[i] = (Math.random()*2-1) * 0.35;
-    } else if(type === 'pink'){
-      let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
-      for(let i=0;i<lengthInSamples;i++){
-        const white = Math.random()*2-1;
-        b0 = 0.99886*b0 + white*0.0555179;
-        b1 = 0.99332*b1 + white*0.0750759;
-        b2 = 0.96900*b2 + white*0.1538520;
-        b3 = 0.86650*b3 + white*0.3104856;
-        b4 = 0.55000*b4 + white*0.5329522;
-        b5 = -0.7616*b5 - white*0.0168980;
-        const pink = b0+b1+b2+b3+b4+b5+b6+white*0.5362;
-        b6 = white*0.115926;
-        data[i] = pink * 0.08;
-      }
-    } else if(type === 'brown'){
-      let last = 0;
-      for(let i=0;i<lengthInSamples;i++){
-        const white = Math.random()*2-1;
-        last = (last + 0.02*white) / 1.02;
-        data[i] = last * 3.5;
-      }
-    }
-  }
-  return buffer;
-}
-
-function generateBinauralBuffer(presetKey, lengthInSamples, sampleRate){
-  const ctx = getCtx();
-  const preset = BINAURAL_PRESETS[presetKey];
-  const buffer = ctx.createBuffer(2, lengthInSamples, sampleRate);
-  const left = buffer.getChannelData(0);
-  const right = buffer.getChannelData(1);
-  const leftFreq = preset.carrier;
-  const rightFreq = preset.carrier + preset.diff;
+function generateBinauralBuffer(presetKey,lengthInSamples,sampleRate){
+  const ctx=getCtx();const preset=BINAURAL_PRESETS[presetKey];
+  const buffer=ctx.createBuffer(2,lengthInSamples,sampleRate);
+  const left=buffer.getChannelData(0),right=buffer.getChannelData(1);
   for(let i=0;i<lengthInSamples;i++){
-    const t = i / sampleRate;
-    left[i]  = Math.sin(2*Math.PI*leftFreq*t)  * 0.25;
-    right[i] = Math.sin(2*Math.PI*rightFreq*t) * 0.25;
+    const t=i/sampleRate;
+    left[i]=Math.sin(2*Math.PI*preset.carrier*t)*0.25;
+    right[i]=Math.sin(2*Math.PI*(preset.carrier+preset.diff)*t)*0.25;
   }
   return buffer;
 }
-
-function generateBgBuffer(type, lengthInSamples, sampleRate){
-  if (BEAT_TYPES.has(type)) return generateBinauralBuffer(type, lengthInSamples, sampleRate);
-  return generateNoiseBuffer(type, lengthInSamples, sampleRate);
-}
-
-function enableControls(){
-  document.getElementById('previewBtn').disabled = false;
-  document.getElementById('exportBtn').disabled = false;
-}
-
-function hannWindow(N){
-  const w = new Float32Array(N);
-  for(let i=0;i<N;i++) w[i] = 0.5 - 0.5*Math.cos(2*Math.PI*i/(N-1));
-  return w;
-}
-function timeStretchChannel(input, speed, N, window_){
-  const Hs = Math.floor(N/4);
-  const Ha = Math.max(1, Math.round(Hs*speed));
-  const inLen = input.length;
-  const outLen = Math.ceil(inLen/Ha)*Hs + N;
-  const output = new Float32Array(outLen);
-  const winSum = new Float32Array(outLen);
-  let inPos = 0, outPos = 0;
-  while(inPos + N <= inLen){
-    for(let i=0;i<N;i++){
-      const w = window_[i];
-      output[outPos+i] += input[inPos+i]*w;
-      winSum[outPos+i] += w*w;
-    }
-    inPos += Ha;
-    outPos += Hs;
-  }
-  const finalLen = Math.max(outPos, 1);
-  for(let i=0;i<finalLen;i++){
-    if (winSum[i] > 1e-4) output[i] /= Math.max(winSum[i], 0.35);
-  }
-  return output.subarray(0, finalLen);
-}
-function processAudio(buffer, speed){
-  if (speed === 1) return buffer;
-  const numCh = buffer.numberOfChannels;
-  const N = 2048;
-  const window_ = hannWindow(N);
-  const outChannels = [];
-  let minLen = Infinity;
-  for(let ch=0; ch<numCh; ch++){
-    const stretched = timeStretchChannel(buffer.getChannelData(ch), speed, N, window_);
-    outChannels.push(stretched);
-    minLen = Math.min(minLen, stretched.length);
-  }
-  const outBuffer = getCtx().createBuffer(numCh, minLen, buffer.sampleRate);
-  for(let ch=0; ch<numCh; ch++) outBuffer.copyToChannel(outChannels[ch].subarray(0, minLen), ch);
-  return outBuffer;
-}
-
-async function startPreview(){
-  const btn = document.getElementById('previewBtn');
-  try { if (previewSource) previewSource.stop(); } catch(e){}
-  try { if (previewBgSource) previewBgSource.stop(); } catch(e){}
-
-  try {
-    if(audioCtx && audioCtx.state !== 'closed') { audioCtx.close(); }
-  } catch(e){}
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const ctx = audioCtx;
-  await ctx.resume();
-
-  const speed = parseFloat(speedSlider.value);
-  const voiceVol = parseInt(voiceSlider.value) / 100;
-  const bgVol = parseInt(bgSlider.value) / 100;
-
-  btn.textContent = '处理中…';
-
-  try {
-    const processed = processAudio(recordedBuffer, speed);
-
-    previewSource = ctx.createBufferSource();
-    previewSource.buffer = processed;
-    const gain = ctx.createGain();
-    gain.gain.value = voiceVol;
-    previewGain = gain;
-    previewSource.connect(gain).connect(ctx.destination);
-    previewSource.loop = true;
-    previewSource.start();
-
-    let bgSource = null;
-    if(bgType !== 'none' && bgVol > 0){
-      const bgBuffer = generateBgBuffer(bgType, processed.length, processed.sampleRate);
-      bgSource = ctx.createBufferSource();
-      bgSource.buffer = bgBuffer;
-      const bgGain = ctx.createGain();
-      bgGain.gain.value = bgVol;
-      previewBgGain = bgGain;
-      bgSource.connect(bgGain).connect(ctx.destination);
-      bgSource.loop = true;
-      bgSource.start();
-    } else {
-      previewBgGain = null;
-    }
-    previewBgSource = bgSource;
-
-    isPreviewPlaying = true;
-    btn.textContent = '⏹ 停止';
-
-    previewSource.onended = () => {
-      isPreviewPlaying = false;
-      btn.textContent = '▶ 试听效果';
-    };
-  } catch(err) {
-    console.error(err);
-    alert('处理出错：' + err.message);
-    btn.textContent = '▶ 试听效果';
-    isPreviewPlaying = false;
-  }
-}
-
-document.getElementById('previewBtn').onclick = async () => {
-  const btn = document.getElementById('previewBtn');
-  if (isPreviewPlaying) {
-    try { if (previewSource) previewSource.stop(); } catch(e){}
-    try { if (previewBgSource) previewBgSource.stop(); } catch(e){}
-    isPreviewPlaying = false;
-    btn.textContent = '▶ 试听效果';
-    return;
-  }
-  if (!recordedBuffer) { alert('请先录制或上传一段声音'); return; }
-  await startPreview();
-};
-
-document.getElementById('exportBtn').onclick = async () => {
-  if (!recordedBuffer) return;
-  const proc = document.getElementById('processing');
-  proc.classList.add('show');
-
-  const speed = parseFloat(speedSlider.value);
-  const voiceVol = parseInt(voiceSlider.value) / 100;
-  const bgVol = parseInt(bgSlider.value) / 100;
-
-    try {
-      const processed = processAudio(recordedBuffer, speed);
-
-      const offline = new OfflineAudioContext(2, processed.length, processed.sampleRate);
-      const src = offline.createBufferSource();
-      src.buffer = processed;
-      const gain = offline.createGain();
-      gain.gain.value = voiceVol;
-      src.connect(gain).connect(offline.destination);
-      src.start();
-
-      if(bgType !== 'none' && bgVol > 0){
-        const bgBuffer = generateBgBuffer(bgType, processed.length, processed.sampleRate);
-        const bgSrc = offline.createBufferSource();
-        bgSrc.buffer = bgBuffer;
-        const bgGain = offline.createGain();
-        bgGain.gain.value = bgVol;
-        bgSrc.connect(bgGain).connect(offline.destination);
-        bgSrc.start();
+// AMBIENCE目前只有"雨声"(白噪音质感)和"海浪"(褐噪音+缓慢潮汐调制)是程序生成的近似音，
+// 壁炉/森林/咖啡馆需要真实录制的环境音素材，现在还没有，先在UI上标"待推出"，不假装能播放
+function generateAmbienceBuffer(type,lengthInSamples,sampleRate){
+  const ctx=getCtx();
+  const buffer=ctx.createBuffer(2,lengthInSamples,sampleRate);
+  for(let ch=0;ch<2;ch++){
+    const data=buffer.getChannelData(ch);
+    if(type==='rain'){
+      for(let i=0;i<lengthInSamples;i++) data[i]=(Math.random()*2-1)*0.3;
+    } else if(type==='ocean'){
+      let last=0;
+      for(let i=0;i<lengthInSamples;i++){
+        const white=Math.random()*2-1;
+        last=(last+0.02*white)/1.02;
+        const swell=0.6+0.4*Math.sin(2*Math.PI*(i/sampleRate)/7); // 约7秒一次潮汐起伏
+        data[i]=last*3.2*swell;
       }
-
-      const rendered = await offline.startRendering();
-
-      const wav = bufferToWav(rendered);
-      const blob = new Blob([wav], { type: 'audio/wav' });
-      const url = URL.createObjectURL(blob);
-
-      const player = document.getElementById('exportPlayer');
-      player.src = url;
-      player.style.display = 'block';
-      player.loop = true;
-
-      proc.classList.remove('show');
-      document.getElementById('exportHint').style.display = 'block';
-
-      openNameModal(blob, 'immersive');
-    } catch(err) {
-      console.error(err);
-      proc.classList.remove('show');
-      alert('合成出错：' + err.message);
     }
-};
-
-let ambientType = 'white';
-let ambientSource = null;
-let ambientGain = null;
-let isAmbientPlaying = false;
-
-document.querySelectorAll('#ambientTypeRow .bg-type-btn').forEach(btn=>{
-  btn.onclick = () => {
-    document.querySelectorAll('#ambientTypeRow .bg-type-btn').forEach(b=>b.classList.remove('selected'));
-    btn.classList.add('selected');
-    ambientType = btn.dataset.type;
-    if (isAmbientPlaying) startAmbientPlayback();
-  };
-});
-const ambientVolSlider = document.getElementById('ambientVolSlider');
-const ambientVolVal = document.getElementById('ambientVolVal');
-ambientVolSlider.oninput = () => {
-  ambientVolVal.textContent = ambientVolSlider.value + '%';
-  if (isAmbientPlaying && ambientGain) ambientGain.gain.value = parseInt(ambientVolSlider.value)/100;
-};
-
-function startAmbientPlayback(){
-  try { if (ambientSource) ambientSource.stop(); } catch(e){}
-  try {
-    if(audioCtx && audioCtx.state !== 'closed') { audioCtx.close(); }
-  } catch(e){}
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const ctx = audioCtx;
-  ctx.resume();
-  const buffer = generateNoiseBuffer(ambientType, ctx.sampleRate*30, ctx.sampleRate);
-  ambientSource = ctx.createBufferSource();
-  ambientSource.buffer = buffer;
-  ambientSource.loop = true;
-  ambientGain = ctx.createGain();
-  ambientGain.gain.value = parseInt(ambientVolSlider.value)/100;
-  ambientSource.connect(ambientGain).connect(ctx.destination);
-  ambientSource.start();
-  isAmbientPlaying = true;
-  document.getElementById('ambientPlayBtn').textContent = '⏹ 停止';
+  }
+  return buffer;
 }
-document.getElementById('ambientPlayBtn').onclick = () => {
-  if (isAmbientPlaying) {
-    try { if (ambientSource) ambientSource.stop(); } catch(e){}
-    isAmbientPlaying = false;
-    document.getElementById('ambientPlayBtn').textContent = '▶ 播放';
-    return;
-  }
-  startAmbientPlayback();
-};
-
-document.getElementById('ambientSaveBtn').onclick = async () => {
-  try {
-    const sr = 44100;
-    const buffer = generateNoiseBuffer(ambientType, sr*30, sr);
-    const offline = new OfflineAudioContext(2, sr*30, sr);
-    const src = offline.createBufferSource();
-    src.buffer = buffer;
-    src.connect(offline.destination);
-    src.start();
-    const rendered = await offline.startRendering();
-    const wav = bufferToWav(rendered);
-    const blob = new Blob([wav], { type: 'audio/wav' });
-    openNameModal(blob, 'ambient');
-  } catch(err) {
-    alert('保存出错：' + err.message);
-  }
-};
-
-function bufferToWav(buffer) {
-  const numCh = buffer.numberOfChannels;
-  const len = buffer.length * numCh * 2 + 44;
-  const arrBuf = new ArrayBuffer(len);
-  const view = new DataView(arrBuf);
-  const channels = [];
-  let offset = 0, pos = 0;
-  function setUint16(d){ view.setUint16(pos, d, true); pos += 2; }
-  function setUint32(d){ view.setUint32(pos, d, true); pos += 4; }
-  setUint32(0x46464952); setUint32(len - 8); setUint32(0x45564157);
-  setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numCh);
-  setUint32(buffer.sampleRate); setUint32(buffer.sampleRate * 2 * numCh);
-  setUint16(numCh * 2); setUint16(16);
-  setUint32(0x61746164); setUint32(len - pos - 4);
-  for (let i = 0; i < numCh; i++) channels.push(buffer.getChannelData(i));
-  while (pos < len) {
-    for (let i = 0; i < numCh; i++) {
-      let sample = Math.max(-1, Math.min(1, channels[i][offset]));
-      sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-      view.setInt16(pos, sample, true); pos += 2;
+function bufferToWav(buffer){
+  const numCh=buffer.numberOfChannels;
+  const len=buffer.length*numCh*2+44;
+  const arrBuf=new ArrayBuffer(len);
+  const view=new DataView(arrBuf);
+  const channels=[];let offset=0,pos=0;
+  function setUint16(d){view.setUint16(pos,d,true);pos+=2;}
+  function setUint32(d){view.setUint32(pos,d,true);pos+=4;}
+  setUint32(0x46464952);setUint32(len-8);setUint32(0x45564157);
+  setUint32(0x20746d66);setUint32(16);setUint16(1);setUint16(numCh);
+  setUint32(buffer.sampleRate);setUint32(buffer.sampleRate*2*numCh);
+  setUint16(numCh*2);setUint16(16);
+  setUint32(0x61746164);setUint32(len-pos-4);
+  for(let i=0;i<numCh;i++) channels.push(buffer.getChannelData(i));
+  while(pos<len){
+    for(let i=0;i<numCh;i++){
+      let sample=Math.max(-1,Math.min(1,channels[i][offset]));
+      sample=sample<0?sample*0x8000:sample*0x7FFF;
+      view.setInt16(pos,sample,true);pos+=2;
     }
     offset++;
   }
   return arrBuf;
 }
+async function decodeBlob(blob){
+  const buf=await blob.arrayBuffer();
+  const tmpCtx=new (window.AudioContext||window.webkitAudioContext)();
+  const decoded=await tmpCtx.decodeAudioData(buf);
+  tmpCtx.close();
+  return decoded;
+}
+// 把若干句录音拼接成一整段人声（句间留0.6秒安静间隔），自由录音模式下只有一句，直接返回
+function concatBuffers(buffers,sampleRate,gapSec){
+  const gapLen=Math.round(gapSec*sampleRate);
+  let totalLen=0;
+  buffers.forEach((b,i)=>{ totalLen+=b.length; if(i<buffers.length-1) totalLen+=gapLen; });
+  const ctx=getCtx();
+  const out=ctx.createBuffer(2,totalLen,sampleRate);
+  let pos=0;
+  buffers.forEach((b,i)=>{
+    for(let ch=0;ch<2;ch++){
+      const srcCh=b.numberOfChannels>ch?b.getChannelData(ch):b.getChannelData(0);
+      out.getChannelData(ch).set(srcCh,pos);
+    }
+    pos+=b.length;
+    if(i<buffers.length-1) pos+=gapLen;
+  });
+  return out;
+}
+
+/* ══════════════════ 听室渲染 ══════════════════ */
+const VOICE_LEVEL_LABEL={clear:'清晰',soft:'轻声',faint:'很轻'};
+let allTracks=[];
+
+async function renderRoom(){
+  allTracks=await dbGetAll();
+  renderNowPlaying();
+  renderTrackGrid();
+}
+function renderNowPlaying(){
+  const slot=document.getElementById('nowPlayingSlot');
+  const lp=lastPlayedGet();
+  const track=lp?allTracks.find(t=>t.id===lp.trackId):null;
+  if(!track){ slot.innerHTML=''; return; }
+  const unfinished=lp.positionSec>3 && lp.positionSec < (track.durationSec-3);
+  slot.innerHTML=`
+    <div class="now-playing">
+      <div class="np-eyebrow">${unfinished?'继续播放':'最近播放'}</div>
+      <div class="np-name">${escapeHtml(track.name)}</div>
+      <div class="np-meta">${escapeHtml(track.mixSummary||'')} · ${fmtTime(track.durationSec)}</div>
+      <button class="np-play-btn" id="npPlayBtn">▶ ${unfinished?'继续播放':'再听一次'}</button>
+    </div>`;
+  document.getElementById('npPlayBtn').onclick=()=>openPlayer(track.id, unfinished?lp.positionSec:0);
+}
+function renderTrackGrid(){
+  const grid=document.getElementById('trackGrid');
+  if(!allTracks.length){
+    grid.innerHTML=`<div class="empty-room"><div class="empty-room-icon">🌙</div><p>还没有属于你的沟通音频<br>先去制作室做第一段吧</p></div>`;
+    return;
+  }
+  grid.innerHTML='';
+  allTracks.forEach(track=>{
+    const card=document.createElement('div');
+    card.className='track-card';
+    card.innerHTML=`
+      <div class="track-cover">🎧</div>
+      <div class="track-info">
+        <div class="track-name"></div>
+        <div class="track-meta"></div>
+      </div>
+      <div class="track-more">⋯</div>`;
+    card.querySelector('.track-name').textContent=track.name;
+    card.querySelector('.track-meta').textContent=(track.mixSummary||'')+' · '+fmtTime(track.durationSec);
+    card.onclick=(e)=>{ if(e.target.closest('.track-more')) return; openPlayer(track.id,0); };
+    card.querySelector('.track-more').onclick=(e)=>{ e.stopPropagation(); openMoreSheet(track.id); };
+    grid.appendChild(card);
+  });
+}
+function fmtTime(sec){
+  sec=Math.max(0,Math.floor(sec||0));
+  const m=Math.floor(sec/60),s=sec%60;
+  return m+':'+String(s).padStart(2,'0');
+}
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+document.getElementById('toStudioBtn').onclick=()=>{ resetDraft(); showView('studioEntryView'); };
+document.getElementById('newTrackBtn').onclick=()=>{ resetDraft(); showView('studioEntryView'); };
+
+/* ══════════════════ 播放器 ══════════════════ */
+let playerAudio=new Audio();
+let currentTrackId=null;
+let currentTrackList=[];
+let posSaveInterval=null;
+
+playerAudio.addEventListener('timeupdate',()=>{
+  if(!playerAudio.duration || isNaN(playerAudio.duration)) return;
+  document.getElementById('playerCur').textContent=fmtTime(playerAudio.currentTime);
+  document.getElementById('playerSeek').value=(playerAudio.currentTime/playerAudio.duration*100)||0;
+});
+playerAudio.addEventListener('play',()=>{ setPlayIcon(true); });
+playerAudio.addEventListener('pause',()=>{ setPlayIcon(false); });
+
+function setPlayIcon(playing){
+  document.getElementById('playerPlayIcon').innerHTML = playing
+    ? '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>'
+    : '<path d="M8 5v14l11-7z"/>';
+}
+
+async function openPlayer(trackId, startAtSec){
+  const track=await dbGet(trackId);
+  if(!track){ showToast('这段音频找不到了'); return; }
+  currentTrackId=trackId;
+  currentTrackList=allTracks.map(t=>t.id);
+
+  document.getElementById('playerName').textContent=track.name;
+  document.getElementById('playerMeta').textContent=track.mixSummary||'';
+  playerAudio.src=URL.createObjectURL(track.finalBlob);
+  playerAudio.loop=true;
+  playerAudio.currentTime=startAtSec||0;
+
+  if('mediaSession' in navigator){
+    navigator.mediaSession.metadata=new MediaMetadata({
+      title:track.name, artist:'潜意识沟通室', album:track.mixSummary||''
+    });
+    navigator.mediaSession.setActionHandler('play',()=>playerAudio.play());
+    navigator.mediaSession.setActionHandler('pause',()=>playerAudio.pause());
+    navigator.mediaSession.setActionHandler('previoustrack',()=>playerSwitch(-1));
+    navigator.mediaSession.setActionHandler('nexttrack',()=>playerSwitch(1));
+  }
+
+  showView('playerView');
+  try{ await playerAudio.play(); }catch(e){ console.error(e); }
+
+  clearInterval(posSaveInterval);
+  posSaveInterval=setInterval(()=>{
+    lastPlayedSet({trackId:currentTrackId, positionSec:playerAudio.currentTime, updatedAt:Date.now()});
+  },3000);
+}
+function playerSwitch(delta){
+  const idx=currentTrackList.indexOf(currentTrackId);
+  if(idx<0) return;
+  const nextIdx=(idx+delta+currentTrackList.length)%currentTrackList.length;
+  openPlayer(currentTrackList[nextIdx],0);
+}
+document.getElementById('playerPlayBtn').onclick=()=>{
+  if(playerAudio.paused) playerAudio.play(); else playerAudio.pause();
+};
+document.getElementById('playerPrevBtn').onclick=()=>playerSwitch(-1);
+document.getElementById('playerNextBtn').onclick=()=>playerSwitch(1);
+document.getElementById('playerSeek').oninput=()=>{
+  if(!playerAudio.duration) return;
+  playerAudio.currentTime=playerAudio.duration*(document.getElementById('playerSeek').value/100);
+};
+function closePlayer(){
+  lastPlayedSet({trackId:currentTrackId, positionSec:playerAudio.currentTime, updatedAt:Date.now()});
+  playerAudio.pause();
+  clearInterval(posSaveInterval);
+  renderRoom();
+  showView('roomView');
+}
+document.getElementById('playerCloseBtn').onclick=closePlayer;
+document.getElementById('playerStopBtn').onclick=()=>{
+  playerAudio.pause(); playerAudio.currentTime=0;
+  closePlayer();
+};
+document.getElementById('playerMoreBtn').onclick=()=>openMoreSheet(currentTrackId);
+
+/* ══════════════════ 更多操作弹层 ══════════════════ */
+let sheetTrackId=null;
+function openMoreSheet(trackId){
+  sheetTrackId=trackId;
+  const track=allTracks.find(t=>t.id===trackId);
+  document.getElementById('moreSheetTitle').textContent=track?track.name:'';
+  document.getElementById('moreSheet').style.display='flex';
+}
+document.getElementById('sheetCancel').onclick=()=>{ document.getElementById('moreSheet').style.display='none'; };
+document.getElementById('sheetDelete').onclick=async ()=>{
+  if(!confirm('确定删除这段沟通音频吗？')) return;
+  await dbDelete(sheetTrackId);
+  document.getElementById('moreSheet').style.display='none';
+  await renderRoom();
+  showView('roomView');
+};
+document.getElementById('sheetRename').onclick=()=>{
+  document.getElementById('moreSheet').style.display='none';
+  const track=allTracks.find(t=>t.id===sheetTrackId);
+  openNameModal(track.name, async (newName)=>{
+    track.name=newName; track.updatedAt=Date.now();
+    await dbPut(track);
+    await renderRoom();
+  });
+};
+document.getElementById('sheetEdit').onclick=async ()=>{
+  document.getElementById('moreSheet').style.display='none';
+  await loadTrackIntoDraft(sheetTrackId);
+  if(draftMode==='sentences'){ showView('contentView'); renderSentenceList(); }
+  else { showView('freeRecordView'); refreshFreeRecordUI(); }
+};
+document.getElementById('sheetMix').onclick=async ()=>{
+  document.getElementById('moreSheet').style.display='none';
+  await loadTrackIntoDraft(sheetTrackId);
+  showView('mixView'); refreshMixUI();
+};
+
+/* ══════════════════ 命名弹层（通用） ══════════════════ */
+let nameModalCallback=null;
+function openNameModal(prefill, onConfirm){
+  document.getElementById('trackNameInput').value=prefill||'';
+  nameModalCallback=onConfirm;
+  document.getElementById('nameModal').style.display='flex';
+}
+document.getElementById('nameCancelBtn').onclick=()=>{ document.getElementById('nameModal').style.display='none'; };
+document.getElementById('nameConfirmBtn').onclick=()=>{
+  const name=document.getElementById('trackNameInput').value.trim();
+  if(!name){ showToast('请输入名字'); return; }
+  document.getElementById('nameModal').style.display='none';
+  if(nameModalCallback) nameModalCallback(name);
+};
+
+/* ══════════════════ 制作室：草稿状态 ══════════════════ */
+let editingTrackId=null;
+let draftMode='sentences'; // 'sentences' | 'freeform'
+let draftSentences=[]; // {id, text, blob}
+let draftFreeformBlob=null;
+let draftVoiceLevel='clear';
+let draftAmbience={enabled:false, type:'rain', volume:50};
+let draftBinaural={enabled:false, type:'theta', volume:35};
+
+function resetDraft(){
+  editingTrackId=null;
+  draftMode='sentences';
+  draftSentences=[];
+  draftFreeformBlob=null;
+  draftVoiceLevel='clear';
+  draftAmbience={enabled:false, type:'rain', volume:50};
+  draftBinaural={enabled:false, type:'theta', volume:35};
+}
+async function loadTrackIntoDraft(trackId){
+  const track=await dbGet(trackId);
+  editingTrackId=trackId;
+  draftMode=track.mode;
+  draftSentences=track.sentences? track.sentences.map(s=>({...s})) : [];
+  draftFreeformBlob=track.freeformBlob||null;
+  draftVoiceLevel=track.voiceLevel||'clear';
+  draftAmbience={enabled:!!track.ambienceType, type:track.ambienceType||'rain', volume:track.ambienceVolume??50};
+  draftBinaural={enabled:!!track.binauralType, type:track.binauralType||'theta', volume:track.binauralVolume??35};
+}
+
+document.getElementById('entryBackBtn').onclick=()=>showView('roomView');
+document.getElementById('fromLifeBtn').onclick=()=>showToast('这个入口还在准备中，敬请期待');
+document.getElementById('writeSelfBtn').onclick=()=>{
+  draftMode='sentences';
+  showView('contentView'); renderSentenceList();
+};
+document.getElementById('freeRecordBtn').onclick=()=>{
+  draftMode='freeform';
+  showView('freeRecordView'); refreshFreeRecordUI();
+};
+
+/* ══════════════════ 内容台 ══════════════════ */
+document.getElementById('contentBackBtn').onclick=()=>showView('studioEntryView');
+function renderSentenceList(){
+  const list=document.getElementById('sentenceList');
+  if(!draftSentences.length){
+    list.innerHTML='<div style="font-size:12px;color:#9a8878;padding:0.6rem 0;">还没有句子，先从下面添加一句</div>';
+  } else {
+    list.innerHTML='';
+    draftSentences.forEach((s,idx)=>{
+      const row=document.createElement('div');
+      row.className='sentence-row';
+      row.innerHTML=`
+        <span class="sentence-text"></span>
+        <div class="sentence-actions">
+          <button class="mini-btn up">↑</button>
+          <button class="mini-btn down">↓</button>
+          <button class="mini-btn del">删除</button>
+        </div>`;
+      row.querySelector('.sentence-text').textContent=s.text;
+      row.querySelector('.up').onclick=()=>{ if(idx>0){ [draftSentences[idx-1],draftSentences[idx]]=[draftSentences[idx],draftSentences[idx-1]]; renderSentenceList(); } };
+      row.querySelector('.down').onclick=()=>{ if(idx<draftSentences.length-1){ [draftSentences[idx+1],draftSentences[idx]]=[draftSentences[idx],draftSentences[idx+1]]; renderSentenceList(); } };
+      row.querySelector('.del').onclick=()=>{ draftSentences.splice(idx,1); renderSentenceList(); };
+      list.appendChild(row);
+    });
+  }
+  document.getElementById('toVoiceBtn').disabled = draftSentences.length===0;
+}
+document.getElementById('addSentenceBtn').onclick=()=>{
+  const input=document.getElementById('newSentenceInput');
+  const text=input.value.trim();
+  if(!text) return;
+  draftSentences.push({id:'s'+Date.now()+Math.random().toString(36).slice(2,6), text, blob:null});
+  input.value='';
+  renderSentenceList();
+};
+document.getElementById('toVoiceBtn').onclick=()=>{ showView('voiceView'); renderVoiceList(); };
+
+/* ══════════════════ 声音台（逐句录音） ══════════════════ */
+document.getElementById('voiceBackBtn').onclick=()=>{ showView('contentView'); renderSentenceList(); };
+let activeRecorder=null, activeRecordChunks=[], activeRecordingSentenceId=null;
+
+function renderVoiceList(){
+  const done=draftSentences.filter(s=>s.blob).length;
+  document.getElementById('voiceProgress').textContent=`${done}/${draftSentences.length} 句已录制`;
+  const list=document.getElementById('voiceSentenceList');
+  list.innerHTML='';
+  draftSentences.forEach(s=>{
+    const row=document.createElement('div');
+    row.className='sentence-row';
+    const hasBlob=!!s.blob;
+    row.innerHTML=`
+      <span class="sentence-text"></span>
+      <div class="sentence-actions">
+        ${hasBlob?'<button class="mini-btn ok">试听</button><button class="mini-btn rec">重录</button>':'<button class="mini-btn rec">录制</button>'}
+      </div>`;
+    row.querySelector('.sentence-text').textContent=s.text;
+    if(hasBlob){
+      row.querySelector('.ok').onclick=()=>{ const a=new Audio(URL.createObjectURL(s.blob)); a.play(); };
+      row.querySelector('.rec').onclick=()=>toggleRecordSentence(s.id);
+    } else {
+      row.querySelector('.rec').onclick=()=>toggleRecordSentence(s.id);
+    }
+    list.appendChild(row);
+  });
+  document.getElementById('toMixFromVoiceBtn').disabled = done===0;
+}
+async function toggleRecordSentence(sentenceId){
+  if(activeRecorder && activeRecorder.state==='recording' && activeRecordingSentenceId===sentenceId){
+    activeRecorder.stop();
+    return;
+  }
+  if(activeRecorder && activeRecorder.state==='recording'){ showToast('先停止当前句子的录音'); return; }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    activeRecorder=new MediaRecorder(stream);
+    activeRecordChunks=[];
+    activeRecordingSentenceId=sentenceId;
+    activeRecorder.ondataavailable=e=>activeRecordChunks.push(e.data);
+    activeRecorder.onstop=()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(activeRecordChunks,{type:activeRecorder.mimeType});
+      const s=draftSentences.find(x=>x.id===sentenceId);
+      if(s) s.blob=blob;
+      renderVoiceList();
+    };
+    activeRecorder.start();
+    showToast('正在录制，再点一次停止');
+    renderVoiceListRecordingState(sentenceId);
+  }catch(err){
+    showToast('无法访问麦克风：'+err.message);
+  }
+}
+function renderVoiceListRecordingState(sentenceId){
+  // 简化处理：录音中禁用其他句子的按钮，通过重新渲染时的状态判断即可，这里只做轻提示，不做复杂UI锁定
+}
+document.getElementById('toMixFromVoiceBtn').onclick=()=>{ showView('mixView'); refreshMixUI(); };
+
+/* ══════════════════ 自由录音 ══════════════════ */
+document.getElementById('freeRecordBackBtn').onclick=()=>showView('studioEntryView');
+let freeRecorder=null, freeRecordChunks=[], freeRecordTimerSec=0, freeRecordInterval=null;
+function refreshFreeRecordUI(){
+  const btn=document.getElementById('freeRecBtn');
+  const status=document.getElementById('freeRecStatus');
+  if(draftFreeformBlob){
+    btn.classList.add('done'); btn.textContent='✓';
+    status.textContent='已录制！可以试听或重新录制';
+    document.getElementById('freePreviewBtn').disabled=false;
+    document.getElementById('toMixFromFreeBtn').disabled=false;
+  } else {
+    btn.classList.remove('done'); btn.textContent='🎙️';
+    status.textContent='点击开始录制，想说多久都可以';
+    document.getElementById('freePreviewBtn').disabled=true;
+    document.getElementById('toMixFromFreeBtn').disabled=true;
+  }
+  document.getElementById('freeRecTimer').textContent='00:00';
+}
+document.getElementById('freeRecBtn').onclick=async ()=>{
+  const btn=document.getElementById('freeRecBtn');
+  if(freeRecorder && freeRecorder.state==='recording'){ freeRecorder.stop(); return; }
+  if(draftFreeformBlob && !confirm('重新录制会覆盖之前的内容，确定吗？')) return;
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    freeRecorder=new MediaRecorder(stream);
+    freeRecordChunks=[];
+    freeRecorder.ondataavailable=e=>freeRecordChunks.push(e.data);
+    freeRecorder.onstop=()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      clearInterval(freeRecordInterval);
+      draftFreeformBlob=new Blob(freeRecordChunks,{type:freeRecorder.mimeType});
+      refreshFreeRecordUI();
+    };
+    freeRecorder.start();
+    btn.classList.add('recording'); btn.textContent='⏹';
+    document.getElementById('freeRecStatus').textContent='正在录制…再次点击停止';
+    freeRecordTimerSec=0;
+    freeRecordInterval=setInterval(()=>{
+      freeRecordTimerSec++;
+      const m=String(Math.floor(freeRecordTimerSec/60)).padStart(2,'0');
+      const s=String(freeRecordTimerSec%60).padStart(2,'0');
+      document.getElementById('freeRecTimer').textContent=m+':'+s;
+    },1000);
+  }catch(err){
+    document.getElementById('freeRecStatus').textContent='无法访问麦克风：'+err.message;
+  }
+  btn.classList.remove('recording');
+};
+document.getElementById('freePreviewBtn').onclick=()=>{
+  if(!draftFreeformBlob) return;
+  const a=new Audio(URL.createObjectURL(draftFreeformBlob)); a.play();
+};
+document.getElementById('toMixFromFreeBtn').onclick=()=>{ showView('mixView'); refreshMixUI(); };
+
+/* ══════════════════ 混音台 ══════════════════ */
+document.getElementById('mixBackBtn').onclick=()=>{
+  if(draftMode==='sentences'){ showView('voiceView'); renderVoiceList(); }
+  else { showView('freeRecordView'); refreshFreeRecordUI(); }
+};
+
+function refreshMixUI(){
+  document.querySelectorAll('#voiceLevelChips .chip').forEach(c=>c.classList.toggle('selected', c.dataset.level===draftVoiceLevel));
+  document.getElementById('ambienceToggle').classList.toggle('on', draftAmbience.enabled);
+  document.getElementById('ambienceBody').style.display = draftAmbience.enabled?'block':'none';
+  document.querySelectorAll('#ambienceChips .chip:not(.soon)').forEach(c=>c.classList.toggle('selected', c.dataset.type===draftAmbience.type));
+  document.getElementById('ambienceVolSlider').value=draftAmbience.volume;
+
+  document.getElementById('binauralToggle').classList.toggle('on', draftBinaural.enabled);
+  document.getElementById('binauralBody').style.display = draftBinaural.enabled?'block':'none';
+  document.querySelectorAll('#binauralChips .chip').forEach(c=>c.classList.toggle('selected', c.dataset.type===draftBinaural.type));
+  document.getElementById('binauralVolSlider').value=draftBinaural.volume;
+}
+document.querySelectorAll('#voiceLevelChips .chip').forEach(btn=>{
+  btn.onclick=()=>{ draftVoiceLevel=btn.dataset.level; refreshMixUI(); liveUpdateVoice(); };
+});
+document.getElementById('ambienceToggle').onclick=()=>{ draftAmbience.enabled=!draftAmbience.enabled; refreshMixUI(); liveRestartAmbience(); };
+document.querySelectorAll('#ambienceChips .chip:not(.soon)').forEach(btn=>{
+  btn.onclick=()=>{ draftAmbience.type=btn.dataset.type; refreshMixUI(); liveRestartAmbience(); };
+});
+document.querySelectorAll('#ambienceChips .chip.soon').forEach(btn=>{
+  btn.onclick=()=>showToast('这个环境音还在准备中，敬请期待');
+});
+document.getElementById('ambienceVolSlider').oninput=(e)=>{ draftAmbience.volume=parseInt(e.target.value); liveUpdateAmbienceVol(); };
+
+document.getElementById('binauralToggle').onclick=()=>{ draftBinaural.enabled=!draftBinaural.enabled; refreshMixUI(); liveRestartBinaural(); };
+document.querySelectorAll('#binauralChips .chip').forEach(btn=>{
+  btn.onclick=()=>{ draftBinaural.type=btn.dataset.type; refreshMixUI(); liveRestartBinaural(); };
+});
+document.getElementById('binauralVolSlider').oninput=(e)=>{ draftBinaural.volume=parseInt(e.target.value); liveUpdateBinauralVol(); };
+
+/* --- 实时试听：拖动滑块立刻听到变化，不需要"保存→重新生成→播放" --- */
+let liveVoiceSource=null, liveVoiceGain=null;
+let liveAmbienceSource=null, liveAmbienceGain=null;
+let liveBinauralSource=null, liveBinauralGain=null;
+let liveVoiceBuffer=null;
+let isLivePreviewing=false;
+const VOICE_LEVEL_GAIN={clear:1.0, soft:0.45, faint:0.18};
+
+async function buildDraftVoiceBuffer(){
+  const ctx=getCtx();
+  if(draftMode==='freeform'){
+    if(!draftFreeformBlob) return null;
+    return await decodeBlob(draftFreeformBlob);
+  } else {
+    const recorded=draftSentences.filter(s=>s.blob);
+    if(!recorded.length) return null;
+    const buffers=await Promise.all(recorded.map(s=>decodeBlob(s.blob)));
+    return concatBuffers(buffers, ctx.sampleRate, 0.6);
+  }
+}
+async function startLivePreview(){
+  stopLivePreview();
+  liveVoiceBuffer=await buildDraftVoiceBuffer();
+  if(!liveVoiceBuffer){ showToast('还没有录音内容'); return; }
+  const ctx=getCtx(); await ctx.resume();
+
+  liveVoiceSource=ctx.createBufferSource();
+  liveVoiceSource.buffer=liveVoiceBuffer; liveVoiceSource.loop=true;
+  liveVoiceGain=ctx.createGain(); liveVoiceGain.gain.value=VOICE_LEVEL_GAIN[draftVoiceLevel];
+  liveVoiceSource.connect(liveVoiceGain).connect(ctx.destination);
+  liveVoiceSource.start();
+
+  if(draftAmbience.enabled){
+    const buf=generateAmbienceBuffer(draftAmbience.type, liveVoiceBuffer.length, liveVoiceBuffer.sampleRate);
+    liveAmbienceSource=ctx.createBufferSource(); liveAmbienceSource.buffer=buf; liveAmbienceSource.loop=true;
+    liveAmbienceGain=ctx.createGain(); liveAmbienceGain.gain.value=draftAmbience.volume/100;
+    liveAmbienceSource.connect(liveAmbienceGain).connect(ctx.destination);
+    liveAmbienceSource.start();
+  }
+  if(draftBinaural.enabled){
+    const buf=generateBinauralBuffer(draftBinaural.type, liveVoiceBuffer.length, liveVoiceBuffer.sampleRate);
+    liveBinauralSource=ctx.createBufferSource(); liveBinauralSource.buffer=buf; liveBinauralSource.loop=true;
+    liveBinauralGain=ctx.createGain(); liveBinauralGain.gain.value=draftBinaural.volume/100;
+    liveBinauralSource.connect(liveBinauralGain).connect(ctx.destination);
+    liveBinauralSource.start();
+  }
+  isLivePreviewing=true;
+  document.getElementById('mixPreviewBtn').textContent='⏹ 停止试听';
+}
+function stopLivePreview(){
+  try{ if(liveVoiceSource) liveVoiceSource.stop(); }catch(e){}
+  try{ if(liveAmbienceSource) liveAmbienceSource.stop(); }catch(e){}
+  try{ if(liveBinauralSource) liveBinauralSource.stop(); }catch(e){}
+  liveVoiceSource=liveAmbienceSource=liveBinauralSource=null;
+  isLivePreviewing=false;
+  document.getElementById('mixPreviewBtn').textContent='▶ 试听混音效果';
+}
+function liveUpdateVoice(){ if(isLivePreviewing && liveVoiceGain) liveVoiceGain.gain.value=VOICE_LEVEL_GAIN[draftVoiceLevel]; }
+function liveUpdateAmbienceVol(){ if(isLivePreviewing && liveAmbienceGain) liveAmbienceGain.gain.value=draftAmbience.volume/100; }
+function liveUpdateBinauralVol(){ if(isLivePreviewing && liveBinauralGain) liveBinauralGain.gain.value=draftBinaural.volume/100; }
+function liveRestartAmbience(){ if(isLivePreviewing) startLivePreview(); }
+function liveRestartBinaural(){ if(isLivePreviewing) startLivePreview(); }
+
+document.getElementById('mixPreviewBtn').onclick=()=>{
+  if(isLivePreviewing) stopLivePreview(); else startLivePreview();
+};
+
+/* --- 保存：渲染最终WAV，写入音频库 --- */
+function buildMixSummary(){
+  const parts=[];
+  if(draftAmbience.enabled) parts.push(draftAmbience.type==='rain'?'雨声':'海浪');
+  if(draftBinaural.enabled) parts.push(BINAURAL_PRESETS[draftBinaural.type].label);
+  parts.push(VOICE_LEVEL_LABEL[draftVoiceLevel]);
+  return parts.join(' · ');
+}
+document.getElementById('mixSaveBtn').onclick=async ()=>{
+  const voiceBuffer=await buildDraftVoiceBuffer();
+  if(!voiceBuffer){ showToast('还没有录音内容，先去声音台录一段'); return; }
+  openNameModal(editingTrackId ? (allTracks.find(t=>t.id===editingTrackId)||{}).name : '', async (name)=>{
+    stopLivePreview();
+    try{
+      const sr=voiceBuffer.sampleRate, len=voiceBuffer.length;
+      const offline=new OfflineAudioContext(2, len, sr);
+      const vSrc=offline.createBufferSource(); vSrc.buffer=voiceBuffer;
+      const vGain=offline.createGain(); vGain.gain.value=VOICE_LEVEL_GAIN[draftVoiceLevel];
+      vSrc.connect(vGain).connect(offline.destination); vSrc.start();
+
+      if(draftAmbience.enabled){
+        const aBuf=generateAmbienceBuffer(draftAmbience.type, len, sr);
+        const aSrc=offline.createBufferSource(); aSrc.buffer=aBuf;
+        const aGain=offline.createGain(); aGain.gain.value=draftAmbience.volume/100;
+        aSrc.connect(aGain).connect(offline.destination); aSrc.start();
+      }
+      if(draftBinaural.enabled){
+        const bBuf=generateBinauralBuffer(draftBinaural.type, len, sr);
+        const bSrc=offline.createBufferSource(); bSrc.buffer=bBuf;
+        const bGain=offline.createGain(); bGain.gain.value=draftBinaural.volume/100;
+        bSrc.connect(bGain).connect(offline.destination); bSrc.start();
+      }
+      const rendered=await offline.startRendering();
+      const wav=bufferToWav(rendered);
+      const finalBlob=new Blob([wav],{type:'audio/wav'});
+
+      const track={
+        id: editingTrackId || undefined,
+        name, createdAt: editingTrackId ? (await dbGet(editingTrackId)).createdAt : Date.now(),
+        updatedAt: Date.now(),
+        durationSec: len/sr,
+        mixSummary: buildMixSummary(),
+        finalBlob,
+        mode: draftMode,
+        sentences: draftMode==='sentences' ? draftSentences.map(s=>({id:s.id, text:s.text, blob:s.blob})) : null,
+        freeformBlob: draftMode==='freeform' ? draftFreeformBlob : null,
+        voiceLevel: draftVoiceLevel,
+        ambienceType: draftAmbience.enabled ? draftAmbience.type : null,
+        ambienceVolume: draftAmbience.volume,
+        binauralType: draftBinaural.enabled ? draftBinaural.type : null,
+        binauralVolume: draftBinaural.volume,
+      };
+      if(editingTrackId===null) delete track.id;
+      await dbPut(track);
+      showToast('已保存到聆听室');
+      resetDraft();
+      await renderRoom();
+      showView('roomView');
+    }catch(err){
+      console.error(err);
+      showToast('保存出错：'+err.message);
+    }
+  });
+};
+
+/* ══════════════════ 初始化 ══════════════════ */
+renderRoom();
 </script>
 </body>
 </html>
