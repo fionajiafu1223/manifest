@@ -27,25 +27,35 @@ body{height:100dvh;position:fixed;inset:0;background:#f4f8f0;font-family:sans-se
   background-image:url('assets/backgrounds/layers/1-sky-gradient.webp');
   background-size:cover;background-position:center top;}
 
-/* 2/3. 山丘：横向拉满不留白，用真实img保持比例，不再有硬边裁切问题 */
-.layer-hills-back{position:absolute;left:-6%;bottom:22dvh;width:112%;}
-.layer-hills-back img{width:100%;display:block;}
-.layer-hills-front{position:absolute;left:-6%;bottom:14dvh;width:112%;}
-.layer-hills-front img{width:100%;display:block;}
+/* 2/3. 山丘：横向拉满不留白，用object-fit:cover保比例不失真地填满指定高度 */
+.layer-hills-back{position:absolute;left:-6%;width:112%;overflow:hidden;z-index:1;
+  height:17dvh;bottom:28dvh;}
+.layer-hills-front{position:absolute;left:-6%;width:112%;overflow:hidden;z-index:2;
+  height:22dvh;bottom:16dvh;}
+.layer-hills-back img,.layer-hills-front img{width:100%;height:100%;object-fit:cover;object-position:bottom center;display:block;}
 
-/* 4/5. 左右两棵树：固定贴在左右下角，用dvh避免iOS工具栏导致的高度跳动 */
-.layer-tree-left{position:absolute;left:0;bottom:0;height:34dvh;width:auto;z-index:3;}
+/* 4/5. 左右两棵树：固定贴左右下角，用dvh避免iOS工具栏导致的高度跳动 */
+.layer-tree-left{position:absolute;left:-2%;bottom:0;height:35dvh;width:auto;z-index:3;}
 .layer-tree-left img{height:100%;width:auto;display:block;}
-.layer-tree-right{position:absolute;right:0;bottom:0;height:30dvh;width:auto;z-index:3;}
+.layer-tree-right{position:absolute;right:-2%;bottom:0;height:33dvh;width:auto;z-index:3;}
 .layer-tree-right img{height:100%;width:auto;display:block;}
 
-/* 6. 前景花草：横向拉满，贴底 */
-.layer-plants{position:absolute;left:-6%;bottom:0;width:112%;z-index:4;}
-.layer-plants img{width:100%;display:block;}
+/* 6. 前景花草：横向拉满，贴底，压住山丘下缘 */
+.layer-plants{position:absolute;left:-6%;width:112%;bottom:0;height:24dvh;overflow:hidden;z-index:4;}
+.layer-plants img{width:100%;height:100%;object-fit:cover;object-position:bottom center;display:block;}
 
-/* 7/8. 蝴蝶：各自独立飘动 */
-.bfly{position:absolute;width:60px;height:60px;animation:flyPath var(--bd) ease-in-out infinite;}
-.bfly img{width:100%;height:100%;display:block;filter:drop-shadow(0 4px 8px rgba(60,90,50,0.25));animation:flap 2.6s ease-in-out infinite;}
+/* iPad横屏比例调整 */
+@media (orientation:landscape){
+  .layer-hills-back{height:16dvh;bottom:24dvh;}
+  .layer-hills-front{height:20dvh;bottom:14dvh;}
+  .layer-tree-left{height:46dvh;}
+  .layer-tree-right{height:44dvh;}
+  .layer-plants{height:25dvh;}
+}
+
+/* 7/8. 蝴蝶：各自独立飘动，竖屏/横屏各有自己的位置和大小 */
+.bfly{position:absolute;width:9vw;max-width:60px;height:auto;animation:flyPath var(--bd) ease-in-out infinite;z-index:5;}
+.bfly img{width:100%;height:auto;display:block;filter:drop-shadow(0 4px 8px rgba(60,90,50,0.25));animation:flap 2.6s ease-in-out infinite;}
 @keyframes flap{0%,100%{transform:scaleX(1) rotate(0deg);}50%{transform:scaleX(0.85) rotate(3deg);}}
 @keyframes flyPath{
   0%{transform:translate(0,0) rotate(-4deg);}
@@ -54,11 +64,20 @@ body{height:100dvh;position:fixed;inset:0;background:#f4f8f0;font-family:sans-se
   75%{transform:translate(30px,-30px) rotate(3deg);}
   100%{transform:translate(0,0) rotate(-4deg);}
 }
+#bfly1{top:52%;left:36%;width:9vw;max-width:35px;}
+#bfly2{top:69%;left:72%;width:10vw;max-width:39px;}
+@media (orientation:landscape){
+  #bfly1{top:43%;left:29%;width:4.5vw;max-width:53px;}
+  #bfly2{top:68%;left:78%;width:5vw;max-width:59px;}
+}
 
-/* 底部四宫格功能区：放在顶部天空区域 */
-.dock{position:absolute;top:calc(env(safe-area-inset-top,44px) + 14px);left:0;width:100%;height:44%;
+/* 底部四宫格功能区：占屏幕上方约38%（横屏30%），下方留给花园 */
+.dock{position:absolute;top:calc(env(safe-area-inset-top,20px) + 2dvh);left:0;width:100%;height:38dvh;
   display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);
   gap:14px;padding:0 5%;z-index:10;}
+@media (orientation:landscape){
+  .dock{height:30dvh;}
+}
 .dock-item{
   cursor:pointer;transition:transform 0.2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
 }
@@ -83,10 +102,10 @@ body{height:100dvh;position:fixed;inset:0;background:#f4f8f0;font-family:sans-se
 
     <div class="layer-plants"><img src="assets/backgrounds/layers/6-foreground-plants.webp" alt=""></div>
 
-    <div class="bfly" style="top:34%;left:14%;--bd:9s;">
+    <div class="bfly" id="bfly1" style="--bd:9s;">
       <img src="assets/backgrounds/layers/7-butterfly-1.webp" alt="">
     </div>
-    <div class="bfly" style="top:48%;right:18%;--bd:11s;animation-direction:reverse;">
+    <div class="bfly" id="bfly2" style="--bd:11s;animation-direction:reverse;">
       <img src="assets/backgrounds/layers/8-butterfly-2.webp" alt="">
     </div>
   </div>
