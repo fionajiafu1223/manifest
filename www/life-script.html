@@ -584,7 +584,7 @@ async function finishScript(){
     clearIdempotencyKey();
     const result = await buildWorld();
     if(!result.success){
-      const innerDetail = result.error && result.error.detail && result.error.detail.detail;
+      const innerDetail = result.error && result.error.detail && result.error.detail.error;
       if(innerDetail !== 'WORLD_ALREADY_BUILT'){
         hideBuildingScreen();
         const detail = result.error && result.error.detail;
