@@ -69,11 +69,52 @@ body{position:fixed;inset:0;width:100%;height:100dvh;background:#f4f8f0;font-fam
 
 .world.entering .garden{animation:wakeUp 2.4s ease-out;}
 @keyframes wakeUp{0%{opacity:0;filter:blur(24px) brightness(1.4);}100%{opacity:1;filter:blur(0) brightness(1);}}
+
+/* 登录/账号弹窗 */
+.acct-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(40,50,30,0.45);
+  display:none;align-items:center;justify-content:center;
+  padding:0 1.6rem;
+}
+.acct-overlay.open{display:flex;}
+.acct-card{
+  width:100%;max-width:340px;
+  background:linear-gradient(180deg,#f5f2e0,#e8f0d8);
+  border-radius:18px;padding:1.8rem 1.6rem 1.6rem;
+  font-family:'Noto Serif SC',serif;color:#3a4a2a;
+  box-shadow:0 12px 40px rgba(0,0,0,0.25);
+  position:relative;
+}
+.acct-close{
+  position:absolute;top:12px;right:14px;
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:#6a7858;font-size:18px;cursor:pointer;
+}
+.acct-title{font-size:18px;font-weight:600;margin-bottom:1.2rem;text-align:center;color:#4a5a38;}
+.acct-field{margin-bottom:0.8rem;}
+.acct-field label{display:block;font-size:12px;color:#6a7858;letter-spacing:1px;margin-bottom:0.35rem;}
+.acct-field input{
+  width:100%;padding:0.75rem 0.9rem;border-radius:10px;border:1.5px solid rgba(120,160,90,0.35);
+  background:rgba(255,255,255,0.75);font-family:'Noto Serif SC',serif;font-size:14px;color:#3a4a2a;outline:none;
+}
+.acct-field input:focus{border-color:#c8a04a;}
+.acct-btn{width:100%;padding:0.8rem;border-radius:12px;border:none;cursor:pointer;
+  font-family:'Noto Serif SC',serif;font-size:14px;letter-spacing:1.5px;transition:transform 0.1s;margin-top:0.35rem;}
+.acct-btn:active{transform:scale(0.98);}
+.acct-btn:disabled{opacity:0.5;pointer-events:none;}
+.acct-btn-primary{background:linear-gradient(135deg,#c8a04a,#e8c860);color:#4a3810;font-weight:600;}
+.acct-btn-secondary{background:rgba(255,255,255,0.6);color:#3a4a2a;border:1.5px solid rgba(120,160,90,0.35);}
+.acct-msg{margin-top:0.9rem;font-size:12.5px;text-align:center;line-height:1.6;min-height:18px;color:#6a7858;}
+.acct-msg.error{color:#b05050;}
+.acct-msg.ok{color:#4a7a3a;}
+.acct-current-email{font-size:14px;color:#4a5a38;text-align:center;margin-bottom:1.2rem;word-break:break-all;}
 </style>
 </head>
 <body>
 <div onclick="window.location.href='debug-test.html'" style="position:absolute;top:calc(env(safe-area-inset-top,44px) + 6px);right:16px;z-index:50;font-size:12px;color:rgba(90,120,90,0.55);padding:6px 10px;">诊断</div>
-<div onclick="switchAccount()" style="position:absolute;top:calc(env(safe-area-inset-top,44px) + 6px);left:16px;z-index:50;font-size:12px;color:rgba(90,120,90,0.55);padding:6px 10px;">登录/切换账号</div>
+<div onclick="openAccountModal()" style="position:absolute;top:calc(env(safe-area-inset-top,44px) + 6px);left:16px;z-index:50;font-size:12px;color:rgba(90,120,90,0.55);padding:6px 10px;">登录/切换账号</div>
 <div class="world entering" id="world">
   <div class="garden" id="garden">
     <img class="garden-scene scene-portrait" src="assets/backgrounds/garden-home-portrait.jpg" alt="">
@@ -101,18 +142,132 @@ body{position:fixed;inset:0;width:100%;height:100dvh;background:#f4f8f0;font-fam
   </div>
 </div>
 
+<!-- 登录/账号弹窗：不跳转页面，直接在首页上弹出 -->
+<div class="acct-overlay" id="acctOverlay" onclick="if(event.target===this) closeAccountModal();">
+  <div class="acct-card">
+    <div class="acct-close" onclick="closeAccountModal()">✕</div>
+    <div id="acctBody"></div>
+  </div>
+</div>
+
 <script>
 setTimeout(()=>{ document.getElementById('world').classList.remove('entering'); }, 2400);
 
-// "登录/切换账号"链接：已登录的话login.html会自动把你弹回来（造成"闪一下"的观感），
-// 所以这里先登出，再跳转，才能真正进到登录页
-async function switchAccount(){
+// ============================================================
+// 登录/账号弹窗：直接在首页弹出，不再跳转到login.html
+// ============================================================
+const acctOverlay = document.getElementById('acctOverlay');
+const acctBody = document.getElementById('acctBody');
+
+function renderLoginForm(){
+  acctBody.innerHTML = `
+    <div class="acct-title">登录</div>
+    <div class="acct-field">
+      <label>邮箱</label>
+      <input type="email" id="acctEmail" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="acct-field">
+      <label>密码</label>
+      <input type="password" id="acctPassword" placeholder="至少6位" autocomplete="current-password">
+    </div>
+    <button class="acct-btn acct-btn-primary" id="acctLoginBtn">登录</button>
+    <button class="acct-btn acct-btn-secondary" id="acctSignupBtn">还没有账号？注册</button>
+    <div class="acct-msg" id="acctMsg"></div>
+  `;
+
+  const emailEl = document.getElementById('acctEmail');
+  const passwordEl = document.getElementById('acctPassword');
+  const msgEl = document.getElementById('acctMsg');
+  const loginBtn = document.getElementById('acctLoginBtn');
+  const signupBtn = document.getElementById('acctSignupBtn');
+
+  function showMsg(text, type){
+    msgEl.textContent = text;
+    msgEl.className = 'acct-msg' + (type ? ' ' + type : '');
+  }
+  function setBusy(busy){
+    loginBtn.disabled = busy;
+    signupBtn.disabled = busy;
+  }
+
+  loginBtn.addEventListener('click', async () => {
+    const email = emailEl.value.trim();
+    const password = passwordEl.value;
+    if(!email || !password){ showMsg('请填写邮箱和密码', 'error'); return; }
+    setBusy(true);
+    showMsg('登录中...');
+    try{
+      const { signIn } = await import('./js/services/authService.js');
+      await signIn(email, password);
+      showMsg('登录成功', 'ok');
+      setTimeout(()=>{ closeAccountModal(); }, 500);
+    }catch(err){
+      showMsg('登录失败：' + (err.message || '未知错误'), 'error');
+      setBusy(false);
+    }
+  });
+
+  signupBtn.addEventListener('click', async () => {
+    const email = emailEl.value.trim();
+    const password = passwordEl.value;
+    if(!email || !password){ showMsg('请填写邮箱和密码', 'error'); return; }
+    if(password.length < 6){ showMsg('密码至少需要6位', 'error'); return; }
+    setBusy(true);
+    showMsg('注册中...');
+    try{
+      const { signUp } = await import('./js/services/authService.js');
+      const data = await signUp(email, password);
+      if(data.session){
+        showMsg('注册成功', 'ok');
+        setTimeout(()=>{ closeAccountModal(); }, 500);
+      } else {
+        showMsg('注册成功，请检查邮箱完成验证后再登录', 'ok');
+        setBusy(false);
+      }
+    }catch(err){
+      showMsg('注册失败：' + (err.message || '未知错误'), 'error');
+      setBusy(false);
+    }
+  });
+}
+
+function renderLoggedInState(email){
+  acctBody.innerHTML = `
+    <div class="acct-title">账号</div>
+    <div class="acct-current-email">当前登录：${email}</div>
+    <button class="acct-btn acct-btn-secondary" id="acctLogoutBtn">退出登录</button>
+    <div class="acct-msg" id="acctMsg"></div>
+  `;
+  document.getElementById('acctLogoutBtn').addEventListener('click', async () => {
+    try{
+      const { signOut } = await import('./js/services/authService.js');
+      await signOut();
+      renderLoginForm();
+    }catch(err){
+      document.getElementById('acctMsg').textContent = '退出失败：' + (err.message || '未知错误');
+      document.getElementById('acctMsg').className = 'acct-msg error';
+    }
+  });
+}
+
+async function openAccountModal(){
+  acctOverlay.classList.add('open');
+  acctBody.innerHTML = '<div class="acct-title">加载中…</div>';
   try{
-    const { getCurrentUser, signOut } = await import('./js/services/authService.js');
+    const { getCurrentUser } = await import('./js/services/authService.js');
     const user = await getCurrentUser();
-    if(user){ await signOut(); }
-  }catch(e){ console.error(e); }
-  window.location.href = 'login.html';
+    if(user){
+      renderLoggedInState(user.email || '');
+    } else {
+      renderLoginForm();
+    }
+  }catch(e){
+    renderLoginForm();
+  }
+}
+
+function closeAccountModal(){
+  acctOverlay.classList.remove('open');
 }
 
 // 点击任意功能图标才检查登录状态；首页本身谁都能看
@@ -123,7 +278,7 @@ async function walkTo(feature, pos){
     user = await getCurrentUser();
   }catch(e){}
   if(!user){
-    window.location.href = 'login.html';
+    openAccountModal();
     return;
   }
 
