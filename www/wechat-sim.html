@@ -475,7 +475,7 @@ async function init(){
       .eq('id', characterId)
       .eq('user_id', user.id)
       .maybeSingle(),
-    supabase.from('main_characters').select('name').eq('user_id', user.id).maybeSingle(),
+    supabase.from('main_characters').select('name, canon').eq('user_id', user.id).maybeSingle(),
   ]);
 
   if(charError || !character){
@@ -486,6 +486,7 @@ async function init(){
   }
 
   heroName = (mainCharacter && mainCharacter.name) || '';
+  heroAvatar = (mainCharacter && mainCharacter.canon && mainCharacter.canon.avatar) || '';
   contactName = character.display_name || character.name || '未知联系人';
   contactInfo = {
     avatarImg: character.avatar_url || autoAvatarImg(contactName, character.job_title||'', character.personality||''),
