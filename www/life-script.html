@@ -261,6 +261,11 @@ body{
     <div class="field"><div class="field-label">价值观</div><textarea class="field-textarea" id="p_values" placeholder="TA看重什么…"></textarea></div>
     <div class="field"><div class="field-label">背景</div><textarea class="field-textarea" id="p_background" placeholder="TA的身份、经历、故事…"></textarea></div>
     <div class="field"><div class="field-label">TA如何对待主角</div><textarea class="field-textarea" id="p_attitude" placeholder="在这个场景里，TA怎样对你说话、对你做事…"></textarea></div>
+    <div class="field-half">
+      <div class="field"><div class="field-label">微信号</div><input type="text" class="field-input" id="p_wechat" placeholder="可选，填了TA才能给你发微信"></div>
+      <div class="field"><div class="field-label">电话</div><input type="text" class="field-input" id="p_phone" placeholder="可选，填了TA才能给你发短信"></div>
+    </div>
+    <div class="field"><div class="field-label">邮箱</div><input type="text" class="field-input" id="p_email" placeholder="可选，填了TA才能给你发邮件"></div>
   </div>
 </div>
 
@@ -483,9 +488,10 @@ function openPersonEditor(idx){
     g('p_name').value=p.name||'';g('p_role').value=p.role||'';g('p_age').value=p.age||'';g('p_gender').value=p.gender||'';
     g('p_look').value=p.look||'';g('p_character').value=p.character||'';g('p_values').value=p.values||'';
     g('p_background').value=p.background||'';g('p_attitude').value=p.attitude||'';
+    g('p_wechat').value=p.wechat||'';g('p_phone').value=p.phone||'';g('p_email').value=p.email||'';
     tempPersonAvatar = p.avatar || null;
   } else {
-    ['p_name','p_role','p_age','p_gender','p_look','p_character','p_values','p_background','p_attitude'].forEach(k=>g(k).value='');
+    ['p_name','p_role','p_age','p_gender','p_look','p_character','p_values','p_background','p_attitude','p_wechat','p_phone','p_email'].forEach(k=>g(k).value='');
     tempPersonAvatar = null;
   }
   if(tempPersonAvatar){ preview.src=tempPersonAvatar; preview.style.display='block'; placeholder.style.display='none'; }
@@ -526,7 +532,7 @@ function savePerson(){
     const skip = confirm('"'+name+'"还没有上传头像，要不要先传一张？\n\n点"取消"回去传照片，点"确定"先不传');
     if(skip===false) return; // 用户选"取消" -> 留在编辑器里传照片
   }
-  const person={ name, role:g('p_role'), age:g('p_age'), gender:g('p_gender'), look:g('p_look'), character:g('p_character'), values:g('p_values'), background:g('p_background'), attitude:g('p_attitude'), avatar: tempPersonAvatar };
+  const person={ name, role:g('p_role'), age:g('p_age'), gender:g('p_gender'), look:g('p_look'), character:g('p_character'), values:g('p_values'), background:g('p_background'), attitude:g('p_attitude'), avatar: tempPersonAvatar, wechat:g('p_wechat'), phone:g('p_phone'), email:g('p_email') };
   if(editingPersonIdx>=0) tempPersons[editingPersonIdx]=person;
   else tempPersons.push(person);
   renderPersons();
