@@ -270,6 +270,44 @@ let heroName = '';
 let heroAvatar = '';
 let sendInFlight = false;
 
+// ---- 头像生成：与wechat-list.html保持一致的逻辑（同一角色在列表和聊天页头像一致） ----
+function hashStr(s){
+  let h = 0;
+  for(let i=0; i<s.length; i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+function pickAvatarType(name, roleText, characterText){
+  const text = (roleText||'') + (characterText||'');
+  if(/艺术|设计|插画|音乐|诗|作家|摄影师|策展/.test(text)) return 'abstract';
+  if(/自然|户外|旅行|登山|徒步|田园|海边|骑行|露营/.test(text)) return 'landscape';
+  if(/学生|年轻|活泼|网红|游戏|二次元|博主/.test(text)) return 'cartoon';
+  const types = ['portrait','portrait','cartoon','landscape','abstract'];
+  return types[hashStr(name) % types.length];
+}
+function avatarUrlFor(type, seed){
+  const h = hashStr(seed);
+  switch(type){
+    case 'portrait': {
+      const gender = h % 2 === 0 ? 'women' : 'men';
+      const idx = (h % 80) + 1;
+      return `https://randomuser.me/api/portraits/${gender}/${idx}.jpg`;
+    }
+    case 'landscape': {
+      const ids = [1018,1015,1043,1036,1039,1050,1044,1024];
+      const id = ids[h % ids.length];
+      return `https://picsum.photos/id/${id}/200/200`;
+    }
+    case 'cartoon':
+      return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
+    case 'abstract':
+      return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(seed)}`;
+  }
+}
+function autoAvatarImg(name, roleText, characterText){
+  const type = pickAvatarType(name, roleText, characterText);
+  return avatarUrlFor(type, name);
+}
+
 // 已读状态：进来就把这个联系人标记为已读（数据库没有已读字段，纯本地UI状态）
 function markRead(){
   if(!characterId) return;
@@ -433,7 +471,7 @@ async function init(){
 
   const [{ data: character, error: charError }, { data: mainCharacter }] = await Promise.all([
     supabase.from('characters')
-      .select('id, name, display_name, personality, job_title, organization_name, background_story, initial_relationship')
+      .select('id, name, display_name, personality, job_title, organization_name, background_story, initial_relationship, avatar_url')
       .eq('id', characterId)
       .eq('user_id', user.id)
       .maybeSingle(),
@@ -450,7 +488,7 @@ async function init(){
   heroName = (mainCharacter && mainCharacter.name) || '';
   contactName = character.display_name || character.name || '未知联系人';
   contactInfo = {
-    avatarImg: null, // 头像风格生成逻辑与列表页保持一致时可在这里补上，暂时用姓名首字母兜底
+    avatarImg: character.avatar_url || autoAvatarImg(contactName, character.job_title||'', character.personality||''),
     role: character.job_title || character.initial_relationship || '朋友',
     character: character.personality || '友善自然',
     background: character.background_story || '',
