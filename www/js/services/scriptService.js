@@ -72,6 +72,7 @@ function mainCharacterToHero(mc) {
 
 function characterToPerson(ch, roleInScene, sceneContext) {
   const c = (ch && ch.canon) || {};
+  const handles = (ch && ch.contact_handles) || {};
   return {
     name: ch ? (ch.name || "") : "",
     role: roleInScene || "",
@@ -82,7 +83,10 @@ function characterToPerson(ch, roleInScene, sceneContext) {
     values: c.values || "",
     background: ch ? (ch.background_story || "") : "",
     attitude: sceneContext || "",
-    avatar: ch ? (ch.avatar_url || null) : null
+    avatar: ch ? (ch.avatar_url || null) : null,
+    wechat: handles.wechat || "",
+    phone: handles.phone || "",
+    email: handles.email || ""
   };
 }
 
@@ -167,6 +171,11 @@ export async function saveScript(scriptData) {
             avatar_url: p.avatar || null,
             initial_relationship: p.role || null,
             origin: "user",
+            contact_handles: {
+              wechat: p.wechat || null,
+              phone: p.phone || null,
+              email: p.email || null
+            },
             canon: {
               age: p.age || null,
               gender: p.gender || null,
