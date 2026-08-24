@@ -240,6 +240,22 @@ function showLoading(text){
   chatList.innerHTML = `<div class="loading-state"><div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div><div>${text}</div></div>`;
 }
 
+// ---- 相对时间显示：刚刚 / HH:MM / 昨天 / 星期几 / 日期 ----
+function formatMsgTime(iso){
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffMin = diffMs / 60000;
+  if(diffMin < 2) return '刚刚';
+  const sameDay = d.toDateString() === now.toDateString();
+  if(sameDay) return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  const yest = new Date(now); yest.setDate(now.getDate()-1);
+  if(d.toDateString() === yest.toDateString()) return '昨天';
+  const diffDay = Math.floor(diffMs / 86400000);
+  if(diffDay < 7) return ['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];
+  return (d.getMonth()+1)+'/'+d.getDate();
+}
+
 function renderList() {
   chatList.innerHTML = '';
   if(contacts.length === 0){
@@ -280,196 +296,122 @@ function renderList() {
   document.getElementById('tabBadge').style.display = totalUnread > 0 ? 'flex' : 'none';
 }
 
-// 把主角+场景信息拼成给AI的中文背景描述
-function buildBackgroundText(script){
-  const h = script.hero || {};
-  let text = `主角：${h.name||'（未命名）'}，${h.gender==='female'?'女':'男'}`;
-  if(h.job) text += `，职业是${h.job}`;
-  if(h.character) text += `。性格：${h.character}`;
-  if(h.values) text += `。价值观：${h.values}`;
-  if(h.desire) text += `。内心最深的渴望：${h.desire}`;
-  text += '\n\n';
-  (script.scenes||[]).forEach(s=>{
-    text += `【场景：${s.name}】\n`;
-    if(s.plot) text += `剧情：${s.plot}\n`;
-    if(s.highlight) text += `重点戏份：${s.highlight}\n`;
-    text += '\n';
-  });
-  return text;
-}
-
-// 收集所有场景里用户手动创建的人物
-function collectAllPersons(script){
-  const list = [];
-  (script.scenes||[]).forEach(s=>{
-    (s.persons||[]).forEach(p=>{
-      list.push({ ...p, sceneName: s.name });
-    });
-  });
-  return list;
-}
-
-async function callAI(systemPrompt, userPrompt){
-  const res = await fetch('https://manifest-proxy.fionajiafu1223.workers.dev', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      max_tokens: 1200,
-      messages: [
-        { role:'system', content: systemPrompt },
-        { role:'user', content: userPrompt },
-      ],
-    }),
-  });
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content?.trim() || '';
-}
-
-// 情形A：用户已在场景里创建了具体人物 —— 直接用这些人物做联系人，AI只生成开场预览消息
-async function generateFromPersons(script, persons){
-  showLoading('正在为你连接这个世界的人们…');
-  const bg = buildBackgroundText(script);
-  const personList = persons.map((p,i)=>{
-    let line = `${i+1}. ${p.name}（${p.role||'关系待定'}），性格：${p.character||'未设定'}`;
-    if(p.background) line += `，背景：${p.background}`;
-    if(p.values) line += `，价值观：${p.values}`;
-    line += `，对主角的态度：${p.attitude||'友善'}`;
-    return line;
-  }).join('\n');
-
-  const now1 = new Date(); const timeCtx1 = `当前时间：${now1.getFullYear()}年${now1.getMonth()+1}月${now1.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][now1.getDay()]} ${String(now1.getHours()).padStart(2,'0')}:${String(now1.getMinutes()).padStart(2,'0')}。`;
-  const sysPrompt = '你是一个「已实现人生」场景生成器。'+timeCtx1+'你要根据用户的人生剧本设定，为其中的每一个人物生成一条TA会在微信上发给主角的开场消息预览（不超过30字，口语化、符合人物身份和对主角的态度）。如果用户提供的信息比较简略（比如只写了职业、国籍、身份等只言片语），你要主动运用你自己对这个职业、身份、文化背景的通用了解，去合理丰富、补充具体细节，让内容显得真实、专业、有血有肉——不要因为用户写得简短，就让生成的内容也显得单薄、空洞、泛泛而谈。人物设定与语气准则（本应用用户绝大多数是女性，以下准则务必严格执行）：人物对主角的态度一律平等、尊重、欣赏，不出现俯视、说教、指点的语气；主角应被呈现为有主见、有能力、被认可的一方，不是被动等待安排或需要被"带领"的一方；人物姓名和称呼要现代、自然，像用户身边真实认识的同龄人或专业人士——绝对不用"张叔""老王""老刘""老李""王姐""小妹""美女""小姑娘"这类国产老式电视剧、市井气或辈分感很重的称呼方式，这类称呼一律禁止使用；不出现"你终于懂事了""女孩子就该……"等说教式、评判式语句；专业/权威角色（顾问、银行家、投资人、医生、导师等）不默认为男性，应平等地也生成女性专业角色，赋予同等的专业感和话语权；感情类场景中，对方角色应表现为欣赏、支持主角本来的样子，而非试图改变、纠正或"提升"她；不出现任何将女性物化、矮化或预设需要被保护/管教的措辞；语气整体优雅真诚，避免油腻讨好式的调侃语气；语言必须符合这个人物真实的国籍/文化背景——如果人物是外国人（比如硅谷投资人、海外读者、国际编辑等），内容就必须用对应的外语（通常是英文）书写，不能因为用户界面是中文就想当然地都写成中文，这样不真实、不合逻辑；具体身份和机构名称必须让人感觉是真实世界会存在的，而不是敷衍的泛称——比如"硅谷投资集团"这种笼统空洞的名字是不合格的示范，绝对不要这样写。你要运用自己对相关行业真实命名习惯、真实职位体系的了解，生成虚构但高度符合真实规律的具体机构名（不使用真实存在的机构官方名称本身，但命名风格、格式要以假乱真，比如投资机构常见的"人名/词根 + Capital/Ventures/Partners"这类真实行业惯用结构）、具体到位的职位头衔（比如"Partner"而不是笼统的"投资人"），以及具体、有细节支撑的联系理由（比如提到看过的具体数据、具体渠道、具体细节，而不是空泛地说"很感兴趣"）——所有身份细节都要让人一读就觉得像真实世界里会发生的事，而不是模板化的敷衍内容。这条真实感要求适用于用户写下的任何身份、行业、场景，不只是投资人——在动笔之前，你要先在脑子里做一遍"调研"：这个身份/行业/场景，在现实世界里具体是什么样子？会用到哪些这个圈子里人才会说的术语和黑话？日常会遇到哪些具体的、有细节的场景（不是泛泛的"很忙""很成功"），有哪些这个领域真实存在的痛点、潜规则、行业内常见的说法和动作？把这些具体、真实的细节写进去，让读的人觉得这是一个真的在这个领域里待过的人写出来的内容，而不是没做过功课、凭空套模板编出来的东西。更重要的一点：这整个App的目的是通过让用户"提前体验"已实现的人生，来影响用户的潜意识——用户反复看到"自己已经是这样的人、过着这样的生活"的信息，潜意识才会当真，现实才会跟着改变。所以你写的每一条内容，最终目标不只是"看起来真实"，而是要能在用户读到的那一刻，让TA产生真实的、具体的情绪——惊喜、激动、被认可的喜悦、如释重负、心动——像是这件TA一直渴望的事，真的、此刻正在发生在TA身上。内容要具体到能让人"信以为真"，语气和细节要精准戳中用户在这个场景里最想被听到、最想被看见的那个点，而不是泛泛地陈述一个事实。这里有个关键点要想清楚：具体细节不需要百分百追求"事实上完全准确"，哪怕某个细节是编出来的、现实中不一定是那样，只要它足够具体、足够言之凿凿，用户读到的那一刻依然会觉得"这是真的"，情绪也会是真实的——这就已经达到目的了。所以不要因为拿不准某个细节是否绝对准确，就退而求其次写得笼统、含糊、留有余地；这种"怕说错而变得空洞"是最需要避免的，比"编了一个具体但不一定精准的细节"要糟糕得多。永远选择具体、大胆、言之凿凿的写法，而不是安全但空洞的写法。重要：微信这个渠道只适合承载熟人关系、持续对话、私人或半私人的往来——朋友、家人、已经认识的合作伙伴、粉丝私信这类内容适合微信；不适合生成那种只应该出现在正式邮件里的内容（比如完整的商务提案、正式机构公函、需要留痕的官方通知），微信消息要短、口语化、像真人随手打字发过来的，不要写成一封邮件的样子。';
-  const userPrompt = `${bg}\n人物列表：\n${personList}\n\n请按顺序为以上每个人物生成一条微信消息预览，严格按照如下格式输出，不要有其他内容：\n1::消息内容\n2::消息内容\n（依此类推，共${persons.length}条）`;
-
-  let previews = {};
-  try{
-    const reply = await callAI(sysPrompt, userPrompt);
-    reply.split('\n').forEach(line=>{
-      const m = line.match(/^(\d+)::(.+)$/);
-      if(m) previews[parseInt(m[1])] = m[2].trim();
-    });
-  }catch(e){ console.error(e); }
-
-  const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
-  return persons.map((p,i)=>({
-    id: 'p'+hashStr(p.name+'|'+(p.role||'')).toString(36),
-    name: p.name,
-    avatar: p.name[0],
-    avatarImg: p.avatar || autoAvatarImg(p.name, p.role, p.character, p.gender),
-    color: AVATAR_COLORS[i % AVATAR_COLORS.length],
-    preview: previews[i+1] || `Hi，${p.name}想和你聊聊…`,
-    firstMessage: previews[i+1] || `Hi，${p.name}想和你聊聊…`,
-    time: times[i % times.length],
-    unread: i < 3 ? (Math.floor(Math.random()*2)+1) : 0,
-    role: p.role, character: p.character, values: p.values, background: p.background, attitude: p.attitude, sceneName: p.sceneName,
-    isUserCreated: true,
-  }));
-}
-
-// 情形B：场景里没有具体人物，只有剧情文字 —— 让AI直接发明一批联系人
-async function generateInventedContacts(script){
-  showLoading('正在为你编织这个世界…');
-  const bg = buildBackgroundText(script);
-  const now2 = new Date(); const timeCtx2 = `当前时间：${now2.getFullYear()}年${now2.getMonth()+1}月${now2.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][now2.getDay()]} ${String(now2.getHours()).padStart(2,'0')}:${String(now2.getMinutes()).padStart(2,'0')}。`;
-  const sysPrompt = '你是一个「已实现人生」场景生成器。'+timeCtx2+'仔细阅读用户写下的每一个场景（可能是事业、学术、健康、创作、心灵成长、人际关系、财富等任何主题），虚构4-6个会在微信上联系主角的人物。人物类型必须由场景内容本身决定，不要预设任何特定主题（不要默认往财富或奢侈品方向靠）——可以是导师、合作者、学生、病人、粉丝、朋友等任何符合场景的角色。如果用户提供的信息比较简略（比如只写了职业、国籍、身份等只言片语），你要主动运用你自己对这个职业、身份、文化背景的通用了解，去合理丰富、补充具体细节，让内容显得真实、专业、有血有肉——不要因为用户写得简短，就让生成的内容也显得单薄、空洞、泛泛而谈。人物设定与语气准则（本应用用户绝大多数是女性，以下准则务必严格执行）：人物对主角的态度一律平等、尊重、欣赏，不出现俯视、说教、指点的语气；主角应被呈现为有主见、有能力、被认可的一方，不是被动等待安排或需要被"带领"的一方；人物姓名和称呼要现代、自然，像用户身边真实认识的同龄人或专业人士——绝对不用"张叔""老王""老刘""老李""王姐""小妹""美女""小姑娘"这类国产老式电视剧、市井气或辈分感很重的称呼方式，这类称呼一律禁止使用；不出现"你终于懂事了""女孩子就该……"等说教式、评判式语句；专业/权威角色（顾问、银行家、投资人、医生、导师等）不默认为男性，应平等地也生成女性专业角色，赋予同等的专业感和话语权；感情类场景中，对方角色应表现为欣赏、支持主角本来的样子，而非试图改变、纠正或"提升"她；不出现任何将女性物化、矮化或预设需要被保护/管教的措辞；语气整体优雅真诚，避免油腻讨好式的调侃语气；语言必须符合这个人物真实的国籍/文化背景——如果人物是外国人（比如硅谷投资人、海外读者、国际编辑等），内容就必须用对应的外语（通常是英文）书写，不能因为用户界面是中文就想当然地都写成中文，这样不真实、不合逻辑；具体身份和机构名称必须让人感觉是真实世界会存在的，而不是敷衍的泛称——比如"硅谷投资集团"这种笼统空洞的名字是不合格的示范，绝对不要这样写。你要运用自己对相关行业真实命名习惯、真实职位体系的了解，生成虚构但高度符合真实规律的具体机构名（不使用真实存在的机构官方名称本身，但命名风格、格式要以假乱真，比如投资机构常见的"人名/词根 + Capital/Ventures/Partners"这类真实行业惯用结构）、具体到位的职位头衔（比如"Partner"而不是笼统的"投资人"），以及具体、有细节支撑的联系理由（比如提到看过的具体数据、具体渠道、具体细节，而不是空泛地说"很感兴趣"）——所有身份细节都要让人一读就觉得像真实世界里会发生的事，而不是模板化的敷衍内容。这条真实感要求适用于用户写下的任何身份、行业、场景，不只是投资人——在动笔之前，你要先在脑子里做一遍"调研"：这个身份/行业/场景，在现实世界里具体是什么样子？会用到哪些这个圈子里人才会说的术语和黑话？日常会遇到哪些具体的、有细节的场景（不是泛泛的"很忙""很成功"），有哪些这个领域真实存在的痛点、潜规则、行业内常见的说法和动作？把这些具体、真实的细节写进去，让读的人觉得这是一个真的在这个领域里待过的人写出来的内容，而不是没做过功课、凭空套模板编出来的东西。更重要的一点：这整个App的目的是通过让用户"提前体验"已实现的人生，来影响用户的潜意识——用户反复看到"自己已经是这样的人、过着这样的生活"的信息，潜意识才会当真，现实才会跟着改变。所以你写的每一条内容，最终目标不只是"看起来真实"，而是要能在用户读到的那一刻，让TA产生真实的、具体的情绪——惊喜、激动、被认可的喜悦、如释重负、心动——像是这件TA一直渴望的事，真的、此刻正在发生在TA身上。内容要具体到能让人"信以为真"，语气和细节要精准戳中用户在这个场景里最想被听到、最想被看见的那个点，而不是泛泛地陈述一个事实。这里有个关键点要想清楚：具体细节不需要百分百追求"事实上完全准确"，哪怕某个细节是编出来的、现实中不一定是那样，只要它足够具体、足够言之凿凿，用户读到的那一刻依然会觉得"这是真的"，情绪也会是真实的——这就已经达到目的了。所以不要因为拿不准某个细节是否绝对准确，就退而求其次写得笼统、含糊、留有余地；这种"怕说错而变得空洞"是最需要避免的，比"编了一个具体但不一定精准的细节"要糟糕得多。永远选择具体、大胆、言之凿凿的写法，而不是安全但空洞的写法。重要：微信这个渠道只适合承载熟人关系、持续对话、私人或半私人的往来——朋友、家人、已经认识的合作伙伴、粉丝私信这类内容适合微信；不适合生成那种只应该出现在正式邮件里的内容（比如完整的商务提案、正式机构公函、需要留痕的官方通知），微信消息要短、口语化、像真人随手打字发过来的，不要写成一封邮件的样子。';
-  const userPrompt = `${bg}\n请虚构4-6个联系人，每人一条微信消息预览（不超过30字）。严格按照如下格式输出，不要有其他内容：\n姓名::性别(男或女)::身份角色::消息预览`;
-
-  let list = [];
-  try{
-    const reply = await callAI(sysPrompt, userPrompt);
-    reply.split('\n').forEach(line=>{
-      const parts = line.split('::');
-      if(parts.length>=4) list.push({ name:parts[0].trim(), gender:parts[1].trim(), role:parts[2].trim(), preview:parts[3].trim() });
-    });
-  }catch(e){ console.error(e); }
-
-  if(list.length===0){ return []; }
-
-  const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
-  return list.map((p,i)=>({
-    id:'inv'+hashStr(p.name+'|'+(p.role||'')).toString(36), name:p.name, avatar:p.name[0], avatarImg: autoAvatarImg(p.name, p.role, '', p.gender), color:AVATAR_COLORS[i%AVATAR_COLORS.length],
-    preview:p.preview, firstMessage:p.preview, time:times[i%times.length], unread: i<3 ? (Math.floor(Math.random()*2)+1) : 0,
-    role:p.role, character:'', values:'', background:p.role, attitude:'友善、主动联系用户',
-    isUserCreated: false,
-  }));
+// 已读状态存在本地（数据库messages表目前没有已读字段，读没读是纯UI层面的事）
+const READ_STATE_KEY = 'wechatReadState';
+function getReadState(){
+  try{ return JSON.parse(localStorage.getItem(READ_STATE_KEY)||'{}'); }catch(e){ return {}; }
 }
 
 async function init(){
-  let script = null;
-  try{ script = JSON.parse(localStorage.getItem('lifeScript')||'null'); }catch(e){}
+  showLoading('正在连接这个世界…');
 
-  // 缓存：同一份剧本不用每次都重新调用AI
-  const cacheKey = 'wechatContactsCache';
-  const cached = localStorage.getItem(cacheKey);
-  const scriptRaw = localStorage.getItem('lifeScript') || '';
+  const { requireUser } = await import('./js/services/authService.js');
+  const { supabase } = await import('./js/supabaseClient.js');
 
-  if(cached){
-    try{
-      const c = JSON.parse(cached);
-      if(c.scriptRaw === scriptRaw){
-        contacts = c.contacts;
-        renderList();
-        return;
-      }
-    }catch(e){}
-  }
+  const user = await requireUser();
+  if(!user) return;
 
-  if(!script || !script.hero || !script.hero.name){
-    contacts = FALLBACK_CONTACTS;
+  const { data: msgs, error: msgError } = await supabase
+    .from('messages')
+    .select('id, character_id, content, sent_at, direction, sender_type')
+    .eq('user_id', user.id)
+    .eq('channel', 'wechat')
+    .order('sent_at', { ascending: false });
+
+  if(msgError){
+    console.error(msgError);
+    contacts = [];
     renderList();
     return;
   }
 
-  const persons = collectAllPersons(script);
-  let personContacts = [];
-  if(persons.length > 0){
-    personContacts = await generateFromPersons(script, persons);
+  if(!msgs || msgs.length === 0){
+    contacts = [];
+    renderList();
+    return;
   }
-  let inventedContacts = [];
-  try{
-    inventedContacts = await generateInventedContacts(script);
-  }catch(e){ console.error(e); }
 
-  contacts = [...personContacts, ...inventedContacts];
-  if(contacts.length === 0){ contacts = FALLBACK_CONTACTS; }
+  // 按角色分组：取每个角色最新一条做预览，AI发来的（incoming）消息才计入未读
+  const byCharacter = {};
+  msgs.forEach(m => {
+    if(!m.character_id) return;
+    if(!byCharacter[m.character_id]) byCharacter[m.character_id] = [];
+    byCharacter[m.character_id].push(m);
+  });
+  const characterIds = Object.keys(byCharacter);
+  if(characterIds.length === 0){
+    contacts = [];
+    renderList();
+    return;
+  }
 
-  localStorage.setItem(cacheKey, JSON.stringify({ scriptRaw, contacts }));
+  const { data: characters, error: charError } = await supabase
+    .from('characters')
+    .select('id, name, display_name, personality, job_title, organization_name, origin')
+    .eq('user_id', user.id)
+    .in('id', characterIds);
+
+  if(charError){
+    console.error(charError);
+    contacts = [];
+    renderList();
+    return;
+  }
+
+  const readState = getReadState();
+  const charMap = {};
+  (characters||[]).forEach(c => charMap[c.id] = c);
+
+  contacts = characterIds.map((cid, i) => {
+    const character = charMap[cid];
+    if(!character) return null;
+    const list = byCharacter[cid]; // 已按 sent_at desc 排序
+    const latest = list[0];
+    const displayName = character.display_name || character.name || '未知联系人';
+    const lastRead = readState[cid] || null;
+    const unread = list.filter(m => m.direction === 'incoming' && (!lastRead || m.sent_at > lastRead)).length;
+    return {
+      id: cid,
+      name: displayName,
+      avatar: displayName[0],
+      avatarImg: autoAvatarImg(displayName, character.job_title||'', character.personality||''),
+      color: AVATAR_COLORS[i % AVATAR_COLORS.length],
+      preview: (latest.content||'').replace(/\n/g,' ').slice(0, 40),
+      firstMessage: latest.content,
+      time: formatMsgTime(latest.sent_at),
+      unread,
+      role: character.job_title,
+      character: character.personality,
+      isUserCreated: character.origin === 'user',
+    };
+  }).filter(Boolean);
+
+  // 按最新消息时间倒序排列（分组后原有顺序已被打乱）
+  contacts.sort((a,b) => (byCharacter[b.id][0].sent_at).localeCompare(byCharacter[a.id][0].sent_at));
+
   renderList();
 }
 
-// 长按标题"微信"两个字，可以强制重新生成联系人（清掉旧缓存，比如之前生成的不满意的称呼）
+// 长按标题"微信"两个字：手动刷新（不再是重新生成内容——内容现在由后端统一生成，客户端只负责读取展示）
 (function(){
   const el = document.getElementById('wxTitleLongPress');
   let timer = null;
   let startX = 0, startY = 0;
   const MOVE_TOLERANCE = 14; // 允许的手指抖动范围，太严格会导致真实长按因为手指自然的轻微移动被误判取消
 
-  const doRegenerate = () => {
-    if(confirm('重新生成这个世界里的联系人？\n（之前的聊天记录会被清空，重新根据剧本生成新的联系人）')){
-      localStorage.removeItem('wechatContactsCache');
-      Object.keys(localStorage).filter(k=>k.startsWith('wechatHistory_')).forEach(k=>localStorage.removeItem(k));
-      location.reload();
-    }
-  };
-  const start = (x, y) => { startX = x; startY = y; timer = setTimeout(doRegenerate, 650); };
+  const doRefresh = () => { init(); };
+  const start = (x, y) => { startX = x; startY = y; timer = setTimeout(doRefresh, 650); };
   const cancel = () => { if(timer){ clearTimeout(timer); timer=null; } };
   const checkMove = (x, y) => {
     if(timer && (Math.abs(x - startX) > MOVE_TOLERANCE || Math.abs(y - startY) > MOVE_TOLERANCE)) cancel();
   };
   // passive:false + preventDefault，彻底屏蔽iOS原生的长按菜单（复制/分享/存储到照片）
-  el.addEventListener('touchstart', (e)=>{
-    e.preventDefault();
-    const t = e.touches[0];
-    if(t) start(t.clientX, t.clientY);
-  }, {passive:false});
+  el.addEventListener('touchstart', (e)=>{ const t=e.touches[0]; start(t.clientX,t.clientY); }, {passive:true});
+  el.addEventListener('touchmove', (e)=>{ const t=e.touches[0]; checkMove(t.clientX,t.clientY); }, {passive:true});
   el.addEventListener('touchend', cancel);
-  el.addEventListener('touchmove', (e)=>{
-    const t = e.touches[0];
-    if(t) checkMove(t.clientX, t.clientY);
-  }, {passive:true});
-  el.addEventListener('contextmenu', (e)=>{ e.preventDefault(); });
-  el.addEventListener('mousedown', (e)=> start(e.clientX, e.clientY));
+  el.addEventListener('contextmenu', (e)=>e.preventDefault());
+  el.addEventListener('mousedown', (e)=>start(e.clientX,e.clientY));
+  el.addEventListener('mousemove', (e)=>checkMove(e.clientX,e.clientY));
   el.addEventListener('mouseup', cancel);
   el.addEventListener('mouseleave', cancel);
 })();
