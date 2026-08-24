@@ -73,6 +73,7 @@ body{position:fixed;inset:0;width:100%;height:100dvh;background:#f4f8f0;font-fam
 </head>
 <body>
 <div onclick="window.location.href='debug-test.html'" style="position:absolute;top:calc(env(safe-area-inset-top,44px) + 6px);right:16px;z-index:50;font-size:12px;color:rgba(90,120,90,0.55);padding:6px 10px;">诊断</div>
+<div onclick="window.location.href='login.html'" style="position:absolute;top:calc(env(safe-area-inset-top,44px) + 6px);left:16px;z-index:50;font-size:12px;color:rgba(90,120,90,0.55);padding:6px 10px;">登录/切换账号</div>
 <div class="world entering" id="world">
   <div class="garden" id="garden">
     <img class="garden-scene scene-portrait" src="assets/backgrounds/garden-home-portrait.jpg" alt="">
@@ -101,20 +102,19 @@ body{position:fixed;inset:0;width:100%;height:100dvh;background:#f4f8f0;font-fam
 </div>
 
 <script>
-setTimeout(()=>{ document.getElementById('world').classList.remove('entering'); }, 2400);
-
-// 点击任意功能图标才检查登录状态；首页本身谁都能看
-async function walkTo(feature, pos){
-  let user = null;
+(async function checkLogin(){
   try{
     const { getCurrentUser } = await import('./js/services/authService.js');
-    user = await getCurrentUser();
-  }catch(e){}
-  if(!user){
-    window.location.href = 'login.html';
-    return;
+    const user = await getCurrentUser();
+    if(!user){ window.location.replace('login.html'); return; }
+  }catch(e){
+    window.location.replace('login.html');
   }
+})();
 
+setTimeout(()=>{ document.getElementById('world').classList.remove('entering'); }, 2400);
+
+function walkTo(feature, pos){
   const garden = document.getElementById('garden');
   const dock = document.getElementById('dock');
   dock.style.transition='opacity 0.5s';
@@ -122,14 +122,16 @@ async function walkTo(feature, pos){
   garden.classList.add('walk-'+pos);
 
   if(feature==='life-script'){
-    let hasScript = false;
-    try{
-      const { loadScript } = await import('./js/services/scriptService.js');
-      const s = await loadScript();
-      hasScript = !!(s && s.hero && s.hero.name);
-    }catch(e){ console.error(e); }
-    const dest = hasScript ? 'desktop.html' : 'life-script.html';
-    setTimeout(()=>{ window.location.href=dest; }, 1300);
+    (async () => {
+      let hasScript = false;
+      try{
+        const { loadScript } = await import('./js/services/scriptService.js');
+        const s = await loadScript();
+        hasScript = !!(s && s.hero && s.hero.name);
+      }catch(e){ console.error(e); }
+      const dest = hasScript ? 'desktop.html' : 'life-script.html';
+      setTimeout(()=>{ window.location.href=dest; }, 1300);
+    })();
   } else {
     const map={ 'gratitude':'gratitude-journal.html','audio':'subliminal-studio.html','vision':'vision-board.html' };
     const dest = map[feature];
