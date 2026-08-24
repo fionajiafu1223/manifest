@@ -260,66 +260,30 @@ const msgInput = document.getElementById('msgInput');
 const sendBtn = document.getElementById('sendBtn');
 const plusBtn = document.getElementById('plusBtn');
 
-// 从URL读取联系人id，从localStorage缓存中找到对应联系人档案
+// 从URL读取联系人id —— 现在是Supabase characters表里的真实UUID
 const urlParams = new URLSearchParams(window.location.search);
-const contactId = urlParams.get('id') || '';
+const characterId = urlParams.get('id') || '';
 
-let contactName = '阿哲';
-let contactInfo = null;
+let contactName = '';
+let contactInfo = { avatarImg: null, role: '', character: '', background: '', attitude: '' };
 let heroName = '';
 let heroAvatar = '';
+let sendInFlight = false;
 
-try{
-  const cache = JSON.parse(localStorage.getItem('wechatContactsCache')||'null');
-  if(cache && cache.contacts){
-    contactInfo = cache.contacts.find(c=>c.id===contactId);
-  }
-}catch(e){}
-
-try{
-  const script = JSON.parse(localStorage.getItem('lifeScript')||'null');
-  if(script && script.hero) { heroName = script.hero.name || ''; heroAvatar = script.hero.avatar || ''; }
-}catch(e){}
-
-if(contactInfo){
-  contactName = contactInfo.name;
-} else {
-  // 兜底人设：没有联系人档案时，用原本的"男友求和好"剧本
-  contactInfo = { role:'男朋友', character:'深爱用户，充满悔意', background:'和用户最近吵架分开', attitude:'真诚、卑微、恳切，主动求和好，充满悔意和思念' };
-}
-document.getElementById('contactName').textContent = contactName;
-
-// 进来就算已读：把这个联系人的未读数清零，写回缓存
-if(contactId){
+// 已读状态：进来就把这个联系人标记为已读（数据库没有已读字段，纯本地UI状态）
+function markRead(){
+  if(!characterId) return;
   try{
-    const cache = JSON.parse(localStorage.getItem('wechatContactsCache')||'null');
-    if(cache && cache.contacts){
-      const idx = cache.contacts.findIndex(c=>c.id===contactId);
-      if(idx>=0 && cache.contacts[idx].unread>0){
-        cache.contacts[idx].unread = 0;
-        localStorage.setItem('wechatContactsCache', JSON.stringify(cache));
-      }
-    }
+    const state = JSON.parse(localStorage.getItem('wechatReadState')||'{}');
+    state[characterId] = new Date().toISOString();
+    localStorage.setItem('wechatReadState', JSON.stringify(state));
   }catch(e){}
 }
 
-// ── 对话记录持久化：每个联系人的聊天记录都存在本地，重新打开时原样还在，不会消失/重生 ──
-const historyKey = 'wechatHistory_' + (contactId || 'default');
-function loadHistory(){
-  try{
-    const raw = localStorage.getItem(historyKey);
-    if(raw){ const arr = JSON.parse(raw); if(Array.isArray(arr)) return arr; }
-  }catch(e){}
-  return null;
-}
-function saveHistory(){
-  try{ localStorage.setItem(historyKey, JSON.stringify(conversationHistory)); }catch(e){}
-}
-
-function addMessage(text, mine = false, persist = true) {
+function addMessage(text, mine = false) {
   const row = document.createElement('div');
   row.className = 'msg-row' + (mine ? ' mine' : '');
-  
+
   const avatar = document.createElement('div');
   avatar.className = 'avatar' + (mine ? ' mine-avatar' : '');
   if(mine && heroAvatar){
@@ -327,25 +291,20 @@ function addMessage(text, mine = false, persist = true) {
   } else if(!mine && contactInfo.avatarImg){
     avatar.innerHTML = `<img src="${contactInfo.avatarImg}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
   } else {
-    avatar.textContent = mine ? '我' : contactName[0];
+    avatar.textContent = mine ? '我' : (contactName[0]||'?');
   }
-  
+
   const wrap = document.createElement('div');
   wrap.className = 'bubble-wrap';
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
   bubble.textContent = text;
   wrap.appendChild(bubble);
-  
+
   row.appendChild(avatar);
   row.appendChild(wrap);
   chatArea.appendChild(row);
   chatArea.scrollTop = chatArea.scrollHeight;
-
-  if(persist){
-    conversationHistory.push({ role: mine ? 'user' : 'assistant', content: text });
-    saveHistory();
-  }
 }
 
 function showTyping() {
@@ -357,7 +316,7 @@ function showTyping() {
   if(contactInfo.avatarImg){
     avatar.innerHTML = `<img src="${contactInfo.avatarImg}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
   } else {
-    avatar.textContent = contactName[0];
+    avatar.textContent = contactName[0]||'?';
   }
   const wrap = document.createElement('div');
   wrap.className = 'bubble-wrap';
@@ -376,23 +335,20 @@ function hideTyping() {
   if (t) t.remove();
 }
 
-// ── 拟真打字节奏 ──
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-// 根据文字长度估算像真人一样的打字时长（不是网络请求要多久就显示多久）
+// 根据文字长度估算像真人一样的打字时长
 function estimateTypingMs(text){
   const len = (text||'').length;
-  const perChar = 90 + Math.random()*50; // 每字约90-140ms，模拟手机打字速度
+  const perChar = 90 + Math.random()*50;
   const base = len * perChar;
   return Math.min(4200, Math.max(700, base));
 }
 
-// 看到消息后，不会立刻开始打字：模拟"看到→愣一下/思考"的停顿
 function readDelay(){
   return 500 + Math.random()*1300;
 }
 
-// 用户输入
 msgInput.addEventListener('input', () => {
   if (msgInput.value.trim()) {
     sendBtn.classList.add('visible');
@@ -403,62 +359,25 @@ msgInput.addEventListener('input', () => {
   }
 });
 
-// 对话历史（用于AI记忆上下文）
-let conversationHistory = [];
-
-// 人设：根据联系人档案动态生成
-const heroAddr = heroName ? `（用户名叫${heroName}）` : '';
-const _now = new Date();
-const _timeCtx = `当前时间：${_now.getFullYear()}年${_now.getMonth()+1}月${_now.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][_now.getDay()]} ${String(_now.getHours()).padStart(2,'0')}:${String(_now.getMinutes()).padStart(2,'0')}。`;
-const persona = `${_timeCtx}你正在扮演「${contactName}」，与用户（${heroAddr}）在微信上聊天。
-你的身份/关系：${contactInfo.role||'朋友'}
-你的性格：${contactInfo.character||'友善自然'}
-背景：${contactInfo.background||''}
-价值观：${contactInfo.values||''}
-你对待用户的态度：${contactInfo.attitude||'友善、主动'}
-重要：你必须严格按照上面设定的"性格"和"态度"来反应，哪怕用户表现出拒绝、冷淡或说"不想理你/不想联系"，也不能因为这一句话就立刻放弃、顺从退让、转为懂事听话——除非这种"轻易妥协"本身就是你的设定性格。如果你的设定是执着、不甘心、想争取的角色，就算被拒绝，也要按这个执着程度继续用符合你身份的方式表达、争取或反驳，不要在一次拒绝后就转变成截然不同的懂事、退让姿态。
-语言规则：你的身份/背景如果暗示你是外国人（比如硅谷投资人、海外朋友），从对话一开始就要用对应的语言（通常是英文）书写，并且这个语言选择必须在整段对话里保持一致——不能这条消息用英文、下一条又莫名切换成中文，除非用户先用另一种语言跟你说话，或者剧情里有明确理由（比如你正在学中文）。不要因为App界面本身是中文，就中途切回中文。
-最重要的一点：这个对话的目的是让用户在读到你的消息时，产生真实的、具体的情绪——惊喜、激动、被认可的喜悦、心动，像是TA一直渴望的事真的在此刻发生。每一句回复都要具体、精准地戳中用户在这段关系/这个场景里最想被听到、最想被看见的那个点，而不是泛泛地说场面话。细节不需要绝对准确，哪怕是编出来的，只要具体、言之凿凿，用户当下就会觉得是真的——永远选择具体大胆的写法，不要因为怕说得不准就写得笼统、留有余地，那样反而更糟。
-请像真实的微信聊天一样回复，简短、口语化、符合你的身份、性格和背景（比如涉及到你的职业、国籍、生活方式的细节，要体现出真实感和专业性——在脑子里先想清楚这个身份在现实里具体是什么样子、会用哪些这个圈子里真实的术语和说法，再落笔，不要显得单薄空洞、模板化），一次只说一两句话，不要长篇大论。不要出现任何旁白、括号说明或AI自称，直接说话。`;
-
-// 进入聊天：优先看这个联系人之前有没有留下的完整对话记录
-// 有 —— 原样显示出来，不重新生成、不用打字动画，对方发过的消息不会凭空消失
-// 没有 —— 才是真的第一次见面：有未读就直接显示等待中的消息；没有就走"AI主动开口"的开场动画
-const savedHistory = loadHistory();
-if(savedHistory && savedHistory.length > 0){
-  conversationHistory = savedHistory;
-  savedHistory.forEach(m => { addMessage(m.content, m.role === 'user', false); });
-} else if(contactInfo.firstMessage){
-  // 不管有没有未读红点，只要列表里有预览消息，打开聊天就必须显示同一条内容——不能重新生成一句不一样的话
-  addMessage(contactInfo.firstMessage);
-} else {
-  setTimeout(playOpening, 700);
-}
-
-async function getAIReply() {
+// 发送一条消息：调用 chat-character Edge Function，AI的回复由后端生成并写入数据库
+async function sendAndGetReply(text){
+  if(sendInFlight) return;
+  sendInFlight = true;
   await sleep(readDelay());
   showTyping();
   const typingStart = Date.now();
-  try {
-    const res = await fetch('https://manifest-proxy.fionajiafu1223.workers.dev', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 500,
-        messages: [
-          { role: 'system', content: persona },
-          ...conversationHistory,
-        ],
-      }),
-    });
-    const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content?.trim() || '……';
-
-    // 让"正在输入"的显示时长贴合消息长度，而不是网络请求耗时
+  try{
+    const { sendMessage } = await import('./js/services/chatService.js');
+    const result = await sendMessage(characterId, null, text);
+    if(!result.success){
+      hideTyping();
+      const msg = (result.error && (result.error.message || (result.error.detail && result.error.detail.error))) || '未知错误';
+      addMessage('（消息发送失败：' + msg + '）');
+      sendInFlight = false;
+      return;
+    }
+    const reply = (result.data && result.data.reply) || '……';
     let remaining = estimateTypingMs(reply) - (Date.now() - typingStart);
-
-    // 较长的消息，中途停顿一下再继续（像真人打字打到一半又想了想）
     if(remaining > 1800 && Math.random() < 0.5){
       const pause = remaining * 0.4;
       await sleep(pause);
@@ -468,95 +387,104 @@ async function getAIReply() {
       remaining -= pause;
     }
     if(remaining > 0) await sleep(remaining);
-
     hideTyping();
     addMessage(reply);
-  } catch (err) {
+  }catch(err){
     hideTyping();
-    addMessage('……（网络好像有点问题）', false, false);
+    addMessage('……（网络好像有点问题）');
   }
-}
-
-// 开场：让AI主动生成1-3条开场消息（符合人设与处境）
-async function playOpening() {
-  await sleep(readDelay());
-  showTyping();
-  const typingStart = Date.now();
-  try {
-    const res = await fetch('https://manifest-proxy.fionajiafu1223.workers.dev', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 300,
-        messages: [
-          { role: 'system', content: persona },
-          { role: 'user', content: '（这是对话的开始，请你主动发起对话，符合你的身份和处境，发送1-3条简短的开场消息。每条消息独占一行，不要编号，不要有其他说明文字。）' },
-        ],
-      }),
-    });
-    const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content?.trim() || `${heroName||'你'}，最近好吗？`;
-    let lines = reply.split('\n').map(l=>l.trim()).filter(l=>l);
-    if(lines.length===0) lines = [`${heroName||'你'}，最近好吗？`];
-
-    let i = 0;
-    async function showNext(){
-      const line = lines[i];
-      let wait = estimateTypingMs(line);
-      if(i===0){
-        // 第一条：扣掉已经花在网络请求上的时间，避免叠加等待
-        wait = Math.max(300, wait - (Date.now() - typingStart));
-      }
-      await sleep(wait);
-      hideTyping();
-      addMessage(line);
-      i++;
-      if(i<lines.length){
-        await sleep(350 + Math.random()*450);
-        showTyping();
-        await showNext();
-      }
-    }
-    await showNext();
-  } catch(err) {
-    hideTyping();
-    addMessage('……（网络好像有点问题，下拉刷新试试）', false, false);
-  }
+  sendInFlight = false;
 }
 
 sendBtn.addEventListener('click', () => {
   const text = msgInput.value.trim();
-  if (!text) return;
+  if (!text || sendInFlight) return;
   addMessage(text, true);
   msgInput.value = '';
   sendBtn.classList.remove('visible');
   plusBtn.style.display = 'flex';
-
-  // AI回复（读消息的停顿+按内容长度打字的节奏，都在getAIReply里处理）
-  getAIReply();
+  sendAndGetReply(text);
 });
 
 msgInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') sendBtn.click();
 });
 
-// 右上角"更多"按钮：彻底删除这个联系人（聊天记录 + 联系人本身都会消失，不再出现在列表里）
+// 右上角"更多"按钮：删除聊天记录功能暂未接入数据库层，先提示，不做假动作
 document.getElementById('navMoreBtn').addEventListener('click', () => {
-  if(confirm('删除和「' + contactName + '」的对话？\n聊天记录会清空，这个联系人也会从微信列表里消失（除非之后长按"微信"重新生成，才可能出现新的类似人物）。')){
-    localStorage.removeItem(historyKey);
-    if(contactId){
-      try{
-        const cache = JSON.parse(localStorage.getItem('wechatContactsCache')||'null');
-        if(cache && cache.contacts){
-          cache.contacts = cache.contacts.filter(c => c.id !== contactId);
-          localStorage.setItem('wechatContactsCache', JSON.stringify(cache));
-        }
-      }catch(e){}
-    }
-    location.href = 'wechat-list.html';
-  }
+  alert('删除聊天记录功能还没接入，暂时无法在这里删除。');
 });
+
+// ============================================================
+// 初始化：从Supabase读取联系人信息 + 历史消息
+// ============================================================
+async function init(){
+  if(!characterId){
+    contactName = '未知联系人';
+    document.getElementById('contactName').textContent = contactName;
+    return;
+  }
+
+  const { requireUser } = await import('./js/services/authService.js');
+  const { supabase } = await import('./js/supabaseClient.js');
+
+  const user = await requireUser();
+  if(!user) return;
+
+  const [{ data: character, error: charError }, { data: mainCharacter }] = await Promise.all([
+    supabase.from('characters')
+      .select('id, name, display_name, personality, job_title, organization_name, background_story, initial_relationship')
+      .eq('id', characterId)
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase.from('main_characters').select('name').eq('user_id', user.id).maybeSingle(),
+  ]);
+
+  if(charError || !character){
+    contactName = '联系人不存在';
+    document.getElementById('contactName').textContent = contactName;
+    chatArea.innerHTML = '<div class="time-stamp">这个联系人不存在，或者不属于你</div>';
+    return;
+  }
+
+  heroName = (mainCharacter && mainCharacter.name) || '';
+  contactName = character.display_name || character.name || '未知联系人';
+  contactInfo = {
+    avatarImg: null, // 头像风格生成逻辑与列表页保持一致时可在这里补上，暂时用姓名首字母兜底
+    role: character.job_title || character.initial_relationship || '朋友',
+    character: character.personality || '友善自然',
+    background: character.background_story || '',
+    values: '',
+    attitude: character.initial_relationship || '友善、主动',
+  };
+  document.getElementById('contactName').textContent = contactName;
+  markRead();
+
+  const { data: msgs, error: msgError } = await supabase
+    .from('messages')
+    .select('id, content, direction, sent_at')
+    .eq('user_id', user.id)
+    .eq('character_id', characterId)
+    .eq('channel', 'wechat')
+    .order('sent_at', { ascending: true });
+
+  if(msgError){
+    console.error(msgError);
+    chatArea.innerHTML = '<div class="time-stamp">加载聊天记录失败</div>';
+    return;
+  }
+
+  chatArea.innerHTML = '';
+  (msgs||[]).forEach(m => {
+    addMessage(m.content, m.direction === 'outgoing');
+  });
+
+  if(!msgs || msgs.length === 0){
+    chatArea.innerHTML = '<div class="time-stamp">还没有消息</div>';
+  }
+}
+
+init();
 </script>
 </body>
 </html>
