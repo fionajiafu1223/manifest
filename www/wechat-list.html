@@ -347,7 +347,7 @@ async function init(){
 
   const { data: characters, error: charError } = await supabase
     .from('characters')
-    .select('id, name, display_name, personality, job_title, organization_name, origin')
+    .select('id, name, display_name, personality, job_title, organization_name, origin, avatar_url')
     .eq('user_id', user.id)
     .in('id', characterIds);
 
@@ -374,7 +374,7 @@ async function init(){
       id: cid,
       name: displayName,
       avatar: displayName[0],
-      avatarImg: autoAvatarImg(displayName, character.job_title||'', character.personality||''),
+      avatarImg: character.avatar_url || autoAvatarImg(displayName, character.job_title||'', character.personality||''),
       color: AVATAR_COLORS[i % AVATAR_COLORS.length],
       preview: (latest.content||'').replace(/\n/g,' ').slice(0, 40),
       firstMessage: latest.content,
