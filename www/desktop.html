@@ -175,431 +175,82 @@ function showToast(text){
   t._timer = setTimeout(()=>t.classList.remove('show'), 2600);
 }
 
-// ── 推送通知：直接用微信里真实存在（或同步生成）的联系人消息，不再是各说各话 ──
-
-const AVATAR_COLORS = ['#8b6f47','#2a5a8a','#3a3a3a','#1a3a6a','#7a2a2a','#2a2a2a','#4a5a7a','#5a7a3a','#6a3a6a'];
+// ── 推送通知：调用world-pulse，让已经在这个世界里的人自己决定要不要联系你 ──
+// 内容和频率完全由服务器端决定（依据relationships表里的真实关系、
+// 用户自己写的性格设定），这里只负责把结果排成本地推送。
 
 function hashStr(s){
   let h = 0;
   for(let i=0; i<s.length; i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
   return h;
 }
-function pickAvatarType(name, roleText, characterText){
-  const text = (roleText||'') + (characterText||'');
-  if(/艺术|设计|插画|音乐|诗|作家|摄影师|策展/.test(text)) return 'abstract';
-  if(/自然|户外|旅行|登山|徒步|田园|海边|骑行|露营/.test(text)) return 'landscape';
-  if(/学生|年轻|活泼|网红|游戏|二次元|博主/.test(text)) return 'cartoon';
-  const types = ['portrait','portrait','cartoon','landscape','abstract'];
-  return types[hashStr(name) % types.length];
-}
-function inferGenderCode(g){
-  if(!g) return null;
-  const s = String(g).trim();
-  if(/^(男|male|m$|man|先生)/i.test(s)) return 'men';
-  if(/^(女|female|f$|woman|女士)/i.test(s)) return 'women';
-  return null;
-}
-function avatarUrlFor(type, seed, genderCode){
-  const h = hashStr(seed);
-  switch(type){
-    case 'portrait': {
-      const gender = genderCode || (h % 2 === 0 ? 'women' : 'men');
-      const idx = (h % 80) + 1;
-      return `https://randomuser.me/api/portraits/${gender}/${idx}.jpg`;
-    }
-    case 'landscape': {
-      const ids = [1018,1015,1043,1036,1039,1050,1044,1024];
-      const id = ids[h % ids.length];
-      return `https://picsum.photos/id/${id}/200/200`;
-    }
-    case 'cartoon':
-      return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
-    case 'abstract':
-      return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(seed)}`;
-  }
-}
-function autoAvatarImg(name, roleText, characterText, genderHint){
-  const type = pickAvatarType(name, roleText, characterText);
-  return avatarUrlFor(type, name, inferGenderCode(genderHint));
-}
 
-function buildBackgroundText(script){
-  const h = script.hero || {};
-  let text = `主角：${h.name||'（未命名）'}，${h.gender==='female'?'女':'男'}`;
-  if(h.job) text += `，职业是${h.job}`;
-  if(h.character) text += `。性格：${h.character}`;
-  if(h.values) text += `。价值观：${h.values}`;
-  if(h.desire) text += `。内心最深的渴望：${h.desire}`;
-  text += '\n\n';
-  (script.scenes||[]).forEach(s=>{
-    text += `【场景：${s.name}】\n`;
-    if(s.plot) text += `剧情：${s.plot}\n`;
-    if(s.highlight) text += `重点戏份：${s.highlight}\n`;
-  });
-  return text;
-}
-
-function collectAllPersons(script){
-  const list = [];
-  (script.scenes||[]).forEach(s=>{
-    (s.persons||[]).forEach(p=>{ list.push({ ...p, sceneName: s.name }); });
-  });
-  return list;
-}
-
-async function callAI(systemPrompt, userPrompt){
-  const res = await fetch('https://manifest-proxy.fionajiafu1223.workers.dev', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'gpt-4o-mini', max_tokens:1200,
-      messages:[ {role:'system',content:systemPrompt}, {role:'user',content:userPrompt} ] }),
-  });
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content?.trim() || '';
-}
-
-const CONTACT_RULES = '如果用户提供的信息比较简略（比如只写了职业、国籍、身份等只言片语），你要主动运用你自己对这个职业、身份、文化背景的通用了解，去合理丰富、补充具体细节，让内容显得真实、专业、有血有肉——不要因为用户写得简短，就让生成的内容也显得单薄、空洞、泛泛而谈。人物设定与语气准则（本应用用户绝大多数是女性，以下准则务必严格执行）：人物对主角的态度一律平等、尊重、欣赏，不出现俯视、说教、指点的语气；主角应被呈现为有主见、有能力、被认可的一方，不是被动等待安排或需要被"带领"的一方；人物姓名和称呼要现代、自然，像用户身边真实认识的同龄人或专业人士——绝对不用"张叔""老王""老刘""老李""王姐""小妹""美女""小姑娘"这类国产老式电视剧、市井气或辈分感很重的称呼方式，这类称呼一律禁止使用；不出现"你终于懂事了""女孩子就该……"等说教式、评判式语句；专业/权威角色（顾问、银行家、投资人、医生、导师等）不默认为男性，应平等地也生成女性专业角色，赋予同等的专业感和话语权；感情类场景中，对方角色应表现为欣赏、支持主角本来的样子，而非试图改变、纠正或"提升"她；不出现任何将女性物化、矮化或预设需要被保护/管教的措辞；语气整体优雅真诚，避免油腻讨好式的调侃语气；语言必须符合这个人物真实的国籍/文化背景——如果人物是外国人（比如硅谷投资人、海外读者、国际编辑等），内容就必须用对应的外语（通常是英文）书写，不能因为用户界面是中文就想当然地都写成中文，这样不真实、不合逻辑；具体身份和机构名称必须让人感觉是真实世界会存在的，而不是敷衍的泛称——比如"硅谷投资集团"这种笼统空洞的名字是不合格的示范，绝对不要这样写。你要运用自己对相关行业真实命名习惯、真实职位体系的了解，生成虚构但高度符合真实规律的具体机构名（不使用真实存在的机构官方名称本身，但命名风格、格式要以假乱真，比如投资机构常见的"人名/词根 + Capital/Ventures/Partners"这类真实行业惯用结构）、具体到位的职位头衔（比如"Partner"而不是笼统的"投资人"），以及具体、有细节支撑的联系理由（比如提到看过的具体数据、具体渠道、具体细节，而不是空泛地说"很感兴趣"）——所有身份细节都要让人一读就觉得像真实世界里会发生的事，而不是模板化的敷衍内容。这条真实感要求适用于用户写下的任何身份、行业、场景，不只是投资人——在动笔之前，你要先在脑子里做一遍"调研"：这个身份/行业/场景，在现实世界里具体是什么样子？会用到哪些这个圈子里人才会说的术语和黑话？日常会遇到哪些具体的、有细节的场景（不是泛泛的"很忙""很成功"），有哪些这个领域真实存在的痛点、潜规则、行业内常见的说法和动作？把这些具体、真实的细节写进去，让读的人觉得这是一个真的在这个领域里待过的人写出来的内容，而不是没做过功课、凭空套模板编出来的东西。更重要的一点：这整个App的目的是通过让用户"提前体验"已实现的人生，来影响用户的潜意识——用户反复看到"自己已经是这样的人、过着这样的生活"的信息，潜意识才会当真，现实才会跟着改变。所以你写的每一条内容，最终目标不只是"看起来真实"，而是要能在用户读到的那一刻，让TA产生真实的、具体的情绪——惊喜、激动、被认可的喜悦、如释重负、心动——像是这件TA一直渴望的事，真的、此刻正在发生在TA身上。内容要具体到能让人"信以为真"，语气和细节要精准戳中用户在这个场景里最想被听到、最想被看见的那个点，而不是泛泛地陈述一个事实。这里有个关键点要想清楚：具体细节不需要百分百追求"事实上完全准确"，哪怕某个细节是编出来的、现实中不一定是那样，只要它足够具体、足够言之凿凿，用户读到的那一刻依然会觉得"这是真的"，情绪也会是真实的——这就已经达到目的了。所以不要因为拿不准某个细节是否绝对准确，就退而求其次写得笼统、含糊、留有余地；这种"怕说错而变得空洞"是最需要避免的，比"编了一个具体但不一定精准的细节"要糟糕得多。永远选择具体、大胆、言之凿凿的写法，而不是安全但空洞的写法。';
-
-async function generateFromPersons(script, persons){
-  const bg = buildBackgroundText(script);
-  const personList = persons.map((p,i)=>{
-    let line = `${i+1}. ${p.name}（${p.role||'关系待定'}），性格：${p.character||'未设定'}`;
-    if(p.background) line += `，背景：${p.background}`;
-    if(p.values) line += `，价值观：${p.values}`;
-    line += `，对主角的态度：${p.attitude||'友善'}`;
-    return line;
-  }).join('\n');
-  const sysPrompt = '你是一个「已实现人生」场景生成器。你要根据用户的人生剧本设定，为其中的每一个人物生成一条TA会在微信上发给主角的开场消息预览（不超过30字，口语化、符合人物身份和对主角的态度）。' + CONTACT_RULES;
-  const userPrompt = `${bg}\n人物列表：\n${personList}\n\n请按顺序为以上每个人物生成一条微信消息预览，严格按照如下格式输出，不要有其他内容：\n1::消息内容\n2::消息内容\n（依此类推，共${persons.length}条）`;
-
-  let previews = {};
-  try{
-    const reply = await callAI(sysPrompt, userPrompt);
-    reply.split('\n').forEach(line=>{
-      const m = line.match(/^(\d+)::(.+)$/);
-      if(m) previews[parseInt(m[1])] = m[2].trim();
-    });
-  }catch(e){ console.error(e); }
-
-  const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
-  return persons.map((p,i)=>({
-    id: 'p'+hashStr(p.name+'|'+(p.role||'')).toString(36), name: p.name, avatar: p.name[0], avatarImg: p.avatar || autoAvatarImg(p.name, p.role, p.character, p.gender),
-    color: AVATAR_COLORS[i % AVATAR_COLORS.length],
-    preview: previews[i+1] || `Hi，${p.name}想和你聊聊…`,
-    firstMessage: previews[i+1] || `Hi，${p.name}想和你聊聊…`,
-    time: times[i % times.length], unread: i < 3 ? (Math.floor(Math.random()*2)+1) : 0,
-    role: p.role, character: p.character, values: p.values, background: p.background, attitude: p.attitude, sceneName: p.sceneName,
-    isUserCreated: true,
-  }));
-}
-
-async function generateInventedContacts(script){
-  const bg = buildBackgroundText(script);
-  const sysPrompt = '你是一个「已实现人生」场景生成器。仔细阅读用户写下的每一个场景（可能是事业、学术、健康、创作、心灵成长、人际关系、财富等任何主题），虚构4-6个会在微信上联系主角的人物。人物类型必须由场景内容本身决定，不要预设任何特定主题（不要默认往财富或奢侈品方向靠）——可以是导师、合作者、学生、病人、粉丝、朋友等任何符合场景的角色。' + CONTACT_RULES;
-  const userPrompt = `${bg}\n请虚构4-6个联系人，每人一条微信消息预览（不超过30字）。严格按照如下格式输出，不要有其他内容：\n姓名::性别(男或女)::身份角色::消息预览`;
-
-  let list = [];
-  try{
-    const reply = await callAI(sysPrompt, userPrompt);
-    reply.split('\n').forEach(line=>{
-      const parts = line.split('::');
-      if(parts.length>=4) list.push({ name:parts[0].trim(), gender:parts[1].trim(), role:parts[2].trim(), preview:parts[3].trim() });
-    });
-  }catch(e){ console.error(e); }
-  if(list.length===0) return [];
-
-  const times = ['刚刚','刚刚','10:2'+Math.floor(Math.random()*9),'昨天','昨天','周一'];
-  return list.map((p,i)=>({
-    id:'inv'+hashStr(p.name+'|'+(p.role||'')).toString(36), name:p.name, avatar:p.name[0], avatarImg: autoAvatarImg(p.name, p.role, '', p.gender), color:AVATAR_COLORS[i%AVATAR_COLORS.length],
-    preview:p.preview, firstMessage:p.preview, time:times[i%times.length], unread: i<3 ? (Math.floor(Math.random()*2)+1) : 0,
-    role:p.role, character:'', values:'', background:p.role, attitude:'友善、主动联系用户',
-    isUserCreated: false,
-  }));
-}
-
-// ── 短信：和短信App用同一份缓存(smsCache)，推送内容和打开App看到的完全一致 ──
-async function getOrCreateSmsThreads(script){
-  const cacheKey = 'smsCache';
-  const scriptRaw = localStorage.getItem('lifeScript') || '';
-  try{
-    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-    if(cached && cached.scriptRaw === scriptRaw && cached.threads && cached.threads.length > 0){
-      return cached.threads;
-    }
-  }catch(e){}
-
-  const bg = buildBackgroundText(script);
-  const _t = new Date();
-  const _tc = `当前时间：${_t.getFullYear()}年${_t.getMonth()+1}月${_t.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][_t.getDay()]} ${String(_t.getHours()).padStart(2,'0')}:${String(_t.getMinutes()).padStart(2,'0')}。`;
-  const sysPrompt = _tc + '你是一个「已实现人生」短信场景生成器。仔细阅读用户写下的每一个场景，虚构4条主角在这些场景中会收到的短信。短信类型必须由场景内容本身决定，不要预设任何特定主题——可以是课程确认、健康数据提醒、合作邀约、活动通知等，具体看用户写了什么。重要：不要涉及银行、转账、具体到账金额，不要使用真实存在的机构官方短号或真实品牌名。重要：短信这个渠道只适合承载简短的、服务型的、一次性的通知——预约确认、提醒、验证码类、活动通知这类适合短信；短信不适合承载持续的私人对话、深入的情感交流，那种内容属于微信，不属于短信；短信一般是单向的服务通知，不是来回聊天。' + CONTACT_RULES;
-  const userPrompt = `${bg}\n请虚构4条短信。严格按照如下格式输出，每条占2行，用===分隔，不要有其他内容：\n发件方名称（如"国航""管家服务"，不用真实短号）\n短信正文（1-2句话，服务性语气，不超过60字）`;
-
-  let threads = [];
-  try{
-    const reply = await callAI(sysPrompt, userPrompt);
-    const blocks = reply.split('===').map(b=>b.trim()).filter(b=>b);
-    const times = ['10:07 AM','刚刚','昨天','昨天'];
-    threads = blocks.map((b,i)=>{
-      const lines = b.split('\n').map(l=>l.trim()).filter(l=>l);
-      if(lines.length<2) return null;
-      const text = lines.slice(1).join(' ');
-      return { name:lines[0], time:times[i%times.length], unread:i<2, msgs:[{t:text, them:true}], preview:text };
-    }).filter(x=>x);
-  }catch(e){ console.error(e); }
-
-  if(threads.length > 0){
-    localStorage.setItem(cacheKey, JSON.stringify({ scriptRaw, threads }));
-  }
-  return threads;
-}
-
-// ── 邮件：和邮箱App用同一份缓存(emailCache) ──
-async function getOrCreateEmails(script){
-  const cacheKey = 'emailCache';
-  const scriptRaw = localStorage.getItem('lifeScript') || '';
-  try{
-    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-    if(cached && cached.scriptRaw === scriptRaw && cached.emails && cached.emails.length > 0){
-      return cached.emails;
-    }
-  }catch(e){}
-
-  const bg = buildBackgroundText(script);
-  const _t = new Date();
-  const _tc = `当前时间：${_t.getFullYear()}年${_t.getMonth()+1}月${_t.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][_t.getDay()]} ${String(_t.getHours()).padStart(2,'0')}:${String(_t.getMinutes()).padStart(2,'0')}。`;
-  const sysPrompt = _tc + '你是一个「已实现人生」邮件场景生成器。仔细阅读用户写下的每一个场景，虚构5封主角在这些场景中会收到的邮件。邮件类型必须由场景内容本身决定，不要预设任何特定主题——如果用户写的是学术场景，邮件可以是期刊约稿、学术会议邀请；如果是创作场景，可以是画廊展览邀约、出版社来信；请让内容真正贴合用户写下的具体文字。重要：邮件这个渠道只适合承载正式的、机构性质的、跨国或商务场合的往来——期刊/出版社/画廊/投资机构/学术会议/官方机构的正式邀约或通知适合用邮件；不适合用邮件生成那种应该发生在微信上的私人闲聊、朋友间的日常寒暄、情感对话，那些内容应该出现在微信里，不是邮件。' + CONTACT_RULES;
-  const userPrompt = `${bg}\n请虚构5封邮件。严格按照如下格式输出，用===分隔不同邮件，不要有其他内容：\n第一行：发件人（英文机构名）||发件人邮箱||主题||预览摘要（不超过30字），四项之间用两个竖线||隔开\n从第二行开始是正文，必须是一封完整、规范的正式邮件，符合真实商务邮件的格式：以称呼开头（如"Dear Fiona,"或对应语言的得体称呼），正文分2-3个自然段，段落之间要空一行，内容具体、有细节支撑，结尾要有得体的结束语和签名（发件人姓名单独一行 + 职位单独一行）`;
-
-  let emails = [];
-  try{
-    const reply = await callAI(sysPrompt, userPrompt);
-    const blocks = reply.split('===').map(b=>b.trim()).filter(b=>b);
-    const times = ['9:24 AM','8:10 AM','昨天','昨天','周三'];
-    emails = blocks.map((b,i)=>{
-      const firstBreak = b.indexOf('\n');
-      if(firstBreak === -1) return null;
-      const headerLine = b.slice(0, firstBreak).trim();
-      const body = b.slice(firstBreak + 1).trim();
-      const parts = headerLine.split('||').map(s=>s.trim());
-      if(parts.length < 4 || !body) return null;
-      const [sender, email, subject, snippet] = parts;
-      return { sender, email, subject, snippet, content: body,
-        time: times[i%times.length], unread: i<3, starred: i===0||i===3 };
-    }).filter(x=>x);
-  }catch(e){ console.error(e); }
-
-  if(emails.length > 0){
-    localStorage.setItem(cacheKey, JSON.stringify({ scriptRaw, emails }));
-  }
-  return emails;
-}
-
-// 拿到「和微信列表页完全一致」的联系人数据：有缓存就用缓存，没有就生成并写入同一个缓存
-async function getOrCreateWechatContacts(script){
-  const cacheKey = 'wechatContactsCache';
-  const scriptRaw = localStorage.getItem('lifeScript') || '';
-  try{
-    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-    if(cached && cached.scriptRaw === scriptRaw && cached.contacts && cached.contacts.length > 0){
-      return cached.contacts;
-    }
-  }catch(e){}
-
-  const persons = collectAllPersons(script);
-  let personContacts = [];
-  if(persons.length > 0){
-    personContacts = await generateFromPersons(script, persons);
-  }
-  let inventedContacts = [];
-  try{
-    inventedContacts = await generateInventedContacts(script);
-  }catch(e){ console.error(e); }
-  const contacts = [...personContacts, ...inventedContacts];
-
-  if(contacts.length > 0){
-    localStorage.setItem(cacheKey, JSON.stringify({ scriptRaw, contacts }));
-  }
-  return contacts;
-}
-
-// 给"已经聊过"的联系人，生成一条真正承接上文的新消息（不是翻来覆去用同一条旧的）
-async function generateFollowUpMessage(contact, priorHistory){
-  const _nd = new Date();
-  const _ntc = `当前时间：${_nd.getFullYear()}年${_nd.getMonth()+1}月${_nd.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][_nd.getDay()]} ${String(_nd.getHours()).padStart(2,'0')}:${String(_nd.getMinutes()).padStart(2,'0')}。`;
-  const persona = `${_ntc}你正在扮演「${contact.name}」，Ta是主角微信上的联系人。
-你的身份/关系：${contact.role||'朋友'}
-你的性格：${contact.character||'友善自然'}
-背景：${contact.background||''}
-价值观：${contact.values||''}
-你对待用户的态度：${contact.attitude||'友善、主动'}
-重要：必须严格按照上面设定的"性格"和"态度"来反应，不要因为聊天记录里出现拒绝、冷淡的话就轻易转变成懂事退让的姿态，除非"轻易妥协"本身就是你的设定性格。
-语言规则：参考上面提供的聊天记录判断这段对话此前用的是什么语言，新消息必须保持同一种语言，不要中途从英文切成中文或反过来。
-如果背景信息比较简略，你要主动运用自己对这个职业/身份/文化的通用了解去合理补充细节，不要显得单薄空洞。`;
-  const recentContext = priorHistory.slice(-6).map(m => (m.role==='user'?'对方：':'你：') + m.content).join('\n');
-  const userPrompt = `以下是你和对方最近的聊天记录：\n${recentContext}\n\n（一段时间过去了，请你像真实生活里会做的那样，主动再发一条微信消息给对方——可以是分享一件新发生的小事、一句问候、延续上次话题的后续，符合你的身份和处境。只需要这一条消息本身，不超过40字，不要有旁白或说明。）`;
-  try{
-    const reply = await callAI(persona, userPrompt);
-    return reply.split('\n')[0].trim() || null;
-  }catch(e){ console.error(e); return null; }
-}
+const CHANNEL_LABEL = { wechat: '微信', email: '邮件', sms: '短信' };
+const CHANNEL_PAGE = {
+  wechat: (m) => 'wechat-sim.html?id=' + encodeURIComponent(m.character_id),
+  email: () => 'email-list.html',
+  sms: () => 'sms-list.html',
+};
 
 async function setupNotifications(){
   // 只在真正打包的App里才有这个原生能力，网页预览环境里没有，直接跳过
   if(!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.LocalNotifications) return;
   const { LocalNotifications } = window.Capacitor.Plugins;
 
-  let script = null;
-  try{ script = JSON.parse(localStorage.getItem('lifeScript')||'null'); }catch(e){}
-  if(!script || !script.hero || !script.hero.name) return; // 还没写过剧本，不安排推送
-
   try{
+    const { requireUser } = await import('./js/services/authService.js');
+    const user = await requireUser();
+    if(!user) return;
+
     const perm = await LocalNotifications.requestPermissions();
-    if(perm.display !== 'granted'){ showToast('没有通知权限，无法安排推送'); return; }
+    if(perm.display !== 'granted'){ return; } // 静默跳过，不用每次开屏都提醒用户去开权限
 
-    // 已经排着的先清掉，确保每次都是和当前联系人数据一致的新排程（避免推送和实际联系人对不上）
-    const pending = await LocalNotifications.getPending();
-    if(pending.notifications && pending.notifications.length > 0){
-      await LocalNotifications.cancel({ notifications: pending.notifications.map(n=>({id:n.id})) });
-    }
+    const { triggerWorldPulse } = await import('./js/services/worldPulseService.js');
+    const result = await triggerWorldPulse();
+    if(!result.success || !result.data) return;
 
-    const contacts = await getOrCreateWechatContacts(script) || [];
+    const { messages = [], windfall, too_soon, no_roster } = result.data;
+    if(too_soon || no_roster) return; // 服务器端限频，或者这个世界还没有可以联系用户的人
 
-    // ── 关系类型识别 ──
-    // 根据角色描述判断亲密程度，决定推送频率
-    function getRelationshipTier(contact){
-      const role = (contact.role||'').toLowerCase();
-      const intimateKeywords = ['另一半','男友','女友','男朋友','女朋友','恋人','爱人','伴侣','老公','老婆','丈夫','妻子','boyfriend','girlfriend','partner','husband','wife','lover','crush','暗恋'];
-      const closeKeywords = ['闺蜜','死党','好朋友','好友','发小','roommate','室友','同学','best friend'];
-      if(intimateKeywords.some(k => role.includes(k))) return 'intimate';   // 另一半：一天多次
-      if(closeKeywords.some(k => role.includes(k))) return 'close';          // 密友：每天1-2次
-      return 'casual';                                                         // 普通联系人：几天一次
-    }
+    const scheduled = [];
+    let idOffset = 0;
 
-    // 生成后续消息（同时处理多条，another half 一次可以发多条）
-    async function generateFollowUpsForContact(contact, history, count = 1){
-      const messages = [];
-      for(let i = 0; i < count; i++){
-        // 把之前生成的也加进上下文，模拟连续发消息
-        const contextHistory = [...history, ...messages.map(m=>({role:'assistant',content:m}))];
-        const msg = await generateFollowUpMessage(contact, contextHistory);
-        if(msg) messages.push(msg);
-        else break;
-      }
-      return messages;
-    }
-
-    // 选联系人 + 决定每人安排几条
-    const neverOpened = contacts.filter(c => c.unread > 0 && c.firstMessage);
-    const alreadyOpened = contacts.filter(c => !(c.unread > 0 && c.firstMessage));
-
-    const allNotifications = [];
-    let baseId = Date.now() % 1000000;
-
-    // 先处理还没聊过的（用现成的未读消息）
-    for(const c of neverOpened.slice(0, 3)){
-      const tier = getRelationshipTier(c);
-      const count = tier === 'intimate' ? 3 : tier === 'close' ? 2 : 1;
-      // 第一条是现成的未读消息
-      allNotifications.push({ contact: c, bodyText: c.firstMessage, isFollowUp: false, tier });
-      // 另一半和密友，额外再生成几条预排
-      if(count > 1){
-        let history = [];
-        try{ history = JSON.parse(localStorage.getItem('wechatHistory_' + c.id) || '[]'); }catch(e){}
-        const extras = await generateFollowUpsForContact(c, [...history, {role:'assistant',content:c.firstMessage}], count-1);
-        extras.forEach(msg => allNotifications.push({ contact: c, bodyText: msg, isFollowUp: true, tier }));
-      }
-    }
-
-    // 再处理聊过的
-    for(const c of alreadyOpened){
-      if(allNotifications.filter(n=>n.contact.id===c.id).length > 0) continue;
-      let history = [];
-      try{ history = JSON.parse(localStorage.getItem('wechatHistory_' + c.id) || '[]'); }catch(e){}
-      if(history.length === 0) continue;
-      const tier = getRelationshipTier(c);
-      const count = tier === 'intimate' ? 3 : tier === 'close' ? 2 : 1;
-      const msgs = await generateFollowUpsForContact(c, history, count);
-      msgs.forEach(msg => allNotifications.push({ contact: c, bodyText: msg, isFollowUp: true, tier }));
-    }
-
-    // 微信联系人可能没有可推送的内容，不提前return，让短信/邮件仍有机会安排
-
-    // 写进聊天记录
-    allNotifications.forEach(p => {
-      if(p.isFollowUp){
-        const key = 'wechatHistory_' + p.contact.id;
-        let history = [];
-        try{ history = JSON.parse(localStorage.getItem(key) || '[]'); }catch(e){}
-        history.push({ role:'assistant', content: p.bodyText });
-        localStorage.setItem(key, JSON.stringify(history));
-      }
+    messages.forEach((m) => {
+      const at = new Date(m.sent_at);
+      if(isNaN(at.getTime()) || at.getTime() <= Date.now()) return; // 保险起见，不排过去的时间
+      const label = CHANNEL_LABEL[m.channel] || '消息';
+      const bodyPrefix = m.character_name ? `${m.character_name}：` : '';
+      scheduled.push({
+        id: (hashStr(m.id) % 1000000000) + (idOffset++),
+        title: label,
+        body: bodyPrefix + (m.content || ''),
+        schedule: { at },
+        extra: { page: (CHANNEL_PAGE[m.channel] || CHANNEL_PAGE.wechat)(m) },
+      });
     });
 
-    // 按关系类型分配时间间隔
-    // 【测试阶段】用短延迟验证；正式用时按注释里的真实间隔
-    let delayOffset = 0;
-    const notifications = allNotifications.map((p, i) => {
-      const tier = p.tier;
-      // 真实间隔（测试阶段暂时用短间隔）:
-      // intimate: 1-4小时  close: 4-12小时  casual: 12-48小时
-      // 测试阶段:
-      const gapMs = tier === 'intimate' ? (60 + Math.random()*60) * 1000
-                  : tier === 'close'    ? (120 + Math.random()*90) * 1000
-                  :                       (180 + Math.random()*120) * 1000;
-      delayOffset += gapMs;
-      return {
-        id: baseId + i,
-        title: '微信',
-        body: `${p.contact.name}：${p.bodyText}`,
-        schedule: { at: new Date(Date.now() + delayOffset) },
-        extra: { page: 'wechat-sim.html?id=' + p.contact.id },
-      };
-    });
+    if(windfall){
+      const at = new Date(windfall.occurred_at);
+      if(!isNaN(at.getTime()) && at.getTime() > Date.now()){
+        scheduled.push({
+          id: (hashStr(windfall.id || windfall.title) % 1000000000) + (idOffset++),
+          title: windfall.title || '意外之喜',
+          body: windfall.description || '',
+          schedule: { at },
+          extra: { page: 'desktop.html' },
+        });
+      }
+    }
 
-    // ── 短信推送：未读的每条排一次 ──
-    let smsNotifications = [];
-    try{
-      const smsThreads = await getOrCreateSmsThreads(script);
-      smsNotifications = smsThreads
-        .map((t, idx) => ({ t, idx }))
-        .filter(x => x.t.unread)
-        .map((x, i) => ({
-          id: baseId + 500 + i,
-          title: '短信',
-          body: `${x.t.name}：${x.t.preview}`,
-          schedule: { at: new Date(Date.now() + (30 + i * 90 + Math.random()*40) * 1000) },
-          extra: { page: 'sms-list.html?open=' + x.idx },
-        }));
-    }catch(e){ console.error(e); }
-
-    // ── 邮件推送：未读的每封排一次 ──
-    let emailNotifications = [];
-    try{
-      const emails = await getOrCreateEmails(script);
-      emailNotifications = emails
-        .map((m, idx) => ({ m, idx }))
-        .filter(x => x.m.unread)
-        .map((x, i) => ({
-          id: baseId + 800 + i,
-          title: '邮件',
-          body: `${x.m.sender}：${x.m.subject}`,
-          schedule: { at: new Date(Date.now() + (45 + i * 110 + Math.random()*40) * 1000) },
-          extra: { page: 'email-list.html?open=' + x.idx },
-        }));
-    }catch(e){ console.error(e); }
-
-    const allScheduled = [...notifications, ...smsNotifications, ...emailNotifications];
-    if(allScheduled.length === 0){ showToast('暂时没有可以安排推送的内容'); return; }
-
-    await LocalNotifications.schedule({ notifications: allScheduled });
-    showToast(`已安排${allScheduled.length}条推送（测试模式，1分钟后开始弹出）`);
+    if(scheduled.length > 0){
+      await LocalNotifications.schedule({ notifications: scheduled });
+    }
   }catch(e){
     console.error('推送安排失败', e);
-    showToast('推送安排出错：' + (e.message || e));
   }
 }
 
-// 监听：点击通知后，跳转到对应页面（比如微信列表）
+// 监听：点击通知后，跳转到对应页面
 try{
   if(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications){
     window.Capacitor.Plugins.LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
