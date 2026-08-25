@@ -471,7 +471,7 @@ async function init(){
 
   const [{ data: character, error: charError }, { data: mainCharacter }] = await Promise.all([
     supabase.from('characters')
-      .select('id, name, display_name, personality, job_title, organization_name, background_story, initial_relationship, avatar_url')
+      .select('id, name, display_name, personality, job_title, organization_name, background_story, initial_relationship, avatar_url, canon')
       .eq('id', characterId)
       .eq('user_id', user.id)
       .maybeSingle(),
@@ -489,7 +489,7 @@ async function init(){
   heroAvatar = (mainCharacter && mainCharacter.canon && mainCharacter.canon.avatar) || '';
   contactName = character.display_name || character.name || '未知联系人';
   contactInfo = {
-    avatarImg: character.avatar_url || autoAvatarImg(contactName, character.job_title||'', character.personality||''),
+    avatarImg: character.avatar_url || autoAvatarImg(contactName, character.job_title||'', character.personality||'', character.canon?.gender||''),
     role: character.job_title || character.initial_relationship || '朋友',
     character: character.personality || '友善自然',
     background: character.background_story || '',
