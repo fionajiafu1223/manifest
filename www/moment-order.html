@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>戏剧化时刻</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{
+  font-family:'Noto Serif SC',serif;
+  height:100dvh;position:fixed;inset:0;
+  background:linear-gradient(160deg,#1a0f0a 0%,#2a1410 30%,#3d1810 60%,#521a0e 100%);
+  color:#fce8d8;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+.back-btn{position:fixed;top:calc(env(safe-area-inset-top,44px) + 12px);left:16px;z-index:9999;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,180,120,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fce8d8;}
+.back-btn svg{width:20px;height:20px;}
+
+.head{padding:calc(env(safe-area-inset-top,44px) + 1.3rem) 1.4rem 0.4rem;text-align:center;flex-shrink:0;}
+.head-icon{font-size:36px;margin-bottom:0.5rem;filter:drop-shadow(0 2px 10px rgba(255,140,60,0.5));}
+.head-title{font-size:22px;font-weight:700;letter-spacing:3px;color:#ffd9a8;}
+.head-sub{font-size:12px;color:rgba(252,232,216,0.65);letter-spacing:1px;margin-top:6px;line-height:1.7;padding:0 0.5rem;}
+
+.body{flex:1;overflow-y:auto;padding:1.2rem 1.4rem 1rem;}
+
+.section-label{font-size:11px;color:rgba(252,232,216,0.55);letter-spacing:2px;margin:1rem 0 0.7rem;}
+.section-label:first-child{margin-top:0;}
+
+.template-grid{display:flex;flex-direction:column;gap:10px;}
+.template-card{background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,180,120,0.25);border-radius:14px;padding:0.9rem 1rem;cursor:pointer;transition:all 0.15s;}
+.template-card:active{transform:scale(0.98);}
+.template-card.selected{background:linear-gradient(135deg,rgba(255,140,60,0.22),rgba(255,90,40,0.12));border-color:rgba(255,160,90,0.75);}
+.template-top{display:flex;align-items:center;gap:10px;margin-bottom:5px;}
+.template-emoji{font-size:20px;}
+.template-name{font-size:15px;font-weight:600;color:#ffd9a8;}
+.template-desc{font-size:12px;color:rgba(252,232,216,0.6);line-height:1.6;}
+.template-meta{font-size:10.5px;color:rgba(255,160,90,0.75);margin-top:6px;letter-spacing:0.5px;}
+
+.desc-field{margin-top:0.3rem;}
+textarea{
+  width:100%;min-height:100px;resize:none;
+  background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,180,120,0.3);border-radius:12px;
+  padding:0.8rem 0.9rem;color:#fce8d8;font-family:'Noto Serif SC',serif;font-size:14px;line-height:1.7;
+  outline:none;
+}
+textarea::placeholder{color:rgba(252,232,216,0.35);}
+textarea:focus{border-color:rgba(255,160,90,0.8);}
+.char-count{font-size:11px;color:rgba(252,232,216,0.4);text-align:right;margin-top:5px;}
+
+.footer{padding:0.8rem 1.4rem calc(0.8rem + env(safe-area-inset-bottom,20px));flex-shrink:0;background:linear-gradient(180deg,transparent,rgba(30,10,5,0.6) 40%);}
+.btn-generate{width:100%;padding:1rem;border:none;border-radius:14px;cursor:pointer;font-family:'Noto Serif SC',serif;font-size:16px;font-weight:600;letter-spacing:2px;background:linear-gradient(135deg,#ff8c3c,#e84a1e);color:#fff;transition:transform 0.1s,opacity 0.2s;}
+.btn-generate:active{transform:scale(0.98);}
+.btn-generate:disabled{opacity:0.4;cursor:default;}
+
+.overlay{position:fixed;inset:0;background:rgba(20,8,4,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10000;opacity:0;pointer-events:none;transition:opacity 0.3s;padding:2rem;text-align:center;}
+.overlay.show{opacity:1;pointer-events:auto;}
+.spinner{width:48px;height:48px;border:3px solid rgba(255,160,90,0.25);border-top-color:#ff8c3c;border-radius:50%;animation:spin 0.9s linear infinite;margin-bottom:1.2rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.overlay-text{font-size:14px;color:#ffd9a8;letter-spacing:1px;line-height:1.8;}
+
+.result-icon{font-size:44px;margin-bottom:1rem;}
+.result-title{font-size:18px;font-weight:600;color:#ffd9a8;margin-bottom:0.6rem;}
+.result-desc{font-size:13px;color:rgba(252,232,216,0.7);line-height:1.8;margin-bottom:1.6rem;max-width:280px;}
+.result-actions{display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px;}
+.result-btn{padding:0.85rem;border-radius:12px;border:1.5px solid rgba(255,180,120,0.4);background:rgba(255,255,255,0.06);color:#fce8d8;font-family:'Noto Serif SC',serif;font-size:14px;cursor:pointer;}
+.result-btn.primary{background:linear-gradient(135deg,#ff8c3c,#e84a1e);border:none;font-weight:600;color:#fff;}
+</style>
+</head>
+<body>
+
+<div class="back-btn" onclick="location.href='desktop.html'">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</div>
+
+<div class="head">
+  <div class="head-icon">⚡</div>
+  <div class="head-title">戏剧化时刻</div>
+  <div class="head-sub">点一个想要发生的爆炸性场景<br>让它像突然降临一样，冲进你的手机</div>
+</div>
+
+<div class="body">
+  <div class="section-label">选一种节奏</div>
+  <div class="template-grid" id="templateGrid">
+    <div class="template-card" data-template="flood">
+      <div class="template-top"><span class="template-emoji">📦</span><span class="template-name">爆单型</span></div>
+      <div class="template-desc">短时间内密集涌入的好消息通知——网店订单、预约爆满、作品被疯狂转发。</div>
+      <div class="template-meta">8-20 条 · 12 小时内密集到达</div>
+    </div>
+    <div class="template-card" data-template="cling">
+      <div class="template-top"><span class="template-emoji">💬</span><span class="template-name">纠缠型</span></div>
+      <div class="template-desc">一个人高频、情绪强烈地反复联系你——求复合、道歉、纠缠不放。</div>
+      <div class="template-meta">6-12 条 · 分散在 2-3 天内</div>
+    </div>
+    <div class="template-card" data-template="windfall_single">
+      <div class="template-top"><span class="template-emoji">🎉</span><span class="template-name">单点型</span></div>
+      <div class="template-desc">一次性的重大好消息——中奖、offer、意外之财，冲击力集中。</div>
+      <div class="template-meta">1-3 条 · 几分钟到几小时内</div>
+    </div>
+  </div>
+
+  <div class="section-label">具体想发生什么</div>
+  <div class="desc-field">
+    <textarea id="descInput" maxlength="500" placeholder="例如：我的 Etsy 手工店突然被一个大网红转发，订单疯狂涌入……"></textarea>
+    <div class="char-count"><span id="charCount">0</span>/500</div>
+  </div>
+</div>
+
+<div class="footer">
+  <button class="btn-generate" id="generateBtn" disabled>让它发生</button>
+</div>
+
+<div class="overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="overlay-text">正在生成这个时刻……<br>马上就会发生</div>
+</div>
+
+<div class="overlay" id="resultOverlay">
+  <div id="resultBody"></div>
+</div>
+
+<script type="module">
+let requireUser, generateMoment;
+
+let selectedTemplate = null;
+
+const templateGrid = document.getElementById('templateGrid');
+const descInput = document.getElementById('descInput');
+const charCount = document.getElementById('charCount');
+const generateBtn = document.getElementById('generateBtn');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const resultOverlay = document.getElementById('resultOverlay');
+const resultBody = document.getElementById('resultBody');
+
+templateGrid.querySelectorAll('.template-card').forEach(card => {
+  card.addEventListener('click', () => {
+    templateGrid.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedTemplate = card.dataset.template;
+    updateGenerateBtn();
+  });
+});
+
+descInput.addEventListener('input', () => {
+  charCount.textContent = descInput.value.length;
+  updateGenerateBtn();
+});
+
+function updateGenerateBtn(){
+  generateBtn.disabled = !selectedTemplate || descInput.value.trim().length === 0;
+}
+
+function showResult(html){
+  resultBody.innerHTML = html;
+  resultOverlay.classList.add('show');
+}
+
+function hideResult(){
+  resultOverlay.classList.remove('show');
+}
+
+generateBtn.addEventListener('click', async () => {
+  if(generateBtn.disabled) return;
+  loadingOverlay.classList.add('show');
+  generateBtn.disabled = true;
+
+  const result = await generateMoment(selectedTemplate, descInput.value.trim());
+
+  loadingOverlay.classList.remove('show');
+
+  if(result.success && result.data && result.data.success){
+    const records = result.data.records || {};
+    const msgCount = (records.message_ids || []).length;
+    showResult(`
+      <div class="result-icon">✨</div>
+      <div class="result-title">已经发生了</div>
+      <div class="result-desc">生成了 ${msgCount} 条消息，正陆续到达。去看看吧。</div>
+      <div class="result-actions">
+        <button class="result-btn primary" onclick="location.href='wechat-list.html'">去微信看看</button>
+        <button class="result-btn" onclick="location.href='sms-list.html'">去短信看看</button>
+        <button class="result-btn" onclick="location.href='email-list.html'">去邮箱看看</button>
+        <button class="result-btn" id="closeResultBtn">再点一个</button>
+      </div>
+    `);
+    document.getElementById('closeResultBtn').addEventListener('click', () => {
+      hideResult();
+      descInput.value = '';
+      charCount.textContent = '0';
+      templateGrid.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+      selectedTemplate = null;
+      updateGenerateBtn();
+    });
+  } else {
+    const detail = result.error && result.error.detail;
+    const detailText = typeof detail === 'string' ? detail : (detail ? JSON.stringify(detail) : '');
+    const message = detailText || (result.error && result.error.message) || '未知错误';
+    showResult(`
+      <div class="result-icon">😕</div>
+      <div class="result-title">这次没成功</div>
+      <div class="result-desc">${message}</div>
+      <div class="result-actions">
+        <button class="result-btn primary" id="retryBtn">重试</button>
+        <button class="result-btn" id="closeErrorBtn">先不弄了</button>
+      </div>
+    `);
+    document.getElementById('retryBtn').addEventListener('click', () => {
+      hideResult();
+      generateBtn.click();
+    });
+    document.getElementById('closeErrorBtn').addEventListener('click', () => {
+      hideResult();
+      updateGenerateBtn();
+    });
+  }
+});
+
+(async function initModules(){
+  ({ requireUser } = await import('./js/services/authService.js'));
+  ({ generateMoment } = await import('./js/services/momentService.js'));
+
+  const user = await requireUser();
+  if(!user) return; // requireUser 内部已跳转登录页
+})();
+</script>
+</body>
+</html>
