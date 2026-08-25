@@ -448,9 +448,25 @@ msgInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') sendBtn.click();
 });
 
-// 右上角"更多"按钮：删除聊天记录功能暂未接入数据库层，先提示，不做假动作
-document.getElementById('navMoreBtn').addEventListener('click', () => {
-  alert('删除聊天记录功能还没接入，暂时无法在这里删除。');
+// 右上角"更多"按钮：删除这个联系人（软删除——TA会从联系人列表、
+// 以后的世界生成、主动联系候选名单里消失，但历史消息数据不会被清空）
+document.getElementById('navMoreBtn').addEventListener('click', async () => {
+  if(!characterId) return;
+  if(!confirm(`删除「${contactName}」？\n\n删除后TA不会再出现在联系人列表里，以后也不会再主动联系你。之前的聊天记录会保留在数据库里（不会显示），如果需要恢复可以联系开发者。`)){
+    return;
+  }
+  try{
+    const { deleteCharacter } = await import('./js/services/deleteCharacterService.js');
+    const result = await deleteCharacter(characterId);
+    if(result.success){
+      window.location.href = 'wechat-list.html';
+    } else {
+      const msg = (result.error && (result.error.message || (result.error.detail && result.error.detail.error))) || '未知错误';
+      alert('删除失败：' + msg);
+    }
+  }catch(err){
+    alert('删除失败，请稍后重试');
+  }
 });
 
 // ============================================================
@@ -474,6 +490,7 @@ async function init(){
       .select('id, name, display_name, personality, job_title, organization_name, background_story, initial_relationship, avatar_url, canon')
       .eq('id', characterId)
       .eq('user_id', user.id)
+      .eq('is_active', true)
       .maybeSingle(),
     supabase.from('main_characters').select('name, canon').eq('user_id', user.id).maybeSingle(),
   ]);
