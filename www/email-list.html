@@ -226,6 +226,7 @@ async function initEmails(){
       .from('characters')
       .select('id, name, display_name, organization_name')
       .eq('user_id', user.id)
+      .eq('is_active', true)
       .in('id', characterIds);
     (characters||[]).forEach(c => charMap[c.id] = c);
   }
