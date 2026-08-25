@@ -505,6 +505,7 @@ async function init(){
     .eq('user_id', user.id)
     .eq('character_id', characterId)
     .eq('channel', 'wechat')
+    .lte('sent_at', new Date().toISOString())
     .order('sent_at', { ascending: true });
 
   if(msgError){
