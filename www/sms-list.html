@@ -165,6 +165,7 @@ async function initThreads(){
     .select('id, character_id, content, sent_at, direction')
     .eq('user_id', user.id)
     .eq('channel', 'sms')
+    .lte('sent_at', new Date().toISOString())
     .order('sent_at', { ascending: true }); // 按角色分组后需要正序还原对话
 
   if(error){
