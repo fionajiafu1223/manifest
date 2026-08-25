@@ -123,7 +123,7 @@ textarea:focus{border-color:rgba(255,160,90,0.8);}
 </div>
 
 <script type="module">
-let requireUser, generateMoment;
+let requireUser, generateMoment, clearMomentIdempotencyKey;
 
 let selectedTemplate = null;
 
@@ -167,6 +167,11 @@ generateBtn.addEventListener('click', async () => {
   loadingOverlay.classList.add('show');
   generateBtn.disabled = true;
 
+  // 每次生成前都先清掉这个模板对应的旧幂等键——不管上次是成功、失败还是
+  // 半途而废，都不复用；换一个全新的 key 再发起，和 life-script.html
+  // 里 buildWorld() 之前的 clearIdempotencyKey() 是同一个做法。这样"重试"
+  // 按钮才不会因为上一次失败的 key 被服务端标记为 failed 而卡住。
+  clearMomentIdempotencyKey(selectedTemplate);
   const result = await generateMoment(selectedTemplate, descInput.value.trim());
 
   loadingOverlay.classList.remove('show');
@@ -219,7 +224,7 @@ generateBtn.addEventListener('click', async () => {
 
 (async function initModules(){
   ({ requireUser } = await import('./js/services/authService.js'));
-  ({ generateMoment } = await import('./js/services/momentService.js'));
+  ({ generateMoment, clearMomentIdempotencyKey } = await import('./js/services/momentService.js'));
 
   const user = await requireUser();
   if(!user) return; // requireUser 内部已跳转登录页
