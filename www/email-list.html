@@ -203,6 +203,7 @@ async function initEmails(){
     .select('id, character_id, subject, sender_address, content, sent_at, direction')
     .eq('user_id', user.id)
     .eq('channel', 'email')
+    .lte('sent_at', new Date().toISOString())
     .order('sent_at', { ascending: false });
 
   if(error){
