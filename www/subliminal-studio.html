@@ -10,7 +10,7 @@
 body{
   font-family:'Noto Sans SC',sans-serif;
   background:linear-gradient(180deg,#f0ecd8 0%,#e4ecc8 25%,#d0e4b8 55%,#b8d8a0 80%,#a0cc90 100%);
-  min-height:100vh;color:#4a3828;overflow:hidden;
+  min-height:100vh;color:#3a4a2a;overflow:hidden;
 }
 .view{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:calc(env(safe-area-inset-top,44px) + 1rem) 1.2rem calc(env(safe-area-inset-bottom,20px) + 2rem);
@@ -46,12 +46,12 @@ body{
   padding:0.9rem 1rem;display:flex;align-items:center;gap:12px;cursor:pointer;
 }
 .track-cover{width:46px;height:46px;border-radius:12px;flex-shrink:0;
-  background:linear-gradient(135deg,#e8b04a,#c88828);display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#e8c860,#c88828);display:flex;align-items:center;justify-content:center;
   font-size:18px;color:#fff;}
 .track-info{flex:1;min-width:0;}
 .track-name{font-size:14px;color:#3a4a2a;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.track-meta{font-size:11px;color:#9a8878;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.track-more{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#9a8878;flex-shrink:0;font-size:16px;}
+.track-meta{font-size:11px;color:#6a7858;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.track-more{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#6a7858;flex-shrink:0;font-size:16px;}
 
 .empty-room{text-align:center;padding:2.4rem 1rem;color:#8a9878;}
 .empty-room-icon{font-size:34px;margin-bottom:10px;opacity:0.6;}
@@ -64,7 +64,7 @@ body{
 /* 播放器 */
 #playerView .wrap{display:flex;flex-direction:column;min-height:calc(100vh - env(safe-area-inset-top,44px) - env(safe-area-inset-bottom,20px) - 3rem);justify-content:center;}
 .player-art{width:220px;height:220px;border-radius:50%;margin:0 auto 2rem;
-  background:radial-gradient(circle at 38% 35%,#e8b04a,#8a5838);
+  background:radial-gradient(circle at 38% 35%,#e8c860,#8a5838);
   display:flex;align-items:center;justify-content:center;font-size:52px;
   box-shadow:0 20px 50px rgba(80,60,20,0.3);}
 .player-name{font-family:'Noto Serif SC',serif;font-size:20px;color:#3a4a2a;text-align:center;margin-bottom:6px;}
@@ -73,7 +73,7 @@ body{
 .progress-time{font-size:11px;color:#8a9878;width:38px;flex-shrink:0;}
 .progress-time.end{text-align:right;}
 .progress-bar{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(120,90,60,0.2);outline:none;}
-.progress-bar::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#c89030;box-shadow:0 2px 6px rgba(180,140,60,0.5);}
+.progress-bar::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#c8a04a;box-shadow:0 2px 6px rgba(200,160,74,0.5);}
 .player-controls{display:flex;align-items:center;justify-content:center;gap:28px;margin-bottom:1.8rem;}
 .ctrl-btn{background:none;border:none;color:#4a6a48;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .ctrl-btn.play-pause{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#5a9060,#3a7048);color:#fff;box-shadow:0 8px 24px rgba(58,112,72,0.4);}
@@ -89,8 +89,8 @@ body{
 .entry-icon{width:48px;height:48px;border-radius:14px;background:rgba(90,144,96,0.15);
   display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
 .entry-text-title{font-size:14px;color:#3a4a2a;font-weight:600;margin-bottom:3px;}
-.entry-text-sub{font-size:11px;color:#9a8878;line-height:1.5;}
-.entry-badge{font-size:10px;color:#c89030;background:rgba(232,176,74,0.15);border-radius:8px;padding:2px 7px;margin-left:6px;}
+.entry-text-sub{font-size:11px;color:#6a7858;line-height:1.5;}
+.entry-badge{font-size:10px;color:#c8a04a;background:rgba(200,160,74,0.15);border-radius:8px;padding:2px 7px;margin-left:6px;}
 
 /* 内容台/声音台 通用 */
 .card{background:rgba(255,255,255,0.85);border:1px solid rgba(120,160,90,0.25);border-radius:18px;padding:1.2rem;margin-bottom:1rem;}
@@ -99,8 +99,8 @@ body{
 .sentence-text{flex:1;font-size:13px;color:#3a4a2a;line-height:1.6;}
 .sentence-actions{display:flex;gap:6px;flex-shrink:0;}
 .mini-btn{background:rgba(90,144,96,0.12);border:none;border-radius:8px;padding:5px 8px;font-size:11px;color:#3a7048;cursor:pointer;}
-.mini-btn.del{background:rgba(200,60,60,0.1);color:#a03030;}
-.mini-btn.rec{background:rgba(200,60,60,0.14);color:#a03030;}
+.mini-btn.del{background:rgba(200,60,60,0.1);color:#b05050;}
+.mini-btn.rec{background:rgba(200,60,60,0.14);color:#b05050;}
 .mini-btn.ok{background:rgba(90,144,96,0.18);color:#2a6038;}
 .add-sentence-row{display:flex;gap:8px;margin-top:10px;}
 .add-sentence-row input{flex:1;padding:9px 12px;border-radius:10px;border:1px solid rgba(150,175,110,0.4);font-size:13px;font-family:'Noto Sans SC',sans-serif;background:#fff;}
@@ -116,7 +116,7 @@ body{
 .record-btn-big.recording{animation:recPulse 1.4s infinite;}
 .record-btn-big.done{background:radial-gradient(circle at 38% 35%,rgba(80,180,120,0.88),rgba(20,100,60,0.78));}
 @keyframes recPulse{0%,100%{box-shadow:0 4px 18px rgba(180,30,30,0.4),0 0 0 0 rgba(220,60,60,0.35);}50%{box-shadow:0 4px 24px rgba(220,30,30,0.6),0 0 0 14px rgba(220,60,60,0);}}
-.record-timer-big{font-family:'Noto Serif SC',serif;font-size:1.3rem;color:#4a3828;}
+.record-timer-big{font-family:'Noto Serif SC',serif;font-size:1.3rem;color:#3a4a2a;}
 
 /* 混音台 */
 .mix-layer{background:rgba(255,255,255,0.85);border:1px solid rgba(120,160,90,0.25);border-radius:16px;padding:1.1rem;margin-bottom:0.9rem;}
@@ -130,11 +130,11 @@ body{
 .chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:0.7rem;}
 .chip{padding:7px 12px;border-radius:10px;border:1px solid rgba(150,175,110,0.4);background:rgba(255,255,255,0.6);
   color:#5a6a48;font-size:12px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;}
-.chip.selected{background:rgba(232,176,74,0.25);border-color:#e8b04a;color:#4a3810;font-weight:600;}
+.chip.selected{background:rgba(232,176,74,0.25);border-color:#e8c860;color:#4a3810;font-weight:600;}
 .chip.soon{opacity:0.5;cursor:default;}
 .mix-vol-row{display:flex;align-items:center;gap:10px;}
 .mix-vol-row input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(120,90,60,0.2);outline:none;}
-.mix-vol-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:linear-gradient(135deg,#e8b04a,#c89030);cursor:pointer;}
+.mix-vol-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:linear-gradient(135deg,#e8c860,#c8a04a);cursor:pointer;}
 .soon-note{font-size:11px;color:#b09878;}
 
 .btn{width:100%;padding:13px;border-radius:14px;border:none;cursor:pointer;
@@ -153,7 +153,7 @@ body{
 .modal-btn-row{display:flex;gap:10px;}
 .modal-btn-row button{flex:1;padding:10px;border-radius:10px;border:none;font-size:13px;cursor:pointer;}
 .sheet-action{padding:14px 4px;font-size:14px;color:#3a4a2a;border-bottom:1px solid rgba(120,160,90,0.15);cursor:pointer;}
-.sheet-action.danger{color:#a03030;}
+.sheet-action.danger{color:#b05050;}
 .sheet-action:last-child{border-bottom:none;}
 .toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,20px) + 30px);left:50%;transform:translateX(-50%);
   background:rgba(40,50,30,0.9);color:#f0ecd8;padding:10px 18px;border-radius:12px;font-size:12px;z-index:20000;
@@ -371,7 +371,7 @@ body{
           <button class="chip" data-type="alpha">Alpha 放松</button>
           <button class="chip" data-type="beta">Beta 行动力</button>
         </div>
-        <div style="font-size:11px;color:#c89030;margin-bottom:8px;">🎧 需佩戴耳机才有效果</div>
+        <div style="font-size:11px;color:#c8a04a;margin-bottom:8px;">🎧 需佩戴耳机才有效果</div>
         <div class="mix-vol-row">
           <span style="font-size:11px;color:#8a9878;">音量</span>
           <input type="range" id="binauralVolSlider" min="0" max="100" value="35">
@@ -804,7 +804,7 @@ document.getElementById('contentBackBtn').onclick=()=>showView('studioEntryView'
 function renderSentenceList(){
   const list=document.getElementById('sentenceList');
   if(!draftSentences.length){
-    list.innerHTML='<div style="font-size:12px;color:#9a8878;padding:0.6rem 0;">还没有句子，先从下面添加一句</div>';
+    list.innerHTML='<div style="font-size:12px;color:#6a7858;padding:0.6rem 0;">还没有句子，先从下面添加一句</div>';
   } else {
     list.innerHTML='';
     draftSentences.forEach((s,idx)=>{
