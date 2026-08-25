@@ -316,6 +316,7 @@ async function init(){
     .select('id, character_id, content, sent_at, direction, sender_type')
     .eq('user_id', user.id)
     .eq('channel', 'wechat')
+    .lte('sent_at', new Date().toISOString())
     .order('sent_at', { ascending: false });
 
   if(msgError){
