@@ -350,6 +350,7 @@ async function init(){
     .from('characters')
     .select('id, name, display_name, personality, job_title, organization_name, origin, avatar_url, canon')
     .eq('user_id', user.id)
+    .eq('is_active', true)
     .in('id', characterIds);
 
   if(charError){
