@@ -12,7 +12,7 @@
      取较小值，保证在各种手机屏幕比例下都能尽量撑满又不会超出屏幕、不变形 */
   --book-w: min(94vw, calc(88vh * 0.75));
 }
-body{font-family:'Noto Serif SC',serif;background:linear-gradient(180deg,#f0ecd8 0%,#e4ecc8 25%,#d0e4b8 55%,#b8d8a0 80%,#a0cc90 100%);width:100vw;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+body{font-family:'Noto Serif SC',serif;background:linear-gradient(180deg,#f3f6e2 0%,#e7eeca 25%,#d2deb2 55%,#a1ba76 80%,#688a41 100%);width:100vw;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;}
 
 .bubbles{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden;transition:opacity 1s;}
 .bubbles.dimmed{opacity:0.25;}
@@ -53,7 +53,7 @@ body{font-family:'Noto Serif SC',serif;background:linear-gradient(180deg,#f0ecd8
 .open-hint{
   position:absolute;bottom:calc(50% - (var(--book-w) * 1.3333 / 2) - 28px);
   left:50%;transform:translateX(-50%);
-  font-size:12px;color:#6a7858;letter-spacing:3px;white-space:nowrap;
+  font-size:12px;color:#688a41;letter-spacing:3px;white-space:nowrap;
   animation:pulse 2s infinite;font-family:'Noto Serif SC',serif;
 }
 @keyframes pulse{0%,100%{opacity:0.4;}50%{opacity:1;}}
@@ -63,7 +63,7 @@ body{font-family:'Noto Serif SC',serif;background:linear-gradient(180deg,#f0ecd8
   width:var(--book-w);
   aspect-ratio:3/4;
   background:rgba(245,238,220,0.97);
-  border:1.5px solid rgba(200,160,74,0.5);
+  border:1.5px solid rgba(104,138,65,0.5);
   border-radius:10px;
   box-shadow:0 0 40px rgba(120,80,20,0.25);
   display:flex;flex-direction:column;
@@ -71,50 +71,50 @@ body{font-family:'Noto Serif SC',serif;background:linear-gradient(180deg,#f0ecd8
 }
 
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;flex-shrink:0;}
-.cal-title{font-family:'Ma Shan Zheng',serif;font-size:18px;color:#3a4a2a;letter-spacing:2px;}
-.cal-nav-btn{background:none;border:1px solid rgba(200,160,74,0.5);border-radius:50%;width:28px;height:28px;color:#3a4a2a;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
-.cal-nav-btn:hover{background:rgba(180,130,60,0.1);}
+.cal-title{font-family:'Ma Shan Zheng',serif;font-size:18px;color:#22460f;letter-spacing:2px;}
+.cal-nav-btn{background:none;border:1px solid rgba(104,138,65,0.5);border-radius:50%;width:28px;height:28px;color:#22460f;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.cal-nav-btn:hover{background:rgba(104,138,65,0.1);}
 .weekdays{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:0.3rem;flex-shrink:0;}
-.weekdays span{text-align:center;font-size:11px;color:#6a7858;padding:3px 0;}
+.weekdays span{text-align:center;font-size:11px;color:#688a41;padding:3px 0;}
 .days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;position:relative;flex:1;}
-.day-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;font-size:11px;color:#3a4a2a;transition:background 0.2s;aspect-ratio:1;align-self:center;}
+.day-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;font-size:11px;color:#22460f;transition:background 0.2s;aspect-ratio:1;align-self:center;}
 .day-cell.has-entry{background:none !important;border-radius:0;}
-.day-cell:hover:not(.empty){background:rgba(180,130,60,0.15);}
-.day-cell.today{background:rgba(200,160,74,0.25);color:#3a4a2a;font-weight:600;}
+.day-cell:hover:not(.empty){background:rgba(104,138,65,0.15);}
+.day-cell.today{background:rgba(104,138,65,0.25);color:#22460f;font-weight:600;}
 .day-cell.empty{cursor:default;}
 .heart-badge{font-size:18px;line-height:1;}
-.day-num-small{font-size:9px;color:#6a7858;}
+.day-num-small{font-size:9px;color:#688a41;}
 .day-cell.has-entry .day-num-small{display:none;}
 .connector-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;}
 
 .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,6,24,0.8);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity 0.3s;}
 .modal-overlay.active{opacity:1;pointer-events:all;}
-.modal-card{background:linear-gradient(180deg,#f5f2e0,#e8f0d8);border:1px solid rgba(200,160,74,0.5);border-radius:24px;padding:1.5rem;width:min(280px,80vw);text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.25);transform:scale(0.9);transition:transform 0.3s;}
+.modal-card{background:linear-gradient(180deg,#f3f6e2,#e7eeca);border:1px solid rgba(104,138,65,0.5);border-radius:24px;padding:1.5rem;width:min(280px,80vw);text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.25);transform:scale(0.9);transition:transform 0.3s;}
 .modal-overlay.active .modal-card{transform:scale(1);}
-.modal-date{font-size:12px;color:#6a7858;letter-spacing:2px;margin-bottom:0.8rem;}
-.modal-label{font-size:13px;color:#3a4a2a;margin-bottom:1rem;letter-spacing:1px;}
+.modal-date{font-size:12px;color:#688a41;letter-spacing:2px;margin-bottom:0.8rem;}
+.modal-label{font-size:13px;color:#22460f;margin-bottom:1rem;letter-spacing:1px;}
 .mood-grid{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:1.2rem;}
 .mood-btn{font-size:26px;cursor:pointer;padding:4px;border:none;background:none;transition:transform 0.2s;}
 .mood-btn:hover{transform:scale(1.2);}
 .mood-btn.selected{transform:scale(1.3);}
-.modal-confirm{width:100%;padding:10px;background:linear-gradient(135deg,#c8a04a,#e8c860);border:none;border-radius:12px;color:#4a3810;font-family:'Noto Serif SC',serif;font-size:13px;letter-spacing:2px;cursor:pointer;}
+.modal-confirm{width:100%;padding:10px;background:linear-gradient(135deg,#688a41,#436b29);border:none;border-radius:12px;color:#fbfbf6;font-family:'Noto Serif SC',serif;font-size:13px;letter-spacing:2px;cursor:pointer;}
 .modal-confirm:hover{opacity:0.85;}
 
 .journal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;flex-shrink:0;}
-.back-btn{background:none;border:1px solid rgba(200,160,74,0.5);border-radius:10px;padding:4px 10px;color:#4a5a38;font-size:11px;cursor:pointer;letter-spacing:1px;}
-.back-btn:hover{background:rgba(180,130,60,0.1);}
-.journal-date-title{font-family:'Ma Shan Zheng',serif;font-size:14px;color:#3a4a2a;letter-spacing:2px;}
+.back-btn{background:none;border:1px solid rgba(104,138,65,0.5);border-radius:10px;padding:4px 10px;color:#436b29;font-size:11px;cursor:pointer;letter-spacing:1px;}
+.back-btn:hover{background:rgba(104,138,65,0.1);}
+.journal-date-title{font-family:'Ma Shan Zheng',serif;font-size:14px;color:#22460f;letter-spacing:2px;}
 .selected-mood-display{font-size:20px;}
-.guide{font-size:12px;color:#6a7858;font-style:italic;letter-spacing:1px;margin-bottom:0.6rem;flex-shrink:0;}
-textarea{width:100%;flex:1;background:rgba(255,255,255,0.75);border:1px solid rgba(150,175,110,0.4);border-radius:12px;padding:0.8rem;color:#3a4a2a;font-family:'Noto Serif SC',serif;font-size:13px;line-height:1.8;resize:none;outline:none;transition:border-color 0.2s;}
-textarea:focus{border-color:rgba(160,110,40,0.6);}
-textarea::placeholder{color:#6a7858;}
-.save-btn{margin-top:0.6rem;width:100%;padding:10px;flex-shrink:0;background:linear-gradient(135deg,#c8a04a,#e8c860);border:none;border-radius:12px;color:#4a3810;font-family:'Noto Serif SC',serif;font-size:13px;letter-spacing:2px;cursor:pointer;}
+.guide{font-size:12px;color:#688a41;font-style:italic;letter-spacing:1px;margin-bottom:0.6rem;flex-shrink:0;}
+textarea{width:100%;flex:1;background:rgba(255,255,255,0.75);border:1px solid rgba(104,138,65,0.4);border-radius:12px;padding:0.8rem;color:#22460f;font-family:'Noto Serif SC',serif;font-size:13px;line-height:1.8;resize:none;outline:none;transition:border-color 0.2s;}
+textarea:focus{border-color:rgba(104,138,65,0.6);}
+textarea::placeholder{color:#688a41;}
+.save-btn{margin-top:0.6rem;width:100%;padding:10px;flex-shrink:0;background:linear-gradient(135deg,#688a41,#436b29);border:none;border-radius:12px;color:#fbfbf6;font-family:'Noto Serif SC',serif;font-size:13px;letter-spacing:2px;cursor:pointer;}
 .save-btn:hover{opacity:0.9;}
 </style>
 </head>
 <body>
-<div id="back-to-garden" style="position:fixed;top:calc(env(safe-area-inset-top,44px) + 12px);left:16px;z-index:9999;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.6);backdrop-filter:blur(8px);border:1px solid rgba(120,160,90,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#3a4a2a;" onclick="window.location.href='index.html'"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+<div id="back-to-garden" style="position:fixed;top:calc(env(safe-area-inset-top,44px) + 12px);left:16px;z-index:9999;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.6);backdrop-filter:blur(8px);border:1px solid rgba(104,138,65,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#22460f;" onclick="window.location.href='index.html'"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
 
 <div class="bubbles" id="bubbles"></div>
 
@@ -222,7 +222,7 @@ function drawConnectors(cells){
     const a=pts[i-1],b=pts[i];
     const line=document.createElementNS('http://www.w3.org/2000/svg','line');
     line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);
-    line.setAttribute('stroke','rgba(160,110,60,0.3)');line.setAttribute('stroke-width','1.5');line.setAttribute('stroke-dasharray','3 4');
+    line.setAttribute('stroke','rgba(104,138,65,0.3)');line.setAttribute('stroke-width','1.5');line.setAttribute('stroke-dasharray','3 4');
     svg.appendChild(line);
   }
 }
