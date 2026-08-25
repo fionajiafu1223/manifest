@@ -39,7 +39,10 @@ body{font-family:'Noto Serif SC',serif;background:linear-gradient(180deg,#f3f6e2
   cursor:pointer;
   border-radius:10px;
   overflow:hidden;
+  opacity:0;
+  transition:opacity 0.4s ease-out;
 }
+.book-cover-wrap.ready{opacity:1;}
 .book-cover-img{width:100%;height:100%;object-fit:cover;display:block;}
 .cover-phone{display:block;}
 .cover-tablet{display:none;}
@@ -122,8 +125,8 @@ textarea::placeholder{color:#688a41;}
 <div class="screen" id="coverScreen">
   <div style="position:relative;">
     <div class="book-cover-wrap" id="bookCoverWrap" onclick="openBook()">
-      <img class="book-cover-img cover-phone" src="assets/backgrounds/gratitude-cover-phone.png" alt="感恩日记">
-      <img class="book-cover-img cover-tablet" src="assets/backgrounds/gratitude-cover-tablet.png" alt="感恩日记">
+      <img class="book-cover-img cover-phone" src="assets/backgrounds/gratitude-cover-phone.webp" alt="感恩日记" onload="onCoverImgLoad(this)">
+      <img class="book-cover-img cover-tablet" src="assets/backgrounds/gratitude-cover-tablet.webp" alt="感恩日记" onload="onCoverImgLoad(this)">
     </div>
     <div class="open-hint">按下搭扣，开启书卷</div>
   </div>
@@ -169,6 +172,19 @@ textarea::placeholder{color:#688a41;}
 </div>
 
 <script>
+// 封面图加载完再显示，避免打开页面时先看到一个空的浅色框（阴影+空容器）
+function onCoverImgLoad(imgEl){
+  if(getComputedStyle(imgEl).display === 'none') return; // 不是当前设备会用到的那张图，忽略
+  document.getElementById('bookCoverWrap').classList.add('ready');
+}
+// 兜底：万一onload因为图片已经在浏览器缓存中而没触发（缓存图片有时直接complete），
+// 页面加载后主动检查一次
+window.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.book-cover-img').forEach(img => {
+    if(img.complete) onCoverImgLoad(img);
+  });
+});
+
 const MOODS=[{e:'🩷'},{e:'💜'},{e:'💙'},{e:'🩵'},{e:'💚'},{e:'🧡'},{e:'🤍'}];
 let curY,curM,selDay=null,selMood=0;
 const today=new Date();
