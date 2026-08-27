@@ -142,11 +142,6 @@ body{
     <div class="scene-empty-hint" id="sceneEmptyHint">还没有场景，点下面添加一个吧<br>可以是事业、感情、健康，任何你想要的</div>
     <button class="add-btn" onclick="openSceneEditor(-1)">＋ 添加一个场景</button>
   </div>
-
-  <div class="hub-footer">
-    <button class="btn btn-secondary" onclick="saveDraft()">保存草稿</button>
-    <button class="btn btn-start" onclick="finishScript()">剧本开演</button>
-  </div>
 </div>
 
 <div class="screen" id="screenBuilding">
@@ -222,7 +217,10 @@ body{
   <div class="editor-head">
     <div class="editor-back" onclick="closeSceneEditor()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <div class="editor-title">编辑场景</div>
-    <button class="editor-save" onclick="saveScene()">保存</button>
+    <div style="display:flex;gap:8px;">
+      <button class="editor-save" onclick="saveSceneOnly()">保存</button>
+      <button class="editor-save" style="background:linear-gradient(135deg,#c98a3a,#a8631f);" onclick="performScene()">剧本开演</button>
+    </div>
   </div>
   <div class="editor-body">
     <div class="field"><div class="field-label">场景名称 / 主题 <span class="req">*</span></div><input type="text" class="field-input" id="s_name" placeholder="例：财富自由、甜蜜爱情、事业巅峰…"></div>
@@ -274,6 +272,9 @@ let scriptData={ hero:{}, scenes:[] };
 let editingSceneIdx=-1;
 let editingPersonIdx=-1;
 let tempPersons=[];
+// 当前正在编辑的场景，如果是已经存过的场景，这里带着它的数据库 id——
+// "保存"和"剧本开演"都要靠这个 id 去更新这一条，而不是猜。
+let editingSceneId=null;
 
 async function hydrateFromExisting(){
   let existing=null;
@@ -389,14 +390,14 @@ document.getElementById('hAvatarInput').addEventListener('change', (e) => {
 
 function selectGender(el,g){ document.querySelectorAll('.gender-btn').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); scriptData._tempGender=g; }
 
-function saveHeroEditor(){
+async function saveHeroEditor(){
   const g=id=>document.getElementById(id).value;
   const name=g('h_name').trim();
   const gender=scriptData._tempGender;
   if(!name){ shake(document.getElementById('h_name')); return; }
   if(!gender){ shake(document.querySelector('.gender-row')); return; }
 
-  scriptData.hero={
+  const hero={
     name, gender, avatar: tempHeroAvatar,
     age:g('h_age'), zodiac:g('h_zodiac'),
     look:g('h_look'), body:g('h_body'), style:g('h_style'),
@@ -405,6 +406,13 @@ function saveHeroEditor(){
     background:g('h_background'), experience:g('h_experience'),
     desire:g('h_desire'), become:g('h_become')
   };
+  try{
+    await saveHero(hero);
+  }catch(err){
+    alert('保存失败，请重试：'+(err.message||err));
+    return;
+  }
+  scriptData.hero = hero;
   renderHeroCard();
   closeHeroEditor();
 }
@@ -418,28 +426,45 @@ function renderScenes(){
     const card=document.createElement('div');
     card.className='scene-card';
     card.onclick=(e)=>{ if(e.target.classList.contains('scene-card-del'))return; openSceneEditor(i); };
+    const performedBadge = s.world_built_at
+      ? '<span class="scene-card-count" style="display:inline-block;margin-bottom:6px;margin-left:6px;background:rgba(201,138,58,0.18);color:#a8631f;">已开演</span>'
+      : '';
     card.innerHTML=`
       <div class="scene-card-top">
         <span class="scene-card-name">${s.name||'未命名场景'}</span>
         <span class="scene-card-del" onclick="delScene(${i})">✕</span>
       </div>
-      <div class="scene-card-count" style="display:inline-block;margin-bottom:6px;">${(s.persons||[]).length} 位人物</div>
+      <div class="scene-card-count" style="display:inline-block;margin-bottom:6px;">${(s.persons||[]).length} 位人物</div>${performedBadge}
       <div class="scene-card-preview">${s.plot||s.highlight||'点击编辑剧情与人物'}</div>
     `;
     list.appendChild(card);
   });
 }
-function delScene(i){ event.stopPropagation(); scriptData.scenes.splice(i,1); renderScenes(); }
+function delScene(i){
+  event.stopPropagation();
+  const scene = scriptData.scenes[i];
+  if(!confirm('确定删除"'+(scene.name||'这个场景')+'"吗？')) return;
+  (async () => {
+    if(scene.id){
+      try{ await deleteScene(scene.id); }
+      catch(err){ alert('删除失败，请重试：'+(err.message||err)); return; }
+    }
+    scriptData.scenes.splice(i,1);
+    renderScenes();
+  })();
+}
 
 function openSceneEditor(idx){
   editingSceneIdx=idx;
   if(idx>=0){
     const s=scriptData.scenes[idx];
+    editingSceneId = s.id || null;
     document.getElementById('s_name').value=s.name||'';
     document.getElementById('s_plot').value=s.plot||'';
     document.getElementById('s_highlight').value=s.highlight||'';
     tempPersons=JSON.parse(JSON.stringify(s.persons||[]));
   } else {
+    editingSceneId = null;
     document.getElementById('s_name').value='';
     document.getElementById('s_plot').value='';
     document.getElementById('s_highlight').value='';
@@ -449,14 +474,78 @@ function openSceneEditor(idx){
   document.getElementById('sceneEditor').classList.add('open');
 }
 function closeSceneEditor(){ document.getElementById('sceneEditor').classList.remove('open'); }
-function saveScene(){
-  const name=document.getElementById('s_name').value.trim();
-  if(!name){ shake(document.getElementById('s_name')); return; }
-  const scene={ name, plot:document.getElementById('s_plot').value, highlight:document.getElementById('s_highlight').value, persons:tempPersons };
-  if(editingSceneIdx>=0) scriptData.scenes[editingSceneIdx]=scene;
-  else scriptData.scenes.push(scene);
-  renderScenes();
+
+function readSceneDraft(){
+  return {
+    id: editingSceneId,
+    name: document.getElementById('s_name').value.trim(),
+    plot: document.getElementById('s_plot').value,
+    highlight: document.getElementById('s_highlight').value,
+    persons: tempPersons
+  };
+}
+
+// "保存"——只把这一个场景写进数据库，不碰 AI，也不影响其他场景。
+async function saveSceneOnly(){
+  const draft = readSceneDraft();
+  if(!draft.name){ shake(document.getElementById('s_name')); return; }
+  const sortHint = editingSceneIdx>=0 ? editingSceneIdx : scriptData.scenes.length;
+  try{
+    const persisted = await persistScene(draft, sortHint);
+    if(editingSceneIdx>=0) scriptData.scenes[editingSceneIdx]=persisted;
+    else { scriptData.scenes.push(persisted); editingSceneIdx=scriptData.scenes.length-1; }
+    editingSceneId = persisted.id;
+    renderScenes();
+    closeSceneEditor();
+  }catch(err){
+    alert('保存失败，请重试：'+(err.message||err));
+  }
+}
+
+// "剧本开演"——先按"保存"同样的方式存一遍这场戏的最新内容，
+// 再把这一个场景交给 AI 去生成消息、关系。只处理这一个场景，
+// 不会牵动其他场景。
+async function performScene(){
+  const draft = readSceneDraft();
+  if(!draft.name){ shake(document.getElementById('s_name')); return; }
+  if(draft.persons.length===0){
+    alert('这个场景还没有人物，至少加一个才能开演');
+    return;
+  }
+
+  const sortHint = editingSceneIdx>=0 ? editingSceneIdx : scriptData.scenes.length;
+  let persisted;
+  try{
+    persisted = await persistScene(draft, sortHint);
+    if(editingSceneIdx>=0) scriptData.scenes[editingSceneIdx]=persisted;
+    else { scriptData.scenes.push(persisted); editingSceneIdx=scriptData.scenes.length-1; }
+    editingSceneId = persisted.id;
+    renderScenes();
+  }catch(err){
+    alert('保存失败，请重试：'+(err.message||err));
+    return;
+  }
+
   closeSceneEditor();
+  showBuildingScreen('正在为"'+(persisted.name||'这场戏')+'"生成剧情…\n可能需要几十秒，请不要退出');
+  try{
+    const result = await buildWorld(persisted.id);
+    if(!result.success){
+      hideBuildingScreen();
+      const detail = result.error && result.error.detail;
+      const detailText = typeof detail === 'string' ? detail : (detail ? JSON.stringify(detail) : '');
+      alert('这场戏开演失败，请重试：'+(detailText || (result.error && result.error.message) || '未知错误'));
+      return;
+    }
+    hideBuildingScreen();
+    if(result.data && result.data.no_new_content){
+      alert('这场戏已经演过了，暂时没有新内容需要生成。');
+    }
+    await hydrateFromExisting();
+  }catch(err){
+    hideBuildingScreen();
+    alert('这场戏开演失败，请重试：'+(err.message||err));
+  }
 }
 
 function renderPersons(){
@@ -539,86 +628,15 @@ function savePerson(){
   closePersonEditor();
 }
 
-function validateScriptComplete(){
-  if(!scriptData.hero || !scriptData.hero.name){
-    shake(document.getElementById('heroNameDisplay').closest('.hero-card'));
-    alert('先点开"主角"卡片，填一下名字和性别吧');
-    return false;
-  }
-  const scenes = scriptData.scenes || [];
-  if(scenes.length===0){
-    alert('至少添加一个场景，故事才能开始');
-    return false;
-  }
-  const emptyScene = scenes.find(s => !s.persons || s.persons.length===0);
-  if(emptyScene){
-    alert('"'+(emptyScene.name||'未命名场景')+'"这个场景里还没有人物，至少加一个');
-    return false;
-  }
-  return true;
-}
-
-async function saveDraft(){
-  if(!scriptData.hero || !scriptData.hero.name){
-    shake(document.getElementById('heroNameDisplay').closest('.hero-card'));
-    alert('先点开"主角"卡片，填一下名字和性别吧，才能保存草稿');
-    return;
-  }
-  showBuildingScreen('正在保存草稿…');
-  try{
-    await saveScript(scriptData);
-    hideBuildingScreen();
-  }catch(err){
-    hideBuildingScreen();
-    alert('保存失败，请重试：'+(err.message||err));
-  }
-}
-
-async function finishScript(){
-  if(!validateScriptComplete()) return;
-  showBuildingScreen('正在保存你的剧本…');
-  try{
-    await saveScript(scriptData);
-  }catch(err){
-    hideBuildingScreen();
-    alert('保存失败，请重试：'+(err.message||err));
-    return;
-  }
-
-  showBuildingScreen('正在为你构建这个世界…\n可能需要几十秒，请不要退出');
-  try{
-    clearIdempotencyKey();
-    const result = await buildWorld();
-    if(!result.success){
-      const innerDetail = result.error && result.error.detail && result.error.detail.error;
-      if(innerDetail !== 'WORLD_ALREADY_BUILT'){
-        hideBuildingScreen();
-        const detail = result.error && result.error.detail;
-        const detailText = typeof detail === 'string' ? detail : (detail ? JSON.stringify(detail) : '');
-        alert('世界生成失败，请重试：'+(detailText || (result.error && result.error.message) || '未知错误'));
-        return;
-      }
-    }
-  }catch(err){
-    hideBuildingScreen();
-    alert('世界生成失败，请重试：'+(err.message||err));
-    return;
-  }
-
-  document.body.style.transition='opacity 0.8s';
-  document.body.style.opacity='0';
-  setTimeout(()=>{ window.location.href='desktop.html'; },800);
-}
-
 const st=document.createElement('style');
 st.textContent='@keyframes shk{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}';
 document.head.appendChild(st);
 
-let requireUser, loadScript, saveScript, buildWorld, clearIdempotencyKey;
+let requireUser, loadScript, saveHero, persistScene, deleteScene, buildWorld, clearIdempotencyKey;
 
 (async function initModules(){
   ({ requireUser } = await import('./js/services/authService.js'));
-  ({ loadScript, saveScript } = await import('./js/services/scriptService.js'));
+  ({ loadScript, saveHero, persistScene, deleteScene } = await import('./js/services/scriptService.js'));
   ({ buildWorld, clearIdempotencyKey } = await import('./js/services/worldService.js'));
 
   const user = await requireUser();
