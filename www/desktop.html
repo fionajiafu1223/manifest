@@ -51,7 +51,6 @@ body{
 .icon-mail{background:linear-gradient(135deg,#6ab0e8,#4a90d8);}
 .icon-sms{background:linear-gradient(135deg,#8ad078,#6ab858);}
 .icon-more{background:linear-gradient(135deg,#c0a8d8,#a888c0);}
-.icon-moment{background:linear-gradient(135deg,#ff8c3c,#e84a1e);}
 
 .app-badge{
   position:absolute;top:-5px;right:-5px;
@@ -143,13 +142,6 @@ body{
     </div>
     <div class="app-name">短信</div>
   </div>
-
-  <div class="app" onclick="openApp('moment')">
-    <div class="app-icon icon-moment">
-      <svg viewBox="0 0 24 24" width="30" height="30" fill="#fff"><path d="M13 2L3 14h7l-1 8 11-13h-8l1-7z"/></svg>
-    </div>
-    <div class="app-name">戏剧时刻</div>
-  </div>
 </div>
 
 <div class="toast" id="toast">敬请期待</div>
@@ -170,7 +162,6 @@ function openApp(app){
   if(app==='wechat'){ location.href='wechat-list.html'; }
   else if(app==='mail'){ location.href='email-list.html'; }
   else if(app==='sms'){ location.href='sms-list.html'; }
-  else if(app==='moment'){ location.href='moment-order.html'; }
   else{
     showToast('敬请期待');
   }
