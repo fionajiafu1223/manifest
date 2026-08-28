@@ -380,7 +380,7 @@ function estimateTypingMs(text){
   const len = (text||'').length;
   const perChar = 90 + Math.random()*50;
   const base = len * perChar;
-  return Math.min(4200, Math.max(700, base));
+  return Math.min(9000, Math.max(700, base));
 }
 
 function readDelay(){
