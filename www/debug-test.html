@@ -34,8 +34,11 @@ hr{border:none;border-top:1px solid #ddd;margin:1rem 0;}
 <button id="readBtn">读取我的角色和场景</button>
 <pre id="readResult">（还没点）</pre>
 
-<div class="label">2. World Builder 测试（会真实调用 AI，请确认前置数据已存在）</div>
-<button class="primary" id="worldBtn">触发 world-builder</button>
+<div class="label">2. World Builder 测试（会真实调用 AI，请先点第1步读取场景，再选一个）</div>
+<select id="sceneSelect" style="width:100%;padding:0.6rem;margin-bottom:0.6rem;border-radius:8px;border:1px solid #ccc;">
+  <option value="">（先点上面"读取我的角色和场景"）</option>
+</select>
+<button class="primary" id="worldBtn" disabled>触发 world-builder</button>
 <pre id="worldResult">（还没点）</pre>
 
 <div class="label">3. 数据完整性验证（自动在第2步成功后运行）</div>
@@ -232,6 +235,8 @@ async function verifyChatOutput(characterId) {
   }, null, 2);
 }
 
+const sceneSelect = document.getElementById('sceneSelect');
+
 readBtn.addEventListener('click', async () => {
   readBtn.disabled = true;
   readResult.textContent = '查询中...';
@@ -244,6 +249,18 @@ readBtn.addEventListener('click', async () => {
       main_characters: charsRes,
       scenes: scenesRes
     }, null, 2);
+
+    // 把场景列表填进下拉框，方便第2步选具体是哪个场景
+    const scenes = scenesRes.data || [];
+    if (scenes.length === 0) {
+      sceneSelect.innerHTML = '<option value="">（没有场景，先去正式App里建一个）</option>';
+      worldBtn.disabled = true;
+    } else {
+      sceneSelect.innerHTML = scenes.map(s =>
+        `<option value="${s.id}">${s.name || '(未命名)'}${s.world_built_at ? ' —— 已开演过' : ' —— 还没开演'}</option>`
+      ).join('');
+      worldBtn.disabled = false;
+    }
   } catch (err) {
     readResult.textContent = '出错：' + (err.message || JSON.stringify(err));
   } finally {
@@ -252,14 +269,19 @@ readBtn.addEventListener('click', async () => {
 });
 
 worldBtn.addEventListener('click', async () => {
+  const sceneId = sceneSelect.value;
+  if (!sceneId) {
+    alert('请先选一个场景');
+    return;
+  }
   worldBtn.disabled = true;
   worldResult.textContent = '调用中，AI生成可能需要几十秒，请耐心等待...';
   verifyBox.textContent = '（等第2步成功后自动检查）';
   verifyDetail.style.display = 'none';
   // 诊断页每次点击都当作全新的一次尝试，不复用上次（可能已失败）的幂等键
-  clearIdempotencyKey();
+  clearIdempotencyKey(sceneId);
   try {
-    const result = await buildWorld();
+    const result = await buildWorld(sceneId);
     worldResult.textContent = JSON.stringify(result, null, 2);
     if (result.success) {
       await verifyWorldBuilderOutput();
@@ -273,3 +295,4 @@ worldBtn.addEventListener('click', async () => {
 </script>
 </body>
 </html>
+
