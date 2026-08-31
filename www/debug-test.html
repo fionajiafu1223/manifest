@@ -41,6 +41,10 @@ hr{border:none;border-top:1px solid #ddd;margin:1rem 0;}
 <button class="primary" id="worldBtn" disabled>触发 world-builder</button>
 <pre id="worldResult">（还没点）</pre>
 
+<div class="label">2.5 World Pulse 测试（角色主动联系你，绕开App内的通知权限判断，直接看后端真实返回）</div>
+<button class="primary" id="pulseBtn">触发 world-pulse</button>
+<pre id="pulseResult">（还没点）</pre>
+
 <div class="label">3. 数据完整性验证（自动在第2步成功后运行）</div>
 <div class="user-box" id="verifyBox">（等第2步成功后自动检查）</div>
 <pre id="verifyDetail" style="display:none;"></pre>
@@ -62,6 +66,7 @@ hr{border:none;border-top:1px solid #ddd;margin:1rem 0;}
 import { supabase } from "./js/supabaseClient.js";
 import { getCurrentUser, signOut } from "./js/services/authService.js";
 import { buildWorld, clearIdempotencyKey } from "./js/services/worldService.js";
+import { triggerWorldPulse } from "./js/services/worldPulseService.js";
 import { listAiCharacters, sendMessage } from "./js/services/chatService.js";
 
 const userBox = document.getElementById('userBox');
@@ -290,6 +295,21 @@ worldBtn.addEventListener('click', async () => {
     worldResult.textContent = '出错：' + (err.message || JSON.stringify(err));
   } finally {
     worldBtn.disabled = false;
+  }
+});
+
+const pulseBtn = document.getElementById('pulseBtn');
+const pulseResult = document.getElementById('pulseResult');
+pulseBtn.addEventListener('click', async () => {
+  pulseBtn.disabled = true;
+  pulseResult.textContent = '调用中...';
+  try {
+    const result = await triggerWorldPulse();
+    pulseResult.textContent = JSON.stringify(result, null, 2);
+  } catch (err) {
+    pulseResult.textContent = '出错：' + (err.message || JSON.stringify(err));
+  } finally {
+    pulseBtn.disabled = false;
   }
 });
 </script>
