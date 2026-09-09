@@ -192,32 +192,80 @@ const CHANNEL_PAGE = {
   sms: () => 'sms-list.html',
 };
 
+// ===== 临时调试面板：定位推送排程到底卡在哪一步 =====
+// 排查完之后把这一段 DEBUG_PUSH 相关代码整段删掉即可。
+function debugPushLog(line){
+  try{
+    let box = document.getElementById('debug-push-box');
+    if(!box){
+      box = document.createElement('div');
+      box.id = 'debug-push-box';
+      box.style.position = 'fixed';
+      box.style.top = '0';
+      box.style.left = '0';
+      box.style.right = '0';
+      box.style.maxHeight = '50vh';
+      box.style.overflowY = 'auto';
+      box.style.background = 'rgba(0,0,0,0.85)';
+      box.style.color = '#0f0';
+      box.style.fontSize = '11px';
+      box.style.fontFamily = 'monospace';
+      box.style.zIndex = '999999';
+      box.style.padding = '8px';
+      box.style.whiteSpace = 'pre-wrap';
+      document.body.appendChild(box);
+    }
+    box.textContent += line + '\n';
+  }catch(e){}
+}
+
 async function setupNotifications(){
+  debugPushLog('[1] setupNotifications 开始');
   // 只在真正打包的App里才有这个原生能力，网页预览环境里没有，直接跳过
-  if(!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.LocalNotifications) return;
+  if(!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.LocalNotifications){
+    debugPushLog('[X] 不在原生App环境里，或LocalNotifications插件不存在，直接跳过');
+    return;
+  }
   const { LocalNotifications } = window.Capacitor.Plugins;
+  debugPushLog('[2] Capacitor + LocalNotifications 插件都存在');
 
   try{
     const { requireUser } = await import('./js/services/authService.js');
     const user = await requireUser();
-    if(!user) return;
+    if(!user){ debugPushLog('[X] requireUser() 返回空，用户未登录？'); return; }
+    debugPushLog('[3] 用户已登录: ' + (user.id || user.email || 'unknown'));
 
     const perm = await LocalNotifications.requestPermissions();
-    if(perm.display !== 'granted'){ return; } // 静默跳过，不用每次开屏都提醒用户去开权限
+    debugPushLog('[4] 通知权限状态: ' + JSON.stringify(perm));
+    if(perm.display !== 'granted'){
+      debugPushLog('[X] 权限不是granted，跳过排程（这里之前是静默return，现在改成打印出来）');
+      return;
+    }
 
     const { triggerWorldPulse } = await import('./js/services/worldPulseService.js');
+    debugPushLog('[5] 开始调用 triggerWorldPulse ...');
     const result = await triggerWorldPulse();
-    if(!result.success || !result.data) return;
+    debugPushLog('[6] triggerWorldPulse 返回: ' + JSON.stringify(result));
+    if(!result.success || !result.data){
+      debugPushLog('[X] triggerWorldPulse 失败或没有data，停止');
+      return;
+    }
 
     const { messages = [], windfall, too_soon, no_roster } = result.data;
-    if(too_soon || no_roster) return; // 服务器端限频，或者这个世界还没有可以联系用户的人
+    if(too_soon){ debugPushLog('[X] too_soon=true，服务器限频（20分钟内不能再触发），停止'); return; }
+    if(no_roster){ debugPushLog('[X] no_roster=true，没有可联系用户的角色，停止'); return; }
+
+    debugPushLog('[7] 拿到 ' + messages.length + ' 条待排程消息，windfall=' + JSON.stringify(windfall));
 
     const scheduled = [];
     let idOffset = 0;
 
     messages.forEach((m) => {
       const at = new Date(m.sent_at);
-      if(isNaN(at.getTime()) || at.getTime() <= Date.now()) return; // 保险起见，不排过去的时间
+      if(isNaN(at.getTime()) || at.getTime() <= Date.now()){
+        debugPushLog('[!] 跳过一条消息（时间无效或已过去）: sent_at=' + m.sent_at);
+        return;
+      }
       const label = CHANNEL_LABEL[m.channel] || '消息';
       const bodyPrefix = m.character_name ? `${m.character_name}：` : '';
       scheduled.push({
@@ -242,10 +290,18 @@ async function setupNotifications(){
       }
     }
 
+    debugPushLog('[8] 最终要排程的通知数量: ' + scheduled.length + ' 内容: ' + JSON.stringify(scheduled));
+
     if(scheduled.length > 0){
-      await LocalNotifications.schedule({ notifications: scheduled });
+      const scheduleResult = await LocalNotifications.schedule({ notifications: scheduled });
+      debugPushLog('[9] LocalNotifications.schedule 调用完成，返回: ' + JSON.stringify(scheduleResult));
+      const pending = await LocalNotifications.getPending();
+      debugPushLog('[10] 当前系统里排队中的通知: ' + JSON.stringify(pending));
+    } else {
+      debugPushLog('[X] scheduled.length === 0，没有任何通知需要排程');
     }
   }catch(e){
+    debugPushLog('[ERROR] 排程过程中报错: ' + (e && e.message ? e.message : String(e)));
     console.error('推送安排失败', e);
   }
 }
