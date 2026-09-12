@@ -194,27 +194,7 @@ const CHANNEL_PAGE = {
 
 // ===== 临时调试面板：定位推送排程到底卡在哪一步 =====
 // 排查完之后把这一段 DEBUG_PUSH 相关代码整段删掉即可。
-function debugPushLog(line){
-  try{
-    let box = document.getElementById('debug-push-box');
-    if(!box){
-      box = document.createElement('div');
-      box.id = 'debug-push-box';
-      box.style.position = 'fixed';
-      box.style.top = '0';
-      box.style.left = '0';
-      box.style.right = '0';
-      box.style.maxHeight = '50vh';
-      box.style.overflowY = 'auto';
-      box.style.background = 'rgba(0,0,0,0.85)';
-      box.style.color = '#0f0';
-      box.style.fontSize = '11px';
-      box.style.fontFamily = 'monospace';
-      box.style.zIndex = '999999';
-      box.style.padding = '8px';
-      box.style.whiteSpace = 'pre-wrap';
-      document.body.appendChild(box);
-    }
+function debugPushLog(line){ /* disabled */ }
     box.textContent += line + '\n';
   }catch(e){}
 }
