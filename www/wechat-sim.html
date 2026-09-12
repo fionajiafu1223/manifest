@@ -507,7 +507,6 @@ async function init(){
     ? (typeof mainCharacter.canon === 'string' ? JSON.parse(mainCharacter.canon) : mainCharacter.canon)
     : {};
   heroAvatar = _heroCanon.avatar || '';
-  alert('heroAvatar长度:' + heroAvatar.length + '\ncanon类型:' + typeof mainCharacter?.canon + '\n有avatar:' + !!_heroCanon.avatar);
   contactName = character.display_name || character.name || '未知联系人';
   const _charCanon = character.canon
     ? (typeof character.canon === 'string' ? JSON.parse(character.canon) : character.canon)
