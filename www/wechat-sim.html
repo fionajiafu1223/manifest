@@ -414,7 +414,9 @@ async function sendAndGetReply(text){
       sendInFlight = false;
       return;
     }
-    const reply = (result.data && result.data.reply) || '……';
+    let reply = (result.data && result.data.reply) || '……';
+    // 去掉 AI 回复开头的"角色名："前缀
+    if (contactName) reply = reply.replace(new RegExp('^' + contactName + '[：:]\s*'), '');
     let remaining = estimateTypingMs(reply) - (Date.now() - typingStart);
     if(remaining > 1800 && Math.random() < 0.5){
       const pause = remaining * 0.4;
