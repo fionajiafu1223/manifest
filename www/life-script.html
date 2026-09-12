@@ -429,6 +429,7 @@ async function saveHeroEditor(){
   if(!name){ shake(document.getElementById('h_name')); return; }
   if(!gender){ shake(document.querySelector('.gender-row')); return; }
   if(tempHeroAvatarUpload) await tempHeroAvatarUpload;
+  alert('保存前 avatar 值: ' + (tempHeroAvatar ? tempHeroAvatar.slice(0,80) : 'null'));
 
   const hero={
     name, gender, avatar: tempHeroAvatar,
