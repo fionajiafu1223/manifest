@@ -355,6 +355,7 @@ function renderHeroCard(){
 }
 
 let tempHeroAvatar = null; // 当前正在编辑的主角头像
+let tempHeroAvatarUpload = null; // 上传中的 Promise
 
 function openHeroEditor(){
   const set=(id,val)=>{ document.getElementById(id).value = val || ''; };
@@ -400,16 +401,19 @@ document.getElementById('hAvatarInput').addEventListener('change', (e) => {
       const hPreview=document.getElementById('hAvatarPreview'), hPlaceholder=document.getElementById('hAvatarPlaceholder');
       hPreview.src = canvas.toDataURL('image/jpeg', 0.8);
       hPreview.style.display='block'; hPlaceholder.style.display='none';
-      canvas.toBlob(async (blob) => {
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          const url = await uploadAvatarToStorage(blob, 'hero/' + user.id + '.jpg');
-          tempHeroAvatar = url;
-        } catch(err) {
-          alert('头像上传失败: ' + (err.message || String(err)));
-          tempHeroAvatar = canvas.toDataURL('image/jpeg', 0.8);
-        }
-      }, 'image/jpeg', 0.8);
+      tempHeroAvatarUpload = new Promise((resolve) => {
+        canvas.toBlob(async (blob) => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const url = await uploadAvatarToStorage(blob, 'hero/' + user.id + '.jpg');
+            tempHeroAvatar = url;
+          } catch(err) {
+            alert('头像上传失败: ' + (err.message || String(err)));
+            tempHeroAvatar = canvas.toDataURL('image/jpeg', 0.8);
+          }
+          resolve();
+        }, 'image/jpeg', 0.8);
+      });
     };
     img.src = ev.target.result;
   };
@@ -424,6 +428,7 @@ async function saveHeroEditor(){
   const gender=scriptData._tempGender;
   if(!name){ shake(document.getElementById('h_name')); return; }
   if(!gender){ shake(document.querySelector('.gender-row')); return; }
+  if(tempHeroAvatarUpload) await tempHeroAvatarUpload;
 
   const hero={
     name, gender, avatar: tempHeroAvatar,
