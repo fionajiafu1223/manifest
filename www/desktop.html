@@ -195,9 +195,6 @@ const CHANNEL_PAGE = {
 // ===== 临时调试面板：定位推送排程到底卡在哪一步 =====
 // 排查完之后把这一段 DEBUG_PUSH 相关代码整段删掉即可。
 function debugPushLog(line){ /* disabled */ }
-    box.textContent += line + '\n';
-  }catch(e){}
-}
 
 async function setupNotifications(){
   debugPushLog('[1] setupNotifications 开始');
