@@ -376,7 +376,7 @@ async function init(){
       id: cid,
       name: displayName,
       avatar: displayName[0],
-      avatarImg: character.avatar_url || autoAvatarImg(displayName, character.job_title||'', character.personality||'', (typeof character.canon === 'string' ? JSON.parse(character.canon) : (character.canon||{})).gender||''),
+      avatarImg: character.avatar_url || autoAvatarImg(displayName, character.job_title||'', character.personality||'', (() => { try { return typeof character.canon === 'string' ? JSON.parse(character.canon) : (character.canon||{}); } catch(e) { return {}; } })().gender||''),
       color: AVATAR_COLORS[i % AVATAR_COLORS.length],
       preview: (latest.content||'').replace(/\n/g,' ').slice(0, 40),
       firstMessage: latest.content,
