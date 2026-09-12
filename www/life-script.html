@@ -387,9 +387,9 @@ document.getElementById('hAvatarInput').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if(!file || !file.type.startsWith('image/')) return;
   const reader = new FileReader();
-  reader.onload = (ev) => {
+  reader.onload = async (ev) => {
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
       const canvas = document.createElement('canvas');
       const size = 240;
       canvas.width = size; canvas.height = size;
@@ -397,9 +397,20 @@ document.getElementById('hAvatarInput').addEventListener('change', (e) => {
       const minSide = Math.min(img.width, img.height);
       const sx = (img.width - minSide) / 2, sy = (img.height - minSide) / 2;
       ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
-      tempHeroAvatar = canvas.toDataURL('image/jpeg', 0.8);
       const hPreview=document.getElementById('hAvatarPreview'), hPlaceholder=document.getElementById('hAvatarPlaceholder');
-      hPreview.src = tempHeroAvatar; hPreview.style.display='block'; hPlaceholder.style.display='none';
+      hPreview.src = canvas.toDataURL('image/jpeg', 0.8);
+      hPreview.style.display='block'; hPlaceholder.style.display='none';
+      canvas.toBlob(async (blob) => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          const url = await uploadAvatarToStorage(blob, 'hero/' + user.id + '.jpg');
+          tempHeroAvatar = url;
+        } catch(err) {
+          console.error('头像上传失败', err);
+          // fallback to base64
+          tempHeroAvatar = canvas.toDataURL('image/jpeg', 0.8);
+        }
+      }, 'image/jpeg', 0.8);
     };
     img.src = ev.target.result;
   };
@@ -620,19 +631,30 @@ document.getElementById('pAvatarInput').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if(!file || !file.type.startsWith('image/')) return;
   const reader = new FileReader();
-  reader.onload = (ev) => {
+  reader.onload = async (ev) => {
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
       const canvas = document.createElement('canvas');
-      const size = 240; // 头像不用太大，正方形裁切压缩
+      const size = 240;
       canvas.width = size; canvas.height = size;
       const ctx = canvas.getContext('2d');
       const minSide = Math.min(img.width, img.height);
       const sx = (img.width - minSide) / 2, sy = (img.height - minSide) / 2;
       ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
-      tempPersonAvatar = canvas.toDataURL('image/jpeg', 0.8);
       const preview=document.getElementById('pAvatarPreview'), placeholder=document.getElementById('pAvatarPlaceholder');
-      preview.src = tempPersonAvatar; preview.style.display='block'; placeholder.style.display='none';
+      preview.src = canvas.toDataURL('image/jpeg', 0.8);
+      preview.style.display='block'; placeholder.style.display='none';
+      canvas.toBlob(async (blob) => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          const path = 'person/' + user.id + '_' + Date.now() + '.jpg';
+          const url = await uploadAvatarToStorage(blob, path);
+          tempPersonAvatar = url;
+        } catch(err) {
+          console.error('头像上传失败', err);
+          tempPersonAvatar = canvas.toDataURL('image/jpeg', 0.8);
+        }
+      }, 'image/jpeg', 0.8);
     };
     img.src = ev.target.result;
   };
@@ -658,12 +680,20 @@ const st=document.createElement('style');
 st.textContent='@keyframes shk{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}';
 document.head.appendChild(st);
 
-let requireUser, loadScript, saveHero, persistScene, deleteScene, buildWorld, clearIdempotencyKey;
+let requireUser, loadScript, saveHero, persistScene, deleteScene, buildWorld, clearIdempotencyKey, supabase;
+
+async function uploadAvatarToStorage(blob, path) {
+  const { data, error } = await supabase.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+  if (error) throw error;
+  const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+  return publicUrl;
+}
 
 (async function initModules(){
   ({ requireUser } = await import('./js/services/authService.js'));
   ({ loadScript, saveHero, persistScene, deleteScene } = await import('./js/services/scriptService.js'));
   ({ buildWorld, clearIdempotencyKey } = await import('./js/services/worldService.js'));
+  ({ supabase } = await import('./js/supabaseClient.js'));
 
   const user = await requireUser();
   if(!user) return; // requireUser 内部已跳转登录页
