@@ -406,8 +406,7 @@ document.getElementById('hAvatarInput').addEventListener('change', (e) => {
           const url = await uploadAvatarToStorage(blob, 'hero/' + user.id + '.jpg');
           tempHeroAvatar = url;
         } catch(err) {
-          console.error('头像上传失败', err);
-          // fallback to base64
+          alert('头像上传失败: ' + (err.message || String(err)));
           tempHeroAvatar = canvas.toDataURL('image/jpeg', 0.8);
         }
       }, 'image/jpeg', 0.8);
