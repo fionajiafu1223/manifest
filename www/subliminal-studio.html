@@ -102,6 +102,25 @@ body{
 .mini-btn.del{background:rgba(200,60,60,0.1);color:#b05050;}
 .mini-btn.rec{background:rgba(200,60,60,0.14);color:#b05050;}
 .mini-btn.ok{background:rgba(90,144,96,0.18);color:#436b29;}
+/* 声音台逐句录音 */
+.voice-guide{font-size:12px;color:#436b29;line-height:1.7;background:rgba(104,138,65,0.1);border-radius:10px;padding:10px 12px;margin-bottom:10px;}
+.vrow{display:flex;align-items:center;gap:12px;padding:12px 10px;margin:0 -10px;border-radius:12px;border-bottom:1px solid rgba(104,138,65,0.15);transition:background 0.2s;}
+.vrow:last-child{border-bottom:none;}
+.vrow.recording{background:rgba(220,60,60,0.1);}
+.vrow.disabled{opacity:0.4;}
+.vrow-num{width:22px;height:22px;border-radius:50%;background:rgba(104,138,65,0.18);color:#436b29;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.vrow-num.done{background:#5a8a3a;color:#fff;}
+.vrow-main{flex:1;min-width:0;}
+.vrow-text{font-size:14px;color:#22460f;line-height:1.6;}
+.vrow-status{font-size:11px;margin-top:3px;color:#688a41;}
+.vrow-status.rec{color:#c0392b;font-weight:600;}
+.vrow-sub{display:flex;gap:6px;margin-top:6px;}
+.mic-btn{width:48px;height:48px;border-radius:50%;border:none;flex-shrink:0;cursor:pointer;
+  background:linear-gradient(135deg,#e05a4f,#c0392b);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px rgba(192,57,43,0.35);}
+.mic-btn.stop{animation:recPulse 1.4s infinite;}
+.mic-btn.stop::before{content:'';width:16px;height:16px;border-radius:3px;background:#fff;}
+.mic-btn:disabled{cursor:default;}
 .add-sentence-row{display:flex;gap:8px;margin-top:10px;}
 .add-sentence-row input{flex:1;padding:9px 12px;border-radius:10px;border:1px solid rgba(104,138,65,0.4);font-size:13px;font-family:'Noto Sans SC',sans-serif;background:#fff;}
 .add-sentence-row button{background:linear-gradient(135deg,#5a9060,#3a7048);color:#fff;border:none;border-radius:10px;padding:0 16px;font-size:13px;cursor:pointer;}
@@ -281,6 +300,7 @@ body{
       <span style="width:36px;"></span>
     </div>
     <div class="card">
+      <div class="voice-guide">点每句右边的红色 🎙 开始录音，<b>读完再点一次停止</b>。<br>录好的句子可以试听、重录，至少录一句就能去混音。</div>
       <div class="voice-progress" id="voiceProgress"></div>
       <div id="voiceSentenceList"></div>
     </div>
@@ -907,30 +927,36 @@ document.getElementById('toVoiceBtn').onclick=()=>{ showView('voiceView'); rende
 document.getElementById('voiceBackBtn').onclick=()=>{ showView('contentView'); renderSentenceList(); };
 let activeRecorder=null, activeRecordChunks=[], activeRecordingSentenceId=null;
 
+let sentenceRecSec=0, sentenceRecInterval=null;
 function renderVoiceList(){
   const done=draftSentences.filter(s=>s.blob).length;
   document.getElementById('voiceProgress').textContent=`${done}/${draftSentences.length} 句已录制`;
   const list=document.getElementById('voiceSentenceList');
   list.innerHTML='';
-  draftSentences.forEach(s=>{
-    const row=document.createElement('div');
-    row.className='sentence-row';
+  const recordingId=(activeRecorder && activeRecorder.state==='recording') ? activeRecordingSentenceId : null;
+  draftSentences.forEach((s,idx)=>{
+    const isRec=recordingId===s.id;
+    const locked=recordingId && !isRec;
     const hasBlob=!!s.blob;
+    const row=document.createElement('div');
+    row.className='vrow'+(isRec?' recording':'')+(locked?' disabled':'');
     row.innerHTML=`
-      <span class="sentence-text"></span>
-      <div class="sentence-actions">
-        ${hasBlob?'<button class="mini-btn ok">试听</button><button class="mini-btn rec">重录</button>':'<button class="mini-btn rec">录制</button>'}
-      </div>`;
-    row.querySelector('.sentence-text').textContent=s.text;
-    if(hasBlob){
-      row.querySelector('.ok').onclick=()=>playPreviewBlob(s.blob);
-      row.querySelector('.rec').onclick=()=>toggleRecordSentence(s.id);
-    } else {
-      row.querySelector('.rec').onclick=()=>toggleRecordSentence(s.id);
-    }
+      <div class="vrow-num ${hasBlob?'done':''}">${hasBlob?'✓':idx+1}</div>
+      <div class="vrow-main">
+        <div class="vrow-text"></div>
+        <div class="vrow-status ${isRec?'rec':''}"></div>
+        ${hasBlob && !isRec ? '<div class="vrow-sub"><button class="mini-btn ok">▶ 试听</button></div>' : ''}
+      </div>
+      <button class="mic-btn ${isRec?'stop':''}" ${locked?'disabled':''}>${isRec?'':'🎙'}</button>`;
+    row.querySelector('.vrow-text').textContent=s.text;
+    row.querySelector('.vrow-status').textContent = isRec
+      ? '● 正在录音 '+fmtTime(sentenceRecSec)+' · 读完点 ■ 停止'
+      : (hasBlob ? '已录好 · 点 🎙 可重录' : '未录制');
+    if(hasBlob && !isRec) row.querySelector('.ok').onclick=()=>playPreviewBlob(s.blob);
+    row.querySelector('.mic-btn').onclick=()=>{ if(!locked) toggleRecordSentence(s.id); };
     list.appendChild(row);
   });
-  document.getElementById('toMixFromVoiceBtn').disabled = done===0;
+  document.getElementById('toMixFromVoiceBtn').disabled = done===0 || !!recordingId;
 }
 async function toggleRecordSentence(sentenceId){
   if(activeRecorder && activeRecorder.state==='recording' && activeRecordingSentenceId===sentenceId){
@@ -951,6 +977,7 @@ async function toggleRecordSentence(sentenceId){
     rec.onstop=()=>{
       stream.getTracks().forEach(t=>t.stop());
       setAudioSession('playback');
+      clearInterval(sentenceRecInterval);
       activeRecordingSentenceId=null;
       const blob=new Blob(chunks,{type:rec.mimeType});
       const s=draftSentences.find(x=>x.id===sentenceId);
@@ -958,7 +985,6 @@ async function toggleRecordSentence(sentenceId){
       renderVoiceList();
     };
     rec.start();
-    showToast('正在录制，再点一次停止');
     renderVoiceListRecordingState(sentenceId);
   }catch(err){
     setAudioSession('playback');
@@ -966,7 +992,14 @@ async function toggleRecordSentence(sentenceId){
   }
 }
 function renderVoiceListRecordingState(sentenceId){
-  // 简化处理：录音中禁用其他句子的按钮，通过重新渲染时的状态判断即可，这里只做轻提示，不做复杂UI锁定
+  sentenceRecSec=0;
+  clearInterval(sentenceRecInterval);
+  sentenceRecInterval=setInterval(()=>{
+    sentenceRecSec++;
+    const st=document.querySelector('#voiceSentenceList .vrow.recording .vrow-status');
+    if(st) st.textContent='● 正在录音 '+fmtTime(sentenceRecSec)+' · 读完点 ■ 停止';
+  },1000);
+  renderVoiceList();
 }
 document.getElementById('toMixFromVoiceBtn').onclick=()=>{ showView('mixView'); refreshMixUI(); };
 
