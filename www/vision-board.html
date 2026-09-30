@@ -28,10 +28,14 @@ body{
 .topbar-title{font-size:17px;letter-spacing:3px;color:#22460f;}
 
 /* 拼贴模式 */
-.collage{
+/* 外层负责上下滚动；内层高度自适应做两列瀑布流（固定高度的多列容器会往右溢出变成左右滑） */
+.collage-scroll{
   position:absolute;top:calc(env(safe-area-inset-top,44px) + 52px);
   left:0;width:100%;bottom:0;
-  overflow-y:auto;padding:12px;
+  overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;
+}
+.collage{
+  padding:12px 12px calc(env(safe-area-inset-bottom,20px) + 96px);
   columns:2;column-gap:10px;
 }
 .collage-item{
@@ -129,7 +133,7 @@ body{
   <div style="width:38px;"></div>
 </div>
 
-<div class="collage" id="collage" style="display:none;"></div>
+<div class="collage-scroll"><div class="collage" id="collage" style="display:none;"></div></div>
 <div class="empty" id="empty" style="display:none;">
   <div class="empty-text">把你向往的生活收藏进来<br>那些图片，是你正在成为的模样</div>
 </div>
