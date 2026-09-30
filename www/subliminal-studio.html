@@ -425,6 +425,14 @@ function showToast(msg){
   showToast._t=setTimeout(()=>t.classList.remove('show'),1800);
 }
 
+/* ══════════════════ iOS 音频会话 ══════════════════
+   iOS 上用过麦克风后，声音会被切到听筒、音量很小，混音差别几乎听不出来；
+   静音开关打开时 Web Audio 也会被静音。播放时切回 playback 模式解决这两个问题（iOS 17+）。 */
+function setAudioSession(type){
+  try{ if(navigator.audioSession && navigator.audioSession.type!==type) navigator.audioSession.type=type; }catch(e){}
+}
+setAudioSession('playback');
+
 /* ══════════════════ 统一音频管理：同一时间只允许一个声音 ══════════════════ */
 const previewAudio=new Audio();
 let previewUrl=null;
@@ -434,6 +442,7 @@ function stopPreviewAudio(){
 }
 function playPreviewBlob(blob){
   stopAllAudio();
+  setAudioSession('playback');
   previewUrl=URL.createObjectURL(blob);
   previewAudio.src=previewUrl;
   previewAudio.play().catch(e=>console.error(e));
@@ -704,6 +713,7 @@ async function openPlayer(trackId, startAtSec){
 
   document.getElementById('playerName').textContent=track.name;
   document.getElementById('playerMeta').textContent=track.mixSummary||'';
+  setAudioSession('playback');
   if(playerUrl) URL.revokeObjectURL(playerUrl);
   playerUrl=URL.createObjectURL(track.finalBlob);
   pendingSeekSec=startAtSec||0;
@@ -930,6 +940,7 @@ async function toggleRecordSentence(sentenceId){
   if(activeRecorder && activeRecorder.state==='recording'){ showToast('先停止当前句子的录音'); return; }
   stopAllAudio({keepRecording:true});
   try{
+    setAudioSession('play-and-record');
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     const rec=new MediaRecorder(stream);
     const chunks=[];
@@ -939,6 +950,7 @@ async function toggleRecordSentence(sentenceId){
     rec.ondataavailable=e=>{ if(e.data && e.data.size) chunks.push(e.data); };
     rec.onstop=()=>{
       stream.getTracks().forEach(t=>t.stop());
+      setAudioSession('playback');
       activeRecordingSentenceId=null;
       const blob=new Blob(chunks,{type:rec.mimeType});
       const s=draftSentences.find(x=>x.id===sentenceId);
@@ -949,6 +961,7 @@ async function toggleRecordSentence(sentenceId){
     showToast('正在录制，再点一次停止');
     renderVoiceListRecordingState(sentenceId);
   }catch(err){
+    setAudioSession('playback');
     showToast('无法访问麦克风：'+err.message);
   }
 }
@@ -983,6 +996,7 @@ document.getElementById('freeRecBtn').onclick=async ()=>{
   if(draftFreeformBlob && !confirm('重新录制会覆盖之前的内容，确定吗？')) return;
   stopAllAudio({keepRecording:true});
   try{
+    setAudioSession('play-and-record');
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     const rec=new MediaRecorder(stream);
     const chunks=[];
@@ -991,6 +1005,7 @@ document.getElementById('freeRecBtn').onclick=async ()=>{
     rec.ondataavailable=e=>{ if(e.data && e.data.size) chunks.push(e.data); };
     rec.onstop=()=>{
       stream.getTracks().forEach(t=>t.stop());
+      setAudioSession('playback');
       clearInterval(freeRecordInterval);
       btn.classList.remove('recording');
       draftFreeformBlob=new Blob(chunks,{type:rec.mimeType});
@@ -1008,6 +1023,7 @@ document.getElementById('freeRecBtn').onclick=async ()=>{
     },1000);
   }catch(err){
     btn.classList.remove('recording');
+    setAudioSession('playback');
     document.getElementById('freeRecStatus').textContent='无法访问麦克风：'+err.message;
   }
 };
@@ -1062,17 +1078,35 @@ let isLivePreviewing=false;
 let livePreviewGen=0; // 每次启动/停止都+1，旧的还没启动完的试听直接作废
 const VOICE_LEVEL_GAIN={clear:1.0, soft:0.45, faint:0.18};
 
+// 手机录音通常很小声，先把人声统一放大到接近满格，"清晰/轻声/很轻"和背景音的差别才听得出来
+function normalizeBuffer(buf,target){
+  let peak=0;
+  for(let ch=0;ch<buf.numberOfChannels;ch++){
+    const d=buf.getChannelData(ch);
+    for(let i=0;i<d.length;i++){ const a=Math.abs(d[i]); if(a>peak) peak=a; }
+  }
+  if(peak<0.0001) return buf;
+  const k=Math.min(target/peak, 20);
+  for(let ch=0;ch<buf.numberOfChannels;ch++){
+    const d=buf.getChannelData(ch);
+    for(let i=0;i<d.length;i++) d[i]*=k;
+  }
+  return buf;
+}
 async function buildDraftVoiceBuffer(){
   const ctx=getCtx();
+  let out=null;
   if(draftMode==='freeform'){
     if(!draftFreeformBlob) return null;
-    return await decodeBlob(draftFreeformBlob);
+    out=await decodeBlob(draftFreeformBlob);
+    if(out.numberOfChannels<2) out=concatBuffers([out], out.sampleRate, 0);
   } else {
     const recorded=draftSentences.filter(s=>s.blob);
     if(!recorded.length) return null;
     const buffers=await Promise.all(recorded.map(s=>decodeBlob(s.blob)));
-    return concatBuffers(buffers, ctx.sampleRate, 0.6);
+    out=concatBuffers(buffers, buffers[0].sampleRate, 0.6);
   }
+  return normalizeBuffer(out,0.9);
 }
 async function startLivePreview(){
   stopAllAudio({keepRecording:false});
@@ -1084,6 +1118,7 @@ async function startLivePreview(){
   if(gen!==livePreviewGen) return; // 等待期间已经被停止或重新启动
   if(!buf){ stopLivePreview(); showToast('还没有录音内容'); return; }
   liveVoiceBuffer=buf;
+  setAudioSession('playback');
   const ctx=getCtx();
   try{ if(ctx.state!=='running') await ctx.resume(); }catch(e){}
   if(gen!==livePreviewGen) return;
