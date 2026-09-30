@@ -413,6 +413,8 @@ body{
 <script>
 /* ══════════════════ 视图切换 ══════════════════ */
 function showView(id){
+  // 切换页面时先把所有声音和录音停掉；进入播放器时保留播放器本身
+  stopAllAudio({keepPlayer: id==='playerView'});
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
@@ -422,6 +424,32 @@ function showToast(msg){
   clearTimeout(showToast._t);
   showToast._t=setTimeout(()=>t.classList.remove('show'),1800);
 }
+
+/* ══════════════════ 统一音频管理：同一时间只允许一个声音 ══════════════════ */
+const previewAudio=new Audio();
+let previewUrl=null;
+function stopPreviewAudio(){
+  try{ previewAudio.pause(); }catch(e){}
+  if(previewUrl){ URL.revokeObjectURL(previewUrl); previewUrl=null; }
+}
+function playPreviewBlob(blob){
+  stopAllAudio();
+  previewUrl=URL.createObjectURL(blob);
+  previewAudio.src=previewUrl;
+  previewAudio.play().catch(e=>console.error(e));
+}
+function stopAllRecording(){
+  try{ if(typeof activeRecorder!=='undefined' && activeRecorder && activeRecorder.state==='recording') activeRecorder.stop(); }catch(e){}
+  try{ if(typeof freeRecorder!=='undefined' && freeRecorder && freeRecorder.state==='recording') freeRecorder.stop(); }catch(e){}
+}
+function stopAllAudio(opts){
+  opts=opts||{};
+  stopPreviewAudio();
+  if(typeof stopLivePreview==='function') stopLivePreview();
+  if(!opts.keepPlayer && typeof playerAudio!=='undefined' && !playerAudio.paused) playerAudio.pause();
+  if(!opts.keepRecording) stopAllRecording();
+}
+window.addEventListener('pagehide',()=>stopAllAudio());
 
 /* ══════════════════ IndexedDB ══════════════════ */
 const DB_NAME='subconsciousRoomDB', STORE_NAME='tracks';
@@ -639,8 +667,26 @@ playerAudio.addEventListener('timeupdate',()=>{
   document.getElementById('playerCur').textContent=fmtTime(playerAudio.currentTime);
   document.getElementById('playerSeek').value=(playerAudio.currentTime/playerAudio.duration*100)||0;
 });
-playerAudio.addEventListener('play',()=>{ setPlayIcon(true); });
-playerAudio.addEventListener('pause',()=>{ setPlayIcon(false); });
+let playerUrl=null;
+let pendingSeekSec=0;
+function savePlayerPosition(){
+  if(currentTrackId==null) return;
+  lastPlayedSet({trackId:currentTrackId, positionSec:playerAudio.currentTime||0, updatedAt:Date.now()});
+}
+playerAudio.addEventListener('loadedmetadata',()=>{
+  if(pendingSeekSec>0){ try{ playerAudio.currentTime=pendingSeekSec; }catch(e){} }
+  pendingSeekSec=0;
+});
+playerAudio.addEventListener('play',()=>{
+  setPlayIcon(true);
+  clearInterval(posSaveInterval);
+  posSaveInterval=setInterval(savePlayerPosition,3000);
+});
+playerAudio.addEventListener('pause',()=>{
+  setPlayIcon(false);
+  clearInterval(posSaveInterval);
+  savePlayerPosition();
+});
 
 function setPlayIcon(playing){
   document.getElementById('playerPlayIcon').innerHTML = playing
@@ -651,14 +697,18 @@ function setPlayIcon(playing){
 async function openPlayer(trackId, startAtSec){
   const track=await dbGet(trackId);
   if(!track){ showToast('这段音频找不到了'); return; }
+  stopAllAudio({keepPlayer:true});
+  if(!playerAudio.paused) playerAudio.pause(); // 先保存上一段的进度
   currentTrackId=trackId;
   currentTrackList=allTracks.map(t=>t.id);
 
   document.getElementById('playerName').textContent=track.name;
   document.getElementById('playerMeta').textContent=track.mixSummary||'';
-  playerAudio.src=URL.createObjectURL(track.finalBlob);
+  if(playerUrl) URL.revokeObjectURL(playerUrl);
+  playerUrl=URL.createObjectURL(track.finalBlob);
+  pendingSeekSec=startAtSec||0;
+  playerAudio.src=playerUrl;
   playerAudio.loop=true;
-  playerAudio.currentTime=startAtSec||0;
 
   if('mediaSession' in navigator){
     navigator.mediaSession.metadata=new MediaMetadata({
@@ -672,11 +722,6 @@ async function openPlayer(trackId, startAtSec){
 
   showView('playerView');
   try{ await playerAudio.play(); }catch(e){ console.error(e); }
-
-  clearInterval(posSaveInterval);
-  posSaveInterval=setInterval(()=>{
-    lastPlayedSet({trackId:currentTrackId, positionSec:playerAudio.currentTime, updatedAt:Date.now()});
-  },3000);
 }
 function playerSwitch(delta){
   const idx=currentTrackList.indexOf(currentTrackId);
@@ -694,15 +739,16 @@ document.getElementById('playerSeek').oninput=()=>{
   playerAudio.currentTime=playerAudio.duration*(document.getElementById('playerSeek').value/100);
 };
 function closePlayer(){
-  lastPlayedSet({trackId:currentTrackId, positionSec:playerAudio.currentTime, updatedAt:Date.now()});
-  playerAudio.pause();
+  if(!playerAudio.paused) playerAudio.pause(); // pause事件里会保存进度
   clearInterval(posSaveInterval);
   renderRoom();
   showView('roomView');
 }
 document.getElementById('playerCloseBtn').onclick=closePlayer;
 document.getElementById('playerStopBtn').onclick=()=>{
-  playerAudio.pause(); playerAudio.currentTime=0;
+  if(!playerAudio.paused) playerAudio.pause();
+  playerAudio.currentTime=0;
+  savePlayerPosition();
   closePlayer();
 };
 document.getElementById('playerMoreBtn').onclick=()=>openMoreSheet(currentTrackId);
@@ -718,6 +764,13 @@ function openMoreSheet(trackId){
 document.getElementById('sheetCancel').onclick=()=>{ document.getElementById('moreSheet').style.display='none'; };
 document.getElementById('sheetDelete').onclick=async ()=>{
   if(!confirm('确定删除这段沟通音频吗？')) return;
+  if(sheetTrackId===currentTrackId){
+    if(!playerAudio.paused) playerAudio.pause();
+    playerAudio.removeAttribute('src'); playerAudio.load();
+    currentTrackId=null;
+  }
+  const lp=lastPlayedGet();
+  if(lp && lp.trackId===sheetTrackId) localStorage.removeItem('scr_lastPlayed');
   await dbDelete(sheetTrackId);
   document.getElementById('moreSheet').style.display='none';
   await renderRoom();
@@ -800,7 +853,11 @@ document.getElementById('freeRecordBtn').onclick=()=>{
 };
 
 /* ══════════════════ 内容台 ══════════════════ */
-document.getElementById('contentBackBtn').onclick=()=>showView('studioEntryView');
+function backFromStudioStart(){
+  if(editingTrackId!==null){ resetDraft(); renderRoom(); showView('roomView'); }
+  else showView('studioEntryView');
+}
+document.getElementById('contentBackBtn').onclick=backFromStudioStart;
 function renderSentenceList(){
   const list=document.getElementById('sentenceList');
   if(!draftSentences.length){
@@ -856,7 +913,7 @@ function renderVoiceList(){
       </div>`;
     row.querySelector('.sentence-text').textContent=s.text;
     if(hasBlob){
-      row.querySelector('.ok').onclick=()=>{ const a=new Audio(URL.createObjectURL(s.blob)); a.play(); };
+      row.querySelector('.ok').onclick=()=>playPreviewBlob(s.blob);
       row.querySelector('.rec').onclick=()=>toggleRecordSentence(s.id);
     } else {
       row.querySelector('.rec').onclick=()=>toggleRecordSentence(s.id);
@@ -871,20 +928,24 @@ async function toggleRecordSentence(sentenceId){
     return;
   }
   if(activeRecorder && activeRecorder.state==='recording'){ showToast('先停止当前句子的录音'); return; }
+  stopAllAudio({keepRecording:true});
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    activeRecorder=new MediaRecorder(stream);
-    activeRecordChunks=[];
+    const rec=new MediaRecorder(stream);
+    const chunks=[];
+    activeRecorder=rec;
+    activeRecordChunks=chunks;
     activeRecordingSentenceId=sentenceId;
-    activeRecorder.ondataavailable=e=>activeRecordChunks.push(e.data);
-    activeRecorder.onstop=()=>{
+    rec.ondataavailable=e=>{ if(e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop=()=>{
       stream.getTracks().forEach(t=>t.stop());
-      const blob=new Blob(activeRecordChunks,{type:activeRecorder.mimeType});
+      activeRecordingSentenceId=null;
+      const blob=new Blob(chunks,{type:rec.mimeType});
       const s=draftSentences.find(x=>x.id===sentenceId);
       if(s) s.blob=blob;
       renderVoiceList();
     };
-    activeRecorder.start();
+    rec.start();
     showToast('正在录制，再点一次停止');
     renderVoiceListRecordingState(sentenceId);
   }catch(err){
@@ -897,10 +958,11 @@ function renderVoiceListRecordingState(sentenceId){
 document.getElementById('toMixFromVoiceBtn').onclick=()=>{ showView('mixView'); refreshMixUI(); };
 
 /* ══════════════════ 自由录音 ══════════════════ */
-document.getElementById('freeRecordBackBtn').onclick=()=>showView('studioEntryView');
+document.getElementById('freeRecordBackBtn').onclick=backFromStudioStart;
 let freeRecorder=null, freeRecordChunks=[], freeRecordTimerSec=0, freeRecordInterval=null;
 function refreshFreeRecordUI(){
   const btn=document.getElementById('freeRecBtn');
+  btn.classList.remove('recording');
   const status=document.getElementById('freeRecStatus');
   if(draftFreeformBlob){
     btn.classList.add('done'); btn.textContent='✓';
@@ -919,18 +981,22 @@ document.getElementById('freeRecBtn').onclick=async ()=>{
   const btn=document.getElementById('freeRecBtn');
   if(freeRecorder && freeRecorder.state==='recording'){ freeRecorder.stop(); return; }
   if(draftFreeformBlob && !confirm('重新录制会覆盖之前的内容，确定吗？')) return;
+  stopAllAudio({keepRecording:true});
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    freeRecorder=new MediaRecorder(stream);
-    freeRecordChunks=[];
-    freeRecorder.ondataavailable=e=>freeRecordChunks.push(e.data);
-    freeRecorder.onstop=()=>{
+    const rec=new MediaRecorder(stream);
+    const chunks=[];
+    freeRecorder=rec;
+    freeRecordChunks=chunks;
+    rec.ondataavailable=e=>{ if(e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop=()=>{
       stream.getTracks().forEach(t=>t.stop());
       clearInterval(freeRecordInterval);
-      draftFreeformBlob=new Blob(freeRecordChunks,{type:freeRecorder.mimeType});
+      btn.classList.remove('recording');
+      draftFreeformBlob=new Blob(chunks,{type:rec.mimeType});
       refreshFreeRecordUI();
     };
-    freeRecorder.start();
+    rec.start();
     btn.classList.add('recording'); btn.textContent='⏹';
     document.getElementById('freeRecStatus').textContent='正在录制…再次点击停止';
     freeRecordTimerSec=0;
@@ -941,13 +1007,13 @@ document.getElementById('freeRecBtn').onclick=async ()=>{
       document.getElementById('freeRecTimer').textContent=m+':'+s;
     },1000);
   }catch(err){
+    btn.classList.remove('recording');
     document.getElementById('freeRecStatus').textContent='无法访问麦克风：'+err.message;
   }
-  btn.classList.remove('recording');
 };
 document.getElementById('freePreviewBtn').onclick=()=>{
   if(!draftFreeformBlob) return;
-  const a=new Audio(URL.createObjectURL(draftFreeformBlob)); a.play();
+  playPreviewBlob(draftFreeformBlob);
 };
 document.getElementById('toMixFromFreeBtn').onclick=()=>{ showView('mixView'); refreshMixUI(); };
 
@@ -993,6 +1059,7 @@ let liveAmbienceSource=null, liveAmbienceGain=null;
 let liveBinauralSource=null, liveBinauralGain=null;
 let liveVoiceBuffer=null;
 let isLivePreviewing=false;
+let livePreviewGen=0; // 每次启动/停止都+1，旧的还没启动完的试听直接作废
 const VOICE_LEVEL_GAIN={clear:1.0, soft:0.45, faint:0.18};
 
 async function buildDraftVoiceBuffer(){
@@ -1008,10 +1075,18 @@ async function buildDraftVoiceBuffer(){
   }
 }
 async function startLivePreview(){
-  stopLivePreview();
-  liveVoiceBuffer=await buildDraftVoiceBuffer();
-  if(!liveVoiceBuffer){ showToast('还没有录音内容'); return; }
-  const ctx=getCtx(); await ctx.resume();
+  stopAllAudio({keepRecording:false});
+  const gen=++livePreviewGen;
+  isLivePreviewing=true;
+  document.getElementById('mixPreviewBtn').textContent='⏹ 停止试听';
+  let buf=null;
+  try{ buf=await buildDraftVoiceBuffer(); }catch(e){ console.error(e); }
+  if(gen!==livePreviewGen) return; // 等待期间已经被停止或重新启动
+  if(!buf){ stopLivePreview(); showToast('还没有录音内容'); return; }
+  liveVoiceBuffer=buf;
+  const ctx=getCtx();
+  try{ if(ctx.state!=='running') await ctx.resume(); }catch(e){}
+  if(gen!==livePreviewGen) return;
 
   liveVoiceSource=ctx.createBufferSource();
   liveVoiceSource.buffer=liveVoiceBuffer; liveVoiceSource.loop=true;
@@ -1037,10 +1112,12 @@ async function startLivePreview(){
   document.getElementById('mixPreviewBtn').textContent='⏹ 停止试听';
 }
 function stopLivePreview(){
+  livePreviewGen++;
   try{ if(liveVoiceSource) liveVoiceSource.stop(); }catch(e){}
   try{ if(liveAmbienceSource) liveAmbienceSource.stop(); }catch(e){}
   try{ if(liveBinauralSource) liveBinauralSource.stop(); }catch(e){}
   liveVoiceSource=liveAmbienceSource=liveBinauralSource=null;
+  liveVoiceGain=liveAmbienceGain=liveBinauralGain=null;
   isLivePreviewing=false;
   document.getElementById('mixPreviewBtn').textContent='▶ 试听混音效果';
 }
