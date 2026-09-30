@@ -19,6 +19,16 @@ workflows:
         script: npm install
       - name: Sync Capacitor web assets
         script: npx cap sync ios
+      - name: Inject export compliance into Info.plist
+        script: |
+          INFOPLIST="ios/App/App/Info.plist"
+          if ! grep -q "ITSAppUsesNonExemptEncryption" "$INFOPLIST"; then
+            sed -i '' 's|</dict>|<key>ITSAppUsesNonExemptEncryption</key><false/></dict>|' "$INFOPLIST"
+            echo "===== export compliance injected ====="
+          else
+            echo "===== export compliance already present ====="
+          fi
+          grep -A1 "ITSAppUsesNonExemptEncryption" "$INFOPLIST"
       - name: Increment build number
         script: |
           cd ios/App
