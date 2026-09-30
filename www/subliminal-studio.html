@@ -147,6 +147,9 @@ body{
 .toggle-switch::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3);}
 .toggle-switch.on::after{left:18px;}
 .chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:0.7rem;}
+.amb-list{max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:0.7rem;padding-right:2px;}
+.amb-list .chip-row{margin-bottom:0.5rem;}
+.amb-group{font-size:11px;color:#688a41;letter-spacing:1px;margin:4px 0 6px;}
 .chip{padding:7px 12px;border-radius:10px;border:1px solid rgba(104,138,65,0.4);background:rgba(255,255,255,0.6);
   color:#436b29;font-size:12px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;}
 .chip.selected{background:#5a8a3a;border-color:#436b29;color:#fff;font-weight:600;}
@@ -357,12 +360,56 @@ body{
         <div class="toggle-switch" id="ambienceToggle"></div>
       </div>
       <div id="ambienceBody" style="display:none;">
-        <div class="chip-row" id="ambienceChips">
-          <button class="chip" data-type="rain">雨声</button>
-          <button class="chip" data-type="ocean">海浪</button>
-          <button class="chip soon" data-type="fireplace">壁炉<span style="font-size:9px;">·待推出</span></button>
-          <button class="chip soon" data-type="forest">森林<span style="font-size:9px;">·待推出</span></button>
-          <button class="chip soon" data-type="cafe">咖啡馆<span style="font-size:9px;">·待推出</span></button>
+        <div id="ambienceChips" class="amb-list">
+          <div class="amb-group">雨</div>
+          <div class="chip-row">
+            <button class="chip" data-type="light-rain">细雨</button>
+            <button class="chip" data-type="heavy-rain">大雨</button>
+            <button class="chip" data-type="thunderstorm">雷雨</button>
+            <button class="chip" data-type="rain-window">雨打窗</button>
+            <button class="chip" data-type="rain-tent">帐篷听雨</button>
+            <button class="chip" data-type="rain-forest">林中雨</button>
+          </div>
+          <div class="amb-group">森林 · 动物</div>
+          <div class="chip-row">
+            <button class="chip" data-type="forest">森林鸟鸣</button>
+            <button class="chip" data-type="jungle">热带雨林</button>
+            <button class="chip" data-type="birds">清晨鸟鸣</button>
+            <button class="chip" data-type="night-forest">夜晚森林</button>
+            <button class="chip" data-type="crickets">夏夜虫鸣</button>
+            <button class="chip" data-type="pond">池塘蛙鸣</button>
+            <button class="chip" data-type="cat-purring">猫咪呼噜</button>
+          </div>
+          <div class="amb-group">水</div>
+          <div class="chip-row">
+            <button class="chip" data-type="waves">海浪</button>
+            <button class="chip" data-type="seashore">海岸海鸥</button>
+            <button class="chip" data-type="river">溪流</button>
+            <button class="chip" data-type="waterfall">瀑布</button>
+            <button class="chip" data-type="droplets">水滴</button>
+            <button class="chip" data-type="deep-sea">深海鲸歌</button>
+            <button class="chip" data-type="sailboat">帆船</button>
+          </div>
+          <div class="amb-group">风 · 雪 · 火</div>
+          <div class="chip-row">
+            <button class="chip" data-type="campfire">篝火</button>
+            <button class="chip" data-type="snow-fire">雪夜篝火</button>
+            <button class="chip" data-type="blizzard">呼啸风雪</button>
+            <button class="chip" data-type="wind">旷野风</button>
+            <button class="chip" data-type="wind-trees">林间风</button>
+          </div>
+          <div class="amb-group">冥想</div>
+          <div class="chip-row">
+            <button class="chip" data-type="singing-bowl">颂钵</button>
+            <button class="chip" data-type="wind-chimes">风铃</button>
+            <button class="chip" data-type="temple">寺庙</button>
+          </div>
+          <div class="amb-group">氛围</div>
+          <div class="chip-row">
+            <button class="chip" data-type="cafe">咖啡馆</button>
+            <button class="chip" data-type="library">图书馆</button>
+            <button class="chip" data-type="night-village">夜晚村庄</button>
+          </div>
         </div>
         <div class="mix-vol-row">
           <span style="font-size:11px;color:#688a41;">音量</span>
@@ -580,6 +627,22 @@ function generateBinauralBuffer(presetKey,lengthInSamples,sampleRate){
 }
 // AMBIENCE目前只有"雨声"(白噪音质感)和"海浪"(褐噪音+缓慢潮汐调制)是程序生成的近似音，
 // 壁炉/森林/咖啡馆需要真实录制的环境音素材，现在还没有，先在UI上标"待推出"，不假装能播放
+/* 真实录音背景音（www/sounds/，来源与授权见 sounds/LICENSE.md） */
+const AMBIENCE_LABELS={"light-rain": "细雨", "heavy-rain": "大雨", "thunderstorm": "雷雨", "rain-window": "雨打窗", "rain-tent": "帐篷听雨", "rain-forest": "林中雨", "forest": "森林鸟鸣", "jungle": "热带雨林", "birds": "清晨鸟鸣", "night-forest": "夜晚森林", "crickets": "夏夜虫鸣", "pond": "池塘蛙鸣", "cat-purring": "猫咪呼噜", "waves": "海浪", "seashore": "海岸海鸥", "river": "溪流", "waterfall": "瀑布", "droplets": "水滴", "deep-sea": "深海鲸歌", "sailboat": "帆船", "campfire": "篝火", "snow-fire": "雪夜篝火", "blizzard": "呼啸风雪", "wind": "旷野风", "wind-trees": "林间风", "singing-bowl": "颂钵", "wind-chimes": "风铃", "temple": "寺庙", "cafe": "咖啡馆", "library": "图书馆", "night-village": "夜晚村庄"};
+const AMBIENCE_LEGACY={rain:'light-rain', ocean:'waves'};
+function normAmbienceType(t){ t=AMBIENCE_LEGACY[t]||t; return AMBIENCE_LABELS[t]?t:'light-rain'; }
+const ambienceCache={};
+async function loadAmbienceBuffer(type){
+  type=normAmbienceType(type);
+  if(!ambienceCache[type]){
+    ambienceCache[type]=(async()=>{
+      const res=await fetch('sounds/'+type+'.mp3');
+      const ab=await res.arrayBuffer();
+      return await getCtx().decodeAudioData(ab);
+    })().catch(e=>{ delete ambienceCache[type]; throw e; });
+  }
+  return ambienceCache[type];
+}
 function generateAmbienceBuffer(type,lengthInSamples,sampleRate){
   const ctx=getCtx();
   const buffer=ctx.createBuffer(2,lengthInSamples,sampleRate);
@@ -870,7 +933,7 @@ let draftMode='sentences'; // 'sentences' | 'freeform'
 let draftSentences=[]; // {id, text, blob}
 let draftFreeformBlob=null;
 let draftVoiceLevel='clear';
-let draftAmbience={enabled:false, type:'rain', volume:50};
+let draftAmbience={enabled:false, type:'light-rain', volume:50};
 let draftBinaural={enabled:false, type:'theta', volume:35};
 
 function resetDraft(){
@@ -879,7 +942,7 @@ function resetDraft(){
   draftSentences=[];
   draftFreeformBlob=null;
   draftVoiceLevel='clear';
-  draftAmbience={enabled:false, type:'rain', volume:50};
+  draftAmbience={enabled:false, type:'light-rain', volume:50};
   draftBinaural={enabled:false, type:'theta', volume:35};
 }
 async function loadTrackIntoDraft(trackId){
@@ -889,7 +952,7 @@ async function loadTrackIntoDraft(trackId){
   draftSentences=track.sentences? track.sentences.map(s=>({...s})) : [];
   draftFreeformBlob=track.freeformBlob||null;
   draftVoiceLevel=track.voiceLevel||'clear';
-  draftAmbience={enabled:!!track.ambienceType, type:track.ambienceType||'rain', volume:track.ambienceVolume??50};
+  draftAmbience={enabled:!!track.ambienceType, type:normAmbienceType(track.ambienceType||'light-rain'), volume:track.ambienceVolume??50};
   draftBinaural={enabled:!!track.binauralType, type:track.binauralType||'theta', volume:track.binauralVolume??35};
 }
 
@@ -1194,15 +1257,21 @@ async function startLivePreview(){
   try{ if(ctx.state!=='running') await ctx.resume(); }catch(e){}
   if(gen!==livePreviewGen) return;
 
+  // 先加载背景音，再让所有声音同时开始
+  let ambBuf=null;
+  if(draftAmbience.enabled){
+    try{ ambBuf=await loadAmbienceBuffer(draftAmbience.type); }catch(e){ console.error(e); showToast('背景音加载失败'); }
+    if(gen!==livePreviewGen) return;
+  }
+
   liveVoiceSource=ctx.createBufferSource();
   liveVoiceSource.buffer=liveVoiceBuffer; liveVoiceSource.loop=true;
   liveVoiceGain=ctx.createGain(); liveVoiceGain.gain.value=VOICE_LEVEL_GAIN[draftVoiceLevel];
   liveVoiceSource.connect(liveVoiceGain).connect(ctx.destination);
   liveVoiceSource.start();
 
-  if(draftAmbience.enabled){
-    const buf=generateAmbienceBuffer(draftAmbience.type, liveVoiceBuffer.length, liveVoiceBuffer.sampleRate);
-    liveAmbienceSource=ctx.createBufferSource(); liveAmbienceSource.buffer=buf; liveAmbienceSource.loop=true;
+  if(draftAmbience.enabled && ambBuf){
+    liveAmbienceSource=ctx.createBufferSource(); liveAmbienceSource.buffer=ambBuf; liveAmbienceSource.loop=true;
     liveAmbienceGain=ctx.createGain(); liveAmbienceGain.gain.value=draftAmbience.volume/100;
     liveAmbienceSource.connect(liveAmbienceGain).connect(ctx.destination);
     liveAmbienceSource.start();
@@ -1250,7 +1319,7 @@ document.getElementById('mixPreviewBtn').onclick=()=>{
 /* --- 保存：渲染最终WAV，写入音频库 --- */
 function buildMixSummary(){
   const parts=[];
-  if(draftAmbience.enabled) parts.push(draftAmbience.type==='rain'?'雨声':'海浪');
+  if(draftAmbience.enabled) parts.push(AMBIENCE_LABELS[normAmbienceType(draftAmbience.type)]);
   if(draftBinaural.enabled) parts.push(BINAURAL_PRESETS[draftBinaural.type].label);
   parts.push(VOICE_LEVEL_LABEL[draftVoiceLevel]);
   return parts.join(' · ');
@@ -1268,9 +1337,15 @@ document.getElementById('mixSaveBtn').onclick=async ()=>{
       vSrc.connect(vGain).connect(offline.destination); vSrc.start();
 
       if(draftAmbience.enabled){
-        const aBuf=generateAmbienceBuffer(draftAmbience.type, len, sr);
-        const aSrc=offline.createBufferSource(); aSrc.buffer=aBuf;
-        const aGain=offline.createGain(); aGain.gain.value=draftAmbience.volume/100;
+        const aBuf=await loadAmbienceBuffer(draftAmbience.type);
+        const aSrc=offline.createBufferSource(); aSrc.buffer=aBuf; aSrc.loop=true;
+        const aGain=offline.createGain();
+        // 首尾各淡入淡出，循环播放时接缝不突兀
+        const v=draftAmbience.volume/100, dur=len/sr, f=Math.min(0.4, dur/4);
+        aGain.gain.setValueAtTime(0,0);
+        aGain.gain.linearRampToValueAtTime(v,f);
+        aGain.gain.setValueAtTime(v,Math.max(f,dur-f));
+        aGain.gain.linearRampToValueAtTime(0,dur);
         aSrc.connect(aGain).connect(offline.destination); aSrc.start();
       }
       if(draftBinaural.enabled){
