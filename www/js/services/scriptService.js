@@ -188,17 +188,23 @@ export async function persistScene(sceneData, sortOrderHint) {
   // 谁被移出了这个场景（角色本身不删，只是解除跟这个场景的关联）。
   const { data: existingLinks, error: linksErr } = await supabase
     .from("scene_characters")
-    .select("character_id")
+    .select("character_id, characters(name, origin)")
     .eq("scene_id", sceneId)
     .eq("user_id", uid);
   if (linksErr) throw linksErr;
   const existingCharacterIds = new Set((existingLinks || []).map(l => l.character_id));
+  // 兜底：前端丢了 id 时，按名字找回这个场景里已有的同一个人，避免重复新建
+  const existingIdByName = new Map();
+  for (const l of (existingLinks || [])) {
+    const nm = l.characters && l.characters.origin === "user" ? String(l.characters.name || "").trim().toLowerCase() : "";
+    if (nm && !existingIdByName.has(nm)) existingIdByName.set(nm, l.character_id);
+  }
 
   const persistedPersons = [];
   const keptCharacterIds = new Set();
 
   for (const p of (sceneData.persons || [])) {
-    let characterId = p.id || null;
+    let characterId = p.id || existingIdByName.get(String(p.name || "").trim().toLowerCase()) || null;
     const charRow = {
       name: p.name || "未命名人物",
       personality: p.character || null,

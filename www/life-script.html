@@ -368,6 +368,7 @@ function openHeroEditor(){
   set('h_desire',h.desire); set('h_become',h.become);
 
   tempHeroAvatar = h.avatar || null;
+  tempHeroAvatarUpload = null;
   const hPreview=document.getElementById('hAvatarPreview'), hPlaceholder=document.getElementById('hAvatarPlaceholder');
   if(tempHeroAvatar){ hPreview.src=tempHeroAvatar; hPreview.style.display='block'; hPlaceholder.style.display='none'; }
   else { hPreview.style.display='none'; hPlaceholder.style.display='block'; }
@@ -405,7 +406,7 @@ document.getElementById('hAvatarInput').addEventListener('change', (e) => {
         canvas.toBlob(async (blob) => {
           try {
             const { data: { user } } = await supabase.auth.getUser();
-            const url = await uploadAvatarToStorage(blob, 'hero/' + user.id + '.jpg');
+            const url = await uploadAvatarToStorage(blob, 'hero/' + user.id + '_' + Date.now() + '.jpg');
             tempHeroAvatar = url;
           } catch(err) {
             alert('头像上传失败: ' + (err.message || String(err)));
@@ -429,7 +430,6 @@ async function saveHeroEditor(){
   if(!name){ shake(document.getElementById('h_name')); return; }
   if(!gender){ shake(document.querySelector('.gender-row')); return; }
   if(tempHeroAvatarUpload) await tempHeroAvatarUpload;
-  alert('保存前 avatar 值: ' + (tempHeroAvatar ? tempHeroAvatar.slice(0,80) : 'null'));
 
   const hero={
     name, gender, avatar: tempHeroAvatar,
@@ -608,10 +608,12 @@ function renderPersons(){
 }
 function delPerson(i){ event.stopPropagation(); tempPersons.splice(i,1); renderPersons(); }
 
-let tempPersonAvatar = null; // 当前正在编辑的人物头像（base64图片，未选择则为null）
+let tempPersonAvatar = null; // 当前正在编辑的人物头像（Storage 链接，失败时退回 base64）
+let tempPersonAvatarUpload = null; // 上传中的 Promise，保存前要等它完成
 
 function openPersonEditor(idx){
   editingPersonIdx=idx;
+  tempPersonAvatarUpload=null;
   const g=id=>document.getElementById(id);
   const preview=g('pAvatarPreview'), placeholder=g('pAvatarPlaceholder');
   if(idx>=0){
@@ -649,33 +651,43 @@ document.getElementById('pAvatarInput').addEventListener('change', (e) => {
       const preview=document.getElementById('pAvatarPreview'), placeholder=document.getElementById('pAvatarPlaceholder');
       preview.src = canvas.toDataURL('image/jpeg', 0.8);
       preview.style.display='block'; placeholder.style.display='none';
-      canvas.toBlob(async (blob) => {
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          const path = 'person/' + user.id + '_' + Date.now() + '.jpg';
-          const url = await uploadAvatarToStorage(blob, path);
-          tempPersonAvatar = url;
-        } catch(err) {
-          console.error('头像上传失败', err);
-          tempPersonAvatar = canvas.toDataURL('image/jpeg', 0.8);
-        }
-      }, 'image/jpeg', 0.8);
+      tempPersonAvatarUpload = new Promise((resolve) => {
+        canvas.toBlob(async (blob) => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const path = 'person/' + user.id + '_' + Date.now() + '.jpg';
+            const url = await uploadAvatarToStorage(blob, path);
+            tempPersonAvatar = url;
+          } catch(err) {
+            console.error('头像上传失败', err);
+            tempPersonAvatar = canvas.toDataURL('image/jpeg', 0.8);
+          }
+          resolve();
+        }, 'image/jpeg', 0.8);
+      });
     };
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
 });
 
-function savePerson(){
+async function savePerson(){
   const g=id=>document.getElementById(id).value;
   const name=g('p_name').trim();
   if(!name){ shake(document.getElementById('p_name')); return; }
+  if(tempPersonAvatarUpload){ await tempPersonAvatarUpload; tempPersonAvatarUpload=null; }
   if(!tempPersonAvatar){
     const skip = confirm('"'+name+'"还没有上传头像，要不要先传一张？\n\n点"取消"回去传照片，点"确定"先不传');
     if(skip===false) return; // 用户选"取消" -> 留在编辑器里传照片
   }
   const person={ name, role:g('p_role'), age:g('p_age'), gender:g('p_gender'), look:g('p_look'), character:g('p_character'), values:g('p_values'), background:g('p_background'), attitude:g('p_attitude'), avatar: tempPersonAvatar, wechat:g('p_wechat'), phone:g('p_phone'), email:g('p_email') };
-  if(editingPersonIdx>=0) tempPersons[editingPersonIdx]=person;
+  // 编辑已有人物时保留数据库 id，否则保存场景时会被当成新人物再建一个（之前出现 7 个 Peter 的原因）
+  if(editingPersonIdx>=0){
+    const old=tempPersons[editingPersonIdx]||{};
+    if(old.id) person.id=old.id;
+    if(old.world_built_at) person.world_built_at=old.world_built_at;
+    tempPersons[editingPersonIdx]=person;
+  }
   else tempPersons.push(person);
   renderPersons();
   closePersonEditor();
