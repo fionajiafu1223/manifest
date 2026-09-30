@@ -680,6 +680,19 @@ async function loadAmbienceBuffer(type){
   }
   return ambienceCache[type];
 }
+// 把背景音铺满整段音频，结尾和开头交叉淡化，整段音频循环播放时背景音无缝衔接
+function buildSeamlessAmbience(src,len,sr){
+  const out=getCtx().createBuffer(2,len,sr);
+  const ratio=src.sampleRate/sr, sLen=src.length;
+  const X=Math.min(Math.round(sr*1.5), Math.floor(len/4));
+  for(let c=0;c<2;c++){
+    const s=src.getChannelData(Math.min(c,src.numberOfChannels-1)), o=out.getChannelData(c);
+    const at=(i)=>s[Math.floor(i*ratio)%sLen];
+    for(let i=0;i<len;i++) o[i]=at(i);
+    for(let i=0;i<X;i++){ const f=i/X; o[i]=o[i]*f+at(len+i)*(1-f); }
+  }
+  return out;
+}
 function generateAmbienceBuffer(type,lengthInSamples,sampleRate){
   const ctx=getCtx();
   const buffer=ctx.createBuffer(2,lengthInSamples,sampleRate);
@@ -1418,22 +1431,20 @@ document.getElementById('mixSaveBtn').onclick=async ()=>{
   openNameModal(editingTrackId ? (allTracks.find(t=>t.id===editingTrackId)||{}).name : '', async (name)=>{
     stopLivePreview();
     try{
-      const sr=voiceBuffer.sampleRate, len=voiceBuffer.length;
+      // 人声重复整数遍，让整段音频至少 60 秒：
+      // 加速后人声很短时，背景音不会被切成几秒一段反复重播，听起来仍是正常速度、连续的
+      const sr=voiceBuffer.sampleRate, vLen=voiceBuffer.length;
+      const reps=Math.max(1, Math.ceil(60*sr/vLen));
+      const len=vLen*reps;
       const offline=new OfflineAudioContext(2, len, sr);
-      const vSrc=offline.createBufferSource(); vSrc.buffer=voiceBuffer;
+      const vSrc=offline.createBufferSource(); vSrc.buffer=voiceBuffer; vSrc.loop=true;
       const vGain=offline.createGain(); vGain.gain.value=VOICE_LEVEL_GAIN[draftVoiceLevel];
       vSrc.connect(vGain).connect(offline.destination); vSrc.start();
 
       if(draftAmbience.enabled){
         const aBuf=await loadAmbienceBuffer(draftAmbience.type);
-        const aSrc=offline.createBufferSource(); aSrc.buffer=aBuf; aSrc.loop=true;
-        const aGain=offline.createGain();
-        // 首尾各淡入淡出，循环播放时接缝不突兀
-        const v=draftAmbience.volume/100, dur=len/sr, f=Math.min(0.4, dur/4);
-        aGain.gain.setValueAtTime(0,0);
-        aGain.gain.linearRampToValueAtTime(v,f);
-        aGain.gain.setValueAtTime(v,Math.max(f,dur-f));
-        aGain.gain.linearRampToValueAtTime(0,dur);
+        const aSrc=offline.createBufferSource(); aSrc.buffer=buildSeamlessAmbience(aBuf, len, sr);
+        const aGain=offline.createGain(); aGain.gain.value=draftAmbience.volume/100;
         aSrc.connect(aGain).connect(offline.destination); aSrc.start();
       }
       if(draftBinaural.enabled){
