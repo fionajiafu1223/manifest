@@ -352,6 +352,14 @@ body{
         <button class="chip" data-level="soft">轻声</button>
         <button class="chip" data-level="faint">很轻</button>
       </div>
+      <div style="font-size:11px;color:#688a41;letter-spacing:1px;margin:2px 0 6px;">语速（音调不变）</div>
+      <div class="chip-row" id="voiceSpeedChips">
+        <button class="chip selected" data-speed="1">1x</button>
+        <button class="chip" data-speed="1.5">1.5x</button>
+        <button class="chip" data-speed="2">2x</button>
+        <button class="chip" data-speed="5">5x</button>
+        <button class="chip" data-speed="10">10x</button>
+      </div>
     </div>
 
     <div class="mix-layer" id="ambienceLayer">
@@ -962,6 +970,7 @@ let draftMode='sentences'; // 'sentences' | 'freeform'
 let draftSentences=[]; // {id, text, blob}
 let draftFreeformBlob=null;
 let draftVoiceLevel='clear';
+let draftVoiceSpeed=1;
 let draftAmbience={enabled:false, type:'light-rain', volume:50};
 let draftBinaural={enabled:false, type:'theta', volume:35};
 
@@ -971,6 +980,7 @@ function resetDraft(){
   draftSentences=[];
   draftFreeformBlob=null;
   draftVoiceLevel='clear';
+  draftVoiceSpeed=1;
   draftAmbience={enabled:false, type:'light-rain', volume:50};
   draftBinaural={enabled:false, type:'theta', volume:35};
 }
@@ -981,6 +991,7 @@ async function loadTrackIntoDraft(trackId){
   draftSentences=track.sentences? track.sentences.map(s=>({...s})) : [];
   draftFreeformBlob=track.freeformBlob||null;
   draftVoiceLevel=track.voiceLevel||'clear';
+  draftVoiceSpeed=track.voiceSpeed||1;
   draftAmbience={enabled:!!track.ambienceType, type:normAmbienceType(track.ambienceType||'light-rain'), volume:track.ambienceVolume??50};
   draftBinaural={enabled:!!track.binauralType, type:track.binauralType||'theta', volume:track.binauralVolume??35};
 }
@@ -1204,6 +1215,7 @@ document.getElementById('mixBackBtn').onclick=()=>{
 
 function refreshMixUI(){
   document.querySelectorAll('#voiceLevelChips .chip').forEach(c=>c.classList.toggle('selected', c.dataset.level===draftVoiceLevel));
+  document.querySelectorAll('#voiceSpeedChips .chip').forEach(c=>c.classList.toggle('selected', parseFloat(c.dataset.speed)===draftVoiceSpeed));
   document.getElementById('ambienceToggle').classList.toggle('on', draftAmbience.enabled);
   document.getElementById('ambienceBody').style.display = draftAmbience.enabled?'block':'none';
   document.querySelectorAll('#ambienceChips .chip:not(.soon)').forEach(c=>c.classList.toggle('selected', c.dataset.type===draftAmbience.type));
@@ -1214,6 +1226,9 @@ function refreshMixUI(){
   document.querySelectorAll('#binauralChips .chip').forEach(c=>c.classList.toggle('selected', c.dataset.type===draftBinaural.type));
   document.getElementById('binauralVolSlider').value=draftBinaural.volume;
 }
+document.querySelectorAll('#voiceSpeedChips .chip').forEach(btn=>{
+  btn.onclick=()=>{ draftVoiceSpeed=parseFloat(btn.dataset.speed); refreshMixUI(); if(isLivePreviewing) startLivePreview(); };
+});
 document.querySelectorAll('#voiceLevelChips .chip').forEach(btn=>{
   btn.onclick=()=>{ draftVoiceLevel=btn.dataset.level; refreshMixUI(); liveUpdateVoice(); };
 });
@@ -1269,7 +1284,50 @@ async function buildDraftVoiceBuffer(){
     const buffers=await Promise.all(recorded.map(s=>decodeBlob(s.blob)));
     out=concatBuffers(buffers, buffers[0].sampleRate, 0.6);
   }
-  return normalizeBuffer(out,0.9);
+  out=normalizeBuffer(out,0.9);
+  if(draftVoiceSpeed && draftVoiceSpeed!==1) out=timeStretch(out,draftVoiceSpeed);
+  return out;
+}
+// WSOLA 变速不变调：按语速跳着取小段，找波形最吻合的位置拼接，音调保持原样
+function timeStretch(buf,speed){
+  const sr=buf.sampleRate, chs=buf.numberOfChannels, inLen=buf.length;
+  const N=Math.round(sr*0.046)&~1, Hs=N>>1, Ha=Hs*speed, tol=Math.round(sr*0.012), STEP=8;
+  const outLen=Math.max(1,Math.ceil(inLen/speed));
+  const inData=[], outData=[];
+  for(let c=0;c<chs;c++){ inData.push(buf.getChannelData(c)); outData.push(new Float32Array(outLen+N)); }
+  const mono=new Float32Array(inLen);
+  for(let c=0;c<chs;c++){ const d=inData[c]; for(let i=0;i<inLen;i++) mono[i]+=d[i]/chs; }
+  const win=new Float32Array(N); for(let i=0;i<N;i++) win[i]=0.5-0.5*Math.cos(2*Math.PI*i/N);
+  const wsum=new Float32Array(outLen+N);
+  let prev=0;
+  for(let k=0;;k++){
+    const outPos=k*Hs; if(outPos>=outLen) break;
+    const nominal=Math.round(k*Ha);
+    let best=nominal;
+    if(k>0){
+      const tpl=prev+Hs; let bestScore=-Infinity;
+      for(let d=-tol; d<=tol; d+=STEP){
+        const p=nominal+d; if(p<0||p+N>inLen) continue;
+        let sc=0;
+        for(let i=0;i<N;i+=STEP){ const t=tpl+i; if(t>=inLen) break; sc+=mono[t]*mono[p+i]; }
+        if(sc>bestScore){ bestScore=sc; best=p; }
+      }
+    }
+    if(best<0) best=0;
+    if(best>=inLen) break;
+    for(let c=0;c<chs;c++){
+      const src=inData[c], dst=outData[c];
+      for(let i=0;i<N && best+i<inLen;i++) dst[outPos+i]+=src[best+i]*win[i];
+    }
+    for(let i=0;i<N;i++) wsum[outPos+i]+=win[i];
+    prev=best;
+  }
+  const res=getCtx().createBuffer(chs,outLen,sr);
+  for(let c=0;c<chs;c++){
+    const d=outData[c], r=res.getChannelData(c);
+    for(let i=0;i<outLen;i++) r[i]= wsum[i]>1e-3 ? d[i]/wsum[i] : d[i];
+  }
+  return res;
 }
 async function startLivePreview(){
   stopAllAudio({keepRecording:false});
@@ -1351,6 +1409,7 @@ function buildMixSummary(){
   if(draftAmbience.enabled) parts.push(AMBIENCE_LABELS[normAmbienceType(draftAmbience.type)]);
   if(draftBinaural.enabled) parts.push(BINAURAL_PRESETS[draftBinaural.type].label);
   parts.push(VOICE_LEVEL_LABEL[draftVoiceLevel]);
+  if(draftVoiceSpeed!==1) parts.push(draftVoiceSpeed+'x');
   return parts.join(' · ');
 }
 document.getElementById('mixSaveBtn').onclick=async ()=>{
@@ -1398,6 +1457,7 @@ document.getElementById('mixSaveBtn').onclick=async ()=>{
         sentences: draftMode==='sentences' ? draftSentences.map(s=>({id:s.id, text:s.text, blob:s.blob})) : null,
         freeformBlob: draftMode==='freeform' ? draftFreeformBlob : null,
         voiceLevel: draftVoiceLevel,
+        voiceSpeed: draftVoiceSpeed,
         ambienceType: draftAmbience.enabled ? draftAmbience.type : null,
         ambienceVolume: draftAmbience.volume,
         binauralType: draftBinaural.enabled ? draftBinaural.type : null,
