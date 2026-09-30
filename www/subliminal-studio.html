@@ -130,7 +130,7 @@ body{
 .chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:0.7rem;}
 .chip{padding:7px 12px;border-radius:10px;border:1px solid rgba(104,138,65,0.4);background:rgba(255,255,255,0.6);
   color:#436b29;font-size:12px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;}
-.chip.selected{background:rgba(104,138,65,0.25);border-color:#436b29;color:#fbfbf6;font-weight:600;}
+.chip.selected{background:#5a8a3a;border-color:#436b29;color:#fff;font-weight:600;}
 .chip.soon{opacity:0.5;cursor:default;}
 .mix-vol-row{display:flex;align-items:center;gap:10px;}
 .mix-vol-row input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(120,90,60,0.2);outline:none;}
@@ -1045,13 +1045,13 @@ document.querySelectorAll('#ambienceChips .chip:not(.soon)').forEach(btn=>{
 document.querySelectorAll('#ambienceChips .chip.soon').forEach(btn=>{
   btn.onclick=()=>showToast('这个环境音还在准备中，敬请期待');
 });
-document.getElementById('ambienceVolSlider').oninput=(e)=>{ draftAmbience.volume=parseInt(e.target.value); liveUpdateAmbienceVol(); };
+['input','change'].forEach(ev=>document.getElementById('ambienceVolSlider').addEventListener(ev,(e)=>{ draftAmbience.volume=parseInt(e.target.value); liveUpdateAmbienceVol(); }));
 
 document.getElementById('binauralToggle').onclick=()=>{ draftBinaural.enabled=!draftBinaural.enabled; refreshMixUI(); liveRestartBinaural(); };
 document.querySelectorAll('#binauralChips .chip').forEach(btn=>{
   btn.onclick=()=>{ draftBinaural.type=btn.dataset.type; refreshMixUI(); liveRestartBinaural(); };
 });
-document.getElementById('binauralVolSlider').oninput=(e)=>{ draftBinaural.volume=parseInt(e.target.value); liveUpdateBinauralVol(); };
+['input','change'].forEach(ev=>document.getElementById('binauralVolSlider').addEventListener(ev,(e)=>{ draftBinaural.volume=parseInt(e.target.value); liveUpdateBinauralVol(); }));
 
 /* --- 实时试听：拖动滑块立刻听到变化，不需要"保存→重新生成→播放" --- */
 let liveVoiceSource=null, liveVoiceGain=null;
@@ -1121,9 +1121,19 @@ function stopLivePreview(){
   isLivePreviewing=false;
   document.getElementById('mixPreviewBtn').textContent='▶ 试听混音效果';
 }
-function liveUpdateVoice(){ if(isLivePreviewing && liveVoiceGain) liveVoiceGain.gain.value=VOICE_LEVEL_GAIN[draftVoiceLevel]; }
-function liveUpdateAmbienceVol(){ if(isLivePreviewing && liveAmbienceGain) liveAmbienceGain.gain.value=draftAmbience.volume/100; }
-function liveUpdateBinauralVol(){ if(isLivePreviewing && liveBinauralGain) liveBinauralGain.gain.value=draftBinaural.volume/100; }
+// 用音频时钟平滑设置音量（iOS 上直接改 gain.value 有时不生效）
+function setGainSmooth(g,v){
+  if(!g) return;
+  const ctx=getCtx(), t=ctx.currentTime;
+  try{
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(g.gain.value,t);
+    g.gain.linearRampToValueAtTime(v,t+0.08);
+  }catch(e){ g.gain.value=v; }
+}
+function liveUpdateVoice(){ if(isLivePreviewing) setGainSmooth(liveVoiceGain, VOICE_LEVEL_GAIN[draftVoiceLevel]); }
+function liveUpdateAmbienceVol(){ if(isLivePreviewing) setGainSmooth(liveAmbienceGain, draftAmbience.volume/100); }
+function liveUpdateBinauralVol(){ if(isLivePreviewing) setGainSmooth(liveBinauralGain, draftBinaural.volume/100); }
 function liveRestartAmbience(){ if(isLivePreviewing) startLivePreview(); }
 function liveRestartBinaural(){ if(isLivePreviewing) startLivePreview(); }
 
