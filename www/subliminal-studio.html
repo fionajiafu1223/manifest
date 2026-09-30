@@ -147,7 +147,7 @@ body{
 .toggle-switch::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3);}
 .toggle-switch.on::after{left:18px;}
 .chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:0.7rem;}
-.amb-list{max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:0.7rem;padding-right:2px;}
+.amb-list{max-height:340px;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:0.7rem;padding-right:2px;}
 .amb-list .chip-row{margin-bottom:0.5rem;}
 .amb-group{font-size:11px;color:#688a41;letter-spacing:1px;margin:4px 0 6px;}
 .chip{padding:7px 12px;border-radius:10px;border:1px solid rgba(104,138,65,0.4);background:rgba(255,255,255,0.6);
@@ -361,6 +361,24 @@ body{
       </div>
       <div id="ambienceBody" style="display:none;">
         <div id="ambienceChips" class="amb-list">
+          <div class="amb-group">复合场景</div>
+          <div class="chip-row">
+            <button class="chip" data-type="sc-rainforest-rain">雨林雨季</button>
+            <button class="chip" data-type="sc-valley-stream">山间溪谷</button>
+            <button class="chip" data-type="sc-rainy-cabin">雨夜小屋</button>
+            <button class="chip" data-type="sc-snow-cabin">雪山木屋</button>
+            <button class="chip" data-type="sc-summer-lake">夏夜湖畔</button>
+            <button class="chip" data-type="sc-island-dusk">海岛黄昏</button>
+            <button class="chip" data-type="sc-farm-morning">田园清晨</button>
+            <button class="chip" data-type="sc-tent-rain-river">帐篷夜雨</button>
+            <button class="chip" data-type="sc-car-rain">车内听雨</button>
+            <button class="chip" data-type="sc-rainy-cafe">雨天咖啡馆</button>
+            <button class="chip" data-type="sc-night-study">深夜书房</button>
+            <button class="chip" data-type="sc-night-train">夜行列车</button>
+            <button class="chip" data-type="sc-zen-garden">禅意庭院</button>
+            <button class="chip" data-type="sc-city-rain">城市雨夜</button>
+            <button class="chip" data-type="sc-wild-night">荒野之夜</button>
+          </div>
           <div class="amb-group">雨</div>
           <div class="chip-row">
             <button class="chip" data-type="light-rain">细雨</button>
@@ -369,6 +387,8 @@ body{
             <button class="chip" data-type="rain-window">雨打窗</button>
             <button class="chip" data-type="rain-tent">帐篷听雨</button>
             <button class="chip" data-type="rain-forest">林中雨</button>
+            <button class="chip" data-type="rain-umbrella">雨打伞</button>
+            <button class="chip" data-type="rain-car">车顶雨</button>
           </div>
           <div class="amb-group">森林 · 动物</div>
           <div class="chip-row">
@@ -403,12 +423,21 @@ body{
             <button class="chip" data-type="singing-bowl">颂钵</button>
             <button class="chip" data-type="wind-chimes">风铃</button>
             <button class="chip" data-type="temple">寺庙</button>
+            <button class="chip" data-type="church">教堂</button>
           </div>
-          <div class="amb-group">氛围</div>
+          <div class="amb-group">氛围 · 旅途</div>
           <div class="chip-row">
             <button class="chip" data-type="cafe">咖啡馆</button>
             <button class="chip" data-type="library">图书馆</button>
             <button class="chip" data-type="night-village">夜晚村庄</button>
+            <button class="chip" data-type="train">列车</button>
+            <button class="chip" data-type="airplane">机舱</button>
+            <button class="chip" data-type="vinyl">黑胶唱片</button>
+          </div>
+          <div class="amb-group">噪音</div>
+          <div class="chip-row">
+            <button class="chip" data-type="brown-noise">棕噪音</button>
+            <button class="chip" data-type="pink-noise">粉噪音</button>
           </div>
         </div>
         <div class="mix-vol-row">
@@ -628,7 +657,7 @@ function generateBinauralBuffer(presetKey,lengthInSamples,sampleRate){
 // AMBIENCE目前只有"雨声"(白噪音质感)和"海浪"(褐噪音+缓慢潮汐调制)是程序生成的近似音，
 // 壁炉/森林/咖啡馆需要真实录制的环境音素材，现在还没有，先在UI上标"待推出"，不假装能播放
 /* 真实录音背景音（www/sounds/，来源与授权见 sounds/LICENSE.md） */
-const AMBIENCE_LABELS={"light-rain": "细雨", "heavy-rain": "大雨", "thunderstorm": "雷雨", "rain-window": "雨打窗", "rain-tent": "帐篷听雨", "rain-forest": "林中雨", "forest": "森林鸟鸣", "jungle": "热带雨林", "birds": "清晨鸟鸣", "night-forest": "夜晚森林", "crickets": "夏夜虫鸣", "pond": "池塘蛙鸣", "cat-purring": "猫咪呼噜", "waves": "海浪", "seashore": "海岸海鸥", "river": "溪流", "waterfall": "瀑布", "droplets": "水滴", "deep-sea": "深海鲸歌", "sailboat": "帆船", "campfire": "篝火", "snow-fire": "雪夜篝火", "blizzard": "呼啸风雪", "wind": "旷野风", "wind-trees": "林间风", "singing-bowl": "颂钵", "wind-chimes": "风铃", "temple": "寺庙", "cafe": "咖啡馆", "library": "图书馆", "night-village": "夜晚村庄"};
+const AMBIENCE_LABELS={"sc-rainforest-rain": "雨林雨季", "sc-valley-stream": "山间溪谷", "sc-rainy-cabin": "雨夜小屋", "sc-snow-cabin": "雪山木屋", "sc-summer-lake": "夏夜湖畔", "sc-island-dusk": "海岛黄昏", "sc-farm-morning": "田园清晨", "sc-tent-rain-river": "帐篷夜雨", "sc-car-rain": "车内听雨", "sc-rainy-cafe": "雨天咖啡馆", "sc-night-study": "深夜书房", "sc-night-train": "夜行列车", "sc-zen-garden": "禅意庭院", "sc-city-rain": "城市雨夜", "sc-wild-night": "荒野之夜", "light-rain": "细雨", "heavy-rain": "大雨", "thunderstorm": "雷雨", "rain-window": "雨打窗", "rain-tent": "帐篷听雨", "rain-forest": "林中雨", "rain-umbrella": "雨打伞", "rain-car": "车顶雨", "forest": "森林鸟鸣", "jungle": "热带雨林", "birds": "清晨鸟鸣", "night-forest": "夜晚森林", "crickets": "夏夜虫鸣", "pond": "池塘蛙鸣", "cat-purring": "猫咪呼噜", "waves": "海浪", "seashore": "海岸海鸥", "river": "溪流", "waterfall": "瀑布", "droplets": "水滴", "deep-sea": "深海鲸歌", "sailboat": "帆船", "campfire": "篝火", "snow-fire": "雪夜篝火", "blizzard": "呼啸风雪", "wind": "旷野风", "wind-trees": "林间风", "singing-bowl": "颂钵", "wind-chimes": "风铃", "temple": "寺庙", "church": "教堂", "cafe": "咖啡馆", "library": "图书馆", "night-village": "夜晚村庄", "train": "列车", "airplane": "机舱", "vinyl": "黑胶唱片", "brown-noise": "棕噪音", "pink-noise": "粉噪音"};
 const AMBIENCE_LEGACY={rain:'light-rain', ocean:'waves'};
 function normAmbienceType(t){ t=AMBIENCE_LEGACY[t]||t; return AMBIENCE_LABELS[t]?t:'light-rain'; }
 const ambienceCache={};
