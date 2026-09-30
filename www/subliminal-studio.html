@@ -455,17 +455,39 @@ setAudioSession('playback');
 
 /* ══════════════════ 统一音频管理：同一时间只允许一个声音 ══════════════════ */
 const previewAudio=new Audio();
-let previewUrl=null;
+let previewUrl=null, previewBtn=null, previewTotal=0, previewBlob=null;
+// 录音时长（解码一次后缓存）
+const blobDurCache=new WeakMap();
+async function blobDuration(blob){
+  if(!blob) return 0;
+  if(blobDurCache.has(blob)) return blobDurCache.get(blob);
+  let d=0;
+  try{ d=(await decodeBlob(blob)).duration; }catch(e){}
+  blobDurCache.set(blob,d);
+  return d;
+}
+function previewIdleLabel(total){ return '▶ 试听 '+fmtTime(total); }
 function stopPreviewAudio(){
   try{ previewAudio.pause(); }catch(e){}
   if(previewUrl){ URL.revokeObjectURL(previewUrl); previewUrl=null; }
+  if(previewBtn){ previewBtn.textContent=previewIdleLabel(previewTotal); }
+  previewBtn=null; previewBlob=null;
 }
-function playPreviewBlob(blob){
+previewAudio.addEventListener('timeupdate',()=>{
+  if(previewBtn) previewBtn.textContent='⏹ '+fmtTime(previewAudio.currentTime)+' / '+fmtTime(previewTotal);
+});
+previewAudio.addEventListener('ended',()=>stopPreviewAudio());
+// btn：点击的试听按钮（播放中显示进度，再点一次停止）
+async function playPreviewBlob(blob,btn){
+  if(btn && previewBtn===btn){ stopPreviewAudio(); return; }
   stopAllAudio();
   setAudioSession('playback');
+  const total=await blobDuration(blob);
+  previewBlob=blob; previewBtn=btn||null; previewTotal=total;
   previewUrl=URL.createObjectURL(blob);
   previewAudio.src=previewUrl;
-  previewAudio.play().catch(e=>console.error(e));
+  if(previewBtn) previewBtn.textContent='⏹ 0:00 / '+fmtTime(total);
+  previewAudio.play().catch(e=>{ console.error(e); stopPreviewAudio(); });
 }
 function stopAllRecording(){
   try{ if(typeof activeRecorder!=='undefined' && activeRecorder && activeRecorder.state==='recording') activeRecorder.stop(); }catch(e){}
@@ -952,7 +974,15 @@ function renderVoiceList(){
     row.querySelector('.vrow-status').textContent = isRec
       ? '● 正在录音 '+fmtTime(sentenceRecSec)+' · 读完点 ■ 停止'
       : (hasBlob ? '已录好 · 点 🎙 可重录' : '未录制');
-    if(hasBlob && !isRec) row.querySelector('.ok').onclick=()=>playPreviewBlob(s.blob);
+    if(hasBlob && !isRec){
+      const okBtn=row.querySelector('.ok');
+      okBtn.onclick=()=>playPreviewBlob(s.blob, okBtn);
+      blobDuration(s.blob).then(d=>{
+        if(previewBtn!==okBtn) okBtn.textContent=previewIdleLabel(d);
+        const st=row.querySelector('.vrow-status');
+        if(st && !row.classList.contains('recording')) st.textContent='已录好 '+fmtTime(d)+' · 点 🎙 可重录';
+      });
+    }
     row.querySelector('.mic-btn').onclick=()=>{ if(!locked) toggleRecordSentence(s.id); };
     list.appendChild(row);
   });
@@ -1013,12 +1043,20 @@ function refreshFreeRecordUI(){
   if(draftFreeformBlob){
     btn.classList.add('done'); btn.textContent='✓';
     status.textContent='已录制！可以试听或重新录制';
-    document.getElementById('freePreviewBtn').disabled=false;
+    const pb=document.getElementById('freePreviewBtn');
+    pb.disabled=false;
+    const blob=draftFreeformBlob;
+    blobDuration(blob).then(d=>{
+      if(draftFreeformBlob!==blob) return;
+      status.textContent='已录制 '+fmtTime(d)+'！可以试听或重新录制';
+      if(previewBtn!==pb) pb.textContent=previewIdleLabel(d);
+    });
     document.getElementById('toMixFromFreeBtn').disabled=false;
   } else {
     btn.classList.remove('done'); btn.textContent='🎙️';
     status.textContent='点击开始录制，想说多久都可以';
     document.getElementById('freePreviewBtn').disabled=true;
+    document.getElementById('freePreviewBtn').textContent='▶ 试听';
     document.getElementById('toMixFromFreeBtn').disabled=true;
   }
   document.getElementById('freeRecTimer').textContent='00:00';
@@ -1062,7 +1100,7 @@ document.getElementById('freeRecBtn').onclick=async ()=>{
 };
 document.getElementById('freePreviewBtn').onclick=()=>{
   if(!draftFreeformBlob) return;
-  playPreviewBlob(draftFreeformBlob);
+  playPreviewBlob(draftFreeformBlob, document.getElementById('freePreviewBtn'));
 };
 document.getElementById('toMixFromFreeBtn').onclick=()=>{ showView('mixView'); refreshMixUI(); };
 
