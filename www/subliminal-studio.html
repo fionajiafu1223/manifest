@@ -462,6 +462,11 @@ body{
       </div>
       <div id="musicBody" style="display:none;">
         <div id="musicChips" class="amb-list">
+          <div class="amb-group">我的音乐</div>
+          <div class="chip-row" id="userMusicChips">
+            <button class="chip" id="userMusicAddBtn" style="border-style:dashed;">＋ 上传音乐</button>
+          </div>
+          <input type="file" id="userMusicInput" accept="audio/*" style="display:none;">
           <div class="amb-group">平静</div>
           <div class="chip-row">
             <button class="chip" data-type="calm-zen">禅音</button>
@@ -624,21 +629,36 @@ function stopAllAudio(opts){
 window.addEventListener('pagehide',()=>stopAllAudio());
 
 /* ══════════════════ IndexedDB ══════════════════ */
-const DB_NAME='subconsciousRoomDB', STORE_NAME='tracks';
+const DB_NAME='subconsciousRoomDB', STORE_NAME='tracks', USER_MUSIC_STORE='userMusic';
 let dbPromise=null;
 function openDB(){
   if(dbPromise) return dbPromise;
   dbPromise=new Promise((resolve,reject)=>{
-    const req=indexedDB.open(DB_NAME,1);
+    const req=indexedDB.open(DB_NAME,2);
     req.onupgradeneeded=()=>{
       const db=req.result;
       if(!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME,{keyPath:'id',autoIncrement:true});
+      if(!db.objectStoreNames.contains(USER_MUSIC_STORE)) db.createObjectStore(USER_MUSIC_STORE,{keyPath:'id',autoIncrement:true});
     };
     req.onsuccess=()=>resolve(req.result);
     req.onerror=()=>reject(req.error);
   });
   return dbPromise;
 }
+// 用户自己上传的音乐（只存在本机）
+function umReq(mode,fn){
+  return openDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(USER_MUSIC_STORE,mode);
+    const req=fn(tx.objectStore(USER_MUSIC_STORE));
+    req.onsuccess=()=>resolve(req.result);
+    tx.onerror=()=>reject(tx.error);
+  }));
+}
+const umAll=()=>umReq('readonly',st=>st.getAll()).then(r=>r.sort((a,b)=>b.createdAt-a.createdAt));
+const umGet=(id)=>umReq('readonly',st=>st.get(id));
+const umPut=(rec)=>umReq('readwrite',st=>st.put(rec));
+const umDelete=(id)=>umReq('readwrite',st=>st.delete(id));
+
 async function dbPut(track){
   const db=await openDB();
   return new Promise((resolve,reject)=>{
@@ -719,14 +739,27 @@ async function loadAmbienceBuffer(type){
 }
 /* 背景音乐（www/music/，来源与授权见 music/LICENSE.md） */
 const MUSIC_LABELS={"calm-zen": "禅音", "calm-still": "静水", "calm-light": "冥想之光", "calm-cloud": "云端", "dream-stars": "星空漂浮", "gentle-morning": "晨光钢琴", "gentle-monologue": "独白", "gentle-story": "温柔故事", "gentle-whisper": "轻语", "romance-heart": "心动", "romance-glow": "微光", "romance-embrace": "相拥", "romance-with-you": "与你同在", "power-faraway": "远方", "power-dawn": "破晓"};
-function normMusicType(t){ return MUSIC_LABELS[t]?t:'calm-zen'; }
+let userMusicList=[];
+function musicLabel(t){
+  if(String(t).startsWith('user:')){ const r=userMusicList.find(m=>'user:'+m.id===t); return r?r.name:'我的音乐'; }
+  return MUSIC_LABELS[t]||'';
+}
+function normMusicType(t){ return (String(t).startsWith('user:')||MUSIC_LABELS[t])?t:'calm-zen'; }
 const musicCache={};
 async function loadMusicBuffer(type){
   type=normMusicType(type);
   if(!musicCache[type]){
     musicCache[type]=(async()=>{
-      const res=await fetch('music/'+type+'.mp3');
-      return await getCtx().decodeAudioData(await res.arrayBuffer());
+      let ab;
+      if(type.startsWith('user:')){
+        const rec=await umGet(parseInt(type.slice(5)));
+        if(!rec) throw new Error('这首音乐已被删除');
+        ab=await rec.blob.arrayBuffer();
+      } else {
+        const res=await fetch('music/'+type+'.mp3');
+        ab=await res.arrayBuffer();
+      }
+      return await getCtx().decodeAudioData(ab);
     })().catch(e=>{ delete musicCache[type]; throw e; });
   }
   return musicCache[type];
@@ -1314,9 +1347,57 @@ document.querySelectorAll('#ambienceChips .chip.soon').forEach(btn=>{
 ['input','change'].forEach(ev=>document.getElementById('ambienceVolSlider').addEventListener(ev,(e)=>{ draftAmbience.volume=parseInt(e.target.value); liveUpdateAmbienceVol(); }));
 
 document.getElementById('musicToggle').onclick=()=>{ draftMusic.enabled=!draftMusic.enabled; refreshMixUI(); liveRestartAmbience(); };
-document.querySelectorAll('#musicChips .chip').forEach(btn=>{
-  btn.onclick=()=>{ draftMusic.type=btn.dataset.type; refreshMixUI(); liveRestartAmbience(); };
+document.getElementById('musicChips').addEventListener('click',async (e)=>{
+  const del=e.target.closest('.um-del');
+  if(del){
+    e.stopPropagation();
+    const id=parseInt(del.dataset.id);
+    const rec=userMusicList.find(m=>m.id===id);
+    if(!confirm('删除「'+(rec?rec.name:'这首音乐')+'」吗？已保存的音频不受影响。')) return;
+    await umDelete(id);
+    delete musicCache['user:'+id];
+    if(draftMusic.type==='user:'+id){ draftMusic.type='calm-zen'; liveRestartAmbience(); }
+    await renderUserMusic();
+    return;
+  }
+  const btn=e.target.closest('.chip[data-type]');
+  if(!btn) return;
+  draftMusic.type=btn.dataset.type; refreshMixUI(); liveRestartAmbience();
 });
+document.getElementById('userMusicAddBtn').onclick=()=>document.getElementById('userMusicInput').click();
+document.getElementById('userMusicInput').onchange=async (e)=>{
+  const file=e.target.files && e.target.files[0];
+  e.target.value='';
+  if(!file) return;
+  if(file.size>60*1024*1024){ showToast('文件太大了，请选 60MB 以内的音乐'); return; }
+  showToast('正在导入…');
+  try{
+    await getCtx().decodeAudioData(await file.arrayBuffer()); // 先确认能播放
+  }catch(err){ showToast('这个文件无法播放，换一个试试'); return; }
+  const name=(file.name||'我的音乐').replace(/\.[^.]+$/,'').slice(0,40);
+  const id=await umPut({name, blob:file, createdAt:Date.now()});
+  await renderUserMusic();
+  draftMusic.enabled=true; draftMusic.type='user:'+id;
+  refreshMixUI(); liveRestartAmbience();
+  showToast('已添加「'+name+'」');
+};
+async function renderUserMusic(){
+  try{ userMusicList=await umAll(); }catch(e){ userMusicList=[]; }
+  const row=document.getElementById('userMusicChips');
+  row.querySelectorAll('.chip[data-type]').forEach(c=>c.remove());
+  const addBtn=document.getElementById('userMusicAddBtn');
+  userMusicList.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='chip'; b.dataset.type='user:'+m.id;
+    const label=m.name.length>10?m.name.slice(0,10)+'…':m.name;
+    b.innerHTML='<span></span> <span class="um-del" style="opacity:0.6;padding:0 2px;">×</span>';
+    b.firstChild.textContent=label;
+    b.querySelector('.um-del').dataset.id=m.id;
+    row.insertBefore(b,addBtn);
+  });
+  refreshMixUI();
+}
+renderUserMusic();
 ['input','change'].forEach(ev=>document.getElementById('musicVolSlider').addEventListener(ev,(e)=>{ draftMusic.volume=parseInt(e.target.value); if(isLivePreviewing) setGainSmooth(liveMusicGain, draftMusic.volume/100); }));
 
 document.getElementById('binauralToggle').onclick=()=>{ draftBinaural.enabled=!draftBinaural.enabled; refreshMixUI(); liveRestartBinaural(); };
@@ -1498,7 +1579,7 @@ document.getElementById('mixPreviewBtn').onclick=()=>{
 function buildMixSummary(){
   const parts=[];
   if(draftAmbience.enabled) parts.push(AMBIENCE_LABELS[normAmbienceType(draftAmbience.type)]);
-  if(draftMusic.enabled) parts.push('♪'+MUSIC_LABELS[normMusicType(draftMusic.type)]);
+  if(draftMusic.enabled) parts.push('♪'+musicLabel(normMusicType(draftMusic.type)));
   if(draftBinaural.enabled) parts.push(BINAURAL_PRESETS[draftBinaural.type].label);
   parts.push(VOICE_LEVEL_LABEL[draftVoiceLevel]);
   if(draftVoiceSpeed!==1) parts.push(draftVoiceSpeed+'x');
