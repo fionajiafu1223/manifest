@@ -467,17 +467,18 @@ body{
             <button class="chip" data-type="calm-zen">禅音</button>
             <button class="chip" data-type="calm-still">静水</button>
             <button class="chip" data-type="calm-light">冥想之光</button>
+            <button class="chip" data-type="calm-cloud">云端</button>
           </div>
           <div class="amb-group">梦境</div>
           <div class="chip-row">
             <button class="chip" data-type="dream-stars">星空漂浮</button>
-            <button class="chip" data-type="dream-cloud">云端</button>
           </div>
           <div class="amb-group">温柔</div>
           <div class="chip-row">
             <button class="chip" data-type="gentle-morning">晨光钢琴</button>
             <button class="chip" data-type="gentle-monologue">独白</button>
             <button class="chip" data-type="gentle-story">温柔故事</button>
+            <button class="chip" data-type="gentle-whisper">轻语</button>
           </div>
           <div class="amb-group">浪漫</div>
           <div class="chip-row">
@@ -488,7 +489,6 @@ body{
           </div>
           <div class="amb-group">力量</div>
           <div class="chip-row">
-            <button class="chip" data-type="power-journey">启程</button>
             <button class="chip" data-type="power-faraway">远方</button>
             <button class="chip" data-type="power-dawn">破晓</button>
           </div>
@@ -718,7 +718,7 @@ async function loadAmbienceBuffer(type){
   return ambienceCache[type];
 }
 /* 背景音乐（www/music/，来源与授权见 music/LICENSE.md） */
-const MUSIC_LABELS={"calm-zen": "禅音", "calm-still": "静水", "calm-light": "冥想之光", "dream-stars": "星空漂浮", "dream-cloud": "云端", "gentle-morning": "晨光钢琴", "gentle-monologue": "独白", "gentle-story": "温柔故事", "romance-heart": "心动", "romance-glow": "微光", "romance-embrace": "相拥", "romance-with-you": "与你同在", "power-journey": "启程", "power-faraway": "远方", "power-dawn": "破晓"};
+const MUSIC_LABELS={"calm-zen": "禅音", "calm-still": "静水", "calm-light": "冥想之光", "calm-cloud": "云端", "dream-stars": "星空漂浮", "gentle-morning": "晨光钢琴", "gentle-monologue": "独白", "gentle-story": "温柔故事", "gentle-whisper": "轻语", "romance-heart": "心动", "romance-glow": "微光", "romance-embrace": "相拥", "romance-with-you": "与你同在", "power-faraway": "远方", "power-dawn": "破晓"};
 function normMusicType(t){ return MUSIC_LABELS[t]?t:'calm-zen'; }
 const musicCache={};
 async function loadMusicBuffer(type){

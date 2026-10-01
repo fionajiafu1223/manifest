@@ -11,7 +11,7 @@
 | calm-still | 静水 | danamusic - meditation relaxing music (293922) |
 | calm-light | 冥想之光 | sigmamusicart - meditation music (514539) |
 | dream-stars | 星空漂浮 | saturn-3-music - ethereal space relaxation (526857) |
-| dream-cloud | 云端 | verclub_music - meditation music (550885) |
+| calm-cloud | 云端 | verclub_music - meditation music (550885) |
 | gentle-morning | 晨光钢琴 | alex-morgan - calm piano (541028) |
 | gentle-monologue | 独白 | leberch - piano (580534) |
 | gentle-story | 温柔故事 | leberch - inspirational calm romantic story piano (375930) |
@@ -19,6 +19,6 @@
 | romance-glow | 微光 | prettyjohn1 - romantic (486823) |
 | romance-embrace | 相拥 | nastelbom - romantic (454545) |
 | romance-with-you | 与你同在 | studiokolomna - moments with you (358369) |
-| power-journey | 启程 | andriih - calm music (579810) |
+| gentle-whisper | 轻语 | andriih - calm music (579810) |
 | power-faraway | 远方 | starostin - ambient music (563333) |
 | power-dawn | 破晓 | tatamusic - ambient music (595127) |
