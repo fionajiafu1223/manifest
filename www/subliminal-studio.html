@@ -455,12 +455,49 @@ body{
       </div>
     </div>
 
-    <div class="mix-layer locked">
+    <div class="mix-layer" id="musicLayer">
       <div class="mix-layer-head">
         <span class="mix-layer-title">MUSIC · 音乐</span>
-        <div class="toggle-switch"></div>
+        <div class="toggle-switch" id="musicToggle"></div>
       </div>
-      <div class="soon-note">敬请期待 · ambient / piano / soft / dream</div>
+      <div id="musicBody" style="display:none;">
+        <div id="musicChips" class="amb-list">
+          <div class="amb-group">平静</div>
+          <div class="chip-row">
+            <button class="chip" data-type="calm-zen">禅音</button>
+            <button class="chip" data-type="calm-still">静水</button>
+            <button class="chip" data-type="calm-light">冥想之光</button>
+          </div>
+          <div class="amb-group">梦境</div>
+          <div class="chip-row">
+            <button class="chip" data-type="dream-stars">星空漂浮</button>
+            <button class="chip" data-type="dream-cloud">云端</button>
+          </div>
+          <div class="amb-group">温柔</div>
+          <div class="chip-row">
+            <button class="chip" data-type="gentle-morning">晨光钢琴</button>
+            <button class="chip" data-type="gentle-monologue">独白</button>
+            <button class="chip" data-type="gentle-story">温柔故事</button>
+          </div>
+          <div class="amb-group">浪漫</div>
+          <div class="chip-row">
+            <button class="chip" data-type="romance-heart">心动</button>
+            <button class="chip" data-type="romance-glow">微光</button>
+            <button class="chip" data-type="romance-embrace">相拥</button>
+            <button class="chip" data-type="romance-with-you">与你同在</button>
+          </div>
+          <div class="amb-group">力量</div>
+          <div class="chip-row">
+            <button class="chip" data-type="power-journey">启程</button>
+            <button class="chip" data-type="power-faraway">远方</button>
+            <button class="chip" data-type="power-dawn">破晓</button>
+          </div>
+        </div>
+        <div class="mix-vol-row">
+          <span style="font-size:11px;color:#688a41;">音量</span>
+          <input type="range" id="musicVolSlider" min="0" max="100" value="35">
+        </div>
+      </div>
     </div>
 
     <div class="mix-layer" id="binauralLayer">
@@ -679,6 +716,20 @@ async function loadAmbienceBuffer(type){
     })().catch(e=>{ delete ambienceCache[type]; throw e; });
   }
   return ambienceCache[type];
+}
+/* 背景音乐（www/music/，来源与授权见 music/LICENSE.md） */
+const MUSIC_LABELS={"calm-zen": "禅音", "calm-still": "静水", "calm-light": "冥想之光", "dream-stars": "星空漂浮", "dream-cloud": "云端", "gentle-morning": "晨光钢琴", "gentle-monologue": "独白", "gentle-story": "温柔故事", "romance-heart": "心动", "romance-glow": "微光", "romance-embrace": "相拥", "romance-with-you": "与你同在", "power-journey": "启程", "power-faraway": "远方", "power-dawn": "破晓"};
+function normMusicType(t){ return MUSIC_LABELS[t]?t:'calm-zen'; }
+const musicCache={};
+async function loadMusicBuffer(type){
+  type=normMusicType(type);
+  if(!musicCache[type]){
+    musicCache[type]=(async()=>{
+      const res=await fetch('music/'+type+'.mp3');
+      return await getCtx().decodeAudioData(await res.arrayBuffer());
+    })().catch(e=>{ delete musicCache[type]; throw e; });
+  }
+  return musicCache[type];
 }
 // 把背景音铺满整段音频，结尾和开头交叉淡化，整段音频循环播放时背景音无缝衔接
 function buildSeamlessAmbience(src,len,sr){
@@ -985,6 +1036,7 @@ let draftFreeformBlob=null;
 let draftVoiceLevel='clear';
 let draftVoiceSpeed=1;
 let draftAmbience={enabled:false, type:'light-rain', volume:50};
+let draftMusic={enabled:false, type:'calm-zen', volume:35};
 let draftBinaural={enabled:false, type:'theta', volume:35};
 
 function resetDraft(){
@@ -995,6 +1047,7 @@ function resetDraft(){
   draftVoiceLevel='clear';
   draftVoiceSpeed=1;
   draftAmbience={enabled:false, type:'light-rain', volume:50};
+  draftMusic={enabled:false, type:'calm-zen', volume:35};
   draftBinaural={enabled:false, type:'theta', volume:35};
 }
 async function loadTrackIntoDraft(trackId){
@@ -1006,6 +1059,7 @@ async function loadTrackIntoDraft(trackId){
   draftVoiceLevel=track.voiceLevel||'clear';
   draftVoiceSpeed=track.voiceSpeed||1;
   draftAmbience={enabled:!!track.ambienceType, type:normAmbienceType(track.ambienceType||'light-rain'), volume:track.ambienceVolume??50};
+  draftMusic={enabled:!!track.musicType, type:normMusicType(track.musicType||'calm-zen'), volume:track.musicVolume??35};
   draftBinaural={enabled:!!track.binauralType, type:track.binauralType||'theta', volume:track.binauralVolume??35};
 }
 
@@ -1234,6 +1288,11 @@ function refreshMixUI(){
   document.querySelectorAll('#ambienceChips .chip:not(.soon)').forEach(c=>c.classList.toggle('selected', c.dataset.type===draftAmbience.type));
   document.getElementById('ambienceVolSlider').value=draftAmbience.volume;
 
+  document.getElementById('musicToggle').classList.toggle('on', draftMusic.enabled);
+  document.getElementById('musicBody').style.display = draftMusic.enabled?'block':'none';
+  document.querySelectorAll('#musicChips .chip').forEach(c=>c.classList.toggle('selected', c.dataset.type===draftMusic.type));
+  document.getElementById('musicVolSlider').value=draftMusic.volume;
+
   document.getElementById('binauralToggle').classList.toggle('on', draftBinaural.enabled);
   document.getElementById('binauralBody').style.display = draftBinaural.enabled?'block':'none';
   document.querySelectorAll('#binauralChips .chip').forEach(c=>c.classList.toggle('selected', c.dataset.type===draftBinaural.type));
@@ -1254,6 +1313,12 @@ document.querySelectorAll('#ambienceChips .chip.soon').forEach(btn=>{
 });
 ['input','change'].forEach(ev=>document.getElementById('ambienceVolSlider').addEventListener(ev,(e)=>{ draftAmbience.volume=parseInt(e.target.value); liveUpdateAmbienceVol(); }));
 
+document.getElementById('musicToggle').onclick=()=>{ draftMusic.enabled=!draftMusic.enabled; refreshMixUI(); liveRestartAmbience(); };
+document.querySelectorAll('#musicChips .chip').forEach(btn=>{
+  btn.onclick=()=>{ draftMusic.type=btn.dataset.type; refreshMixUI(); liveRestartAmbience(); };
+});
+['input','change'].forEach(ev=>document.getElementById('musicVolSlider').addEventListener(ev,(e)=>{ draftMusic.volume=parseInt(e.target.value); if(isLivePreviewing) setGainSmooth(liveMusicGain, draftMusic.volume/100); }));
+
 document.getElementById('binauralToggle').onclick=()=>{ draftBinaural.enabled=!draftBinaural.enabled; refreshMixUI(); liveRestartBinaural(); };
 document.querySelectorAll('#binauralChips .chip').forEach(btn=>{
   btn.onclick=()=>{ draftBinaural.type=btn.dataset.type; refreshMixUI(); liveRestartBinaural(); };
@@ -1263,6 +1328,7 @@ document.querySelectorAll('#binauralChips .chip').forEach(btn=>{
 /* --- 实时试听：拖动滑块立刻听到变化，不需要"保存→重新生成→播放" --- */
 let liveVoiceSource=null, liveVoiceGain=null;
 let liveAmbienceSource=null, liveAmbienceGain=null;
+let liveMusicSource=null, liveMusicGain=null;
 let liveBinauralSource=null, liveBinauralGain=null;
 let liveVoiceBuffer=null;
 let isLivePreviewing=false;
@@ -1363,6 +1429,11 @@ async function startLivePreview(){
     try{ ambBuf=await loadAmbienceBuffer(draftAmbience.type); }catch(e){ console.error(e); showToast('背景音加载失败'); }
     if(gen!==livePreviewGen) return;
   }
+  let musBuf=null;
+  if(draftMusic.enabled){
+    try{ musBuf=await loadMusicBuffer(draftMusic.type); }catch(e){ console.error(e); showToast('音乐加载失败'); }
+    if(gen!==livePreviewGen) return;
+  }
 
   liveVoiceSource=ctx.createBufferSource();
   liveVoiceSource.buffer=liveVoiceBuffer; liveVoiceSource.loop=true;
@@ -1375,6 +1446,12 @@ async function startLivePreview(){
     liveAmbienceGain=ctx.createGain(); liveAmbienceGain.gain.value=draftAmbience.volume/100;
     liveAmbienceSource.connect(liveAmbienceGain).connect(ctx.destination);
     liveAmbienceSource.start();
+  }
+  if(draftMusic.enabled && musBuf){
+    liveMusicSource=ctx.createBufferSource(); liveMusicSource.buffer=musBuf; liveMusicSource.loop=true;
+    liveMusicGain=ctx.createGain(); liveMusicGain.gain.value=draftMusic.volume/100;
+    liveMusicSource.connect(liveMusicGain).connect(ctx.destination);
+    liveMusicSource.start();
   }
   if(draftBinaural.enabled){
     const buf=generateBinauralBuffer(draftBinaural.type, liveVoiceBuffer.length, liveVoiceBuffer.sampleRate);
@@ -1391,8 +1468,9 @@ function stopLivePreview(){
   try{ if(liveVoiceSource) liveVoiceSource.stop(); }catch(e){}
   try{ if(liveAmbienceSource) liveAmbienceSource.stop(); }catch(e){}
   try{ if(liveBinauralSource) liveBinauralSource.stop(); }catch(e){}
-  liveVoiceSource=liveAmbienceSource=liveBinauralSource=null;
-  liveVoiceGain=liveAmbienceGain=liveBinauralGain=null;
+  try{ if(liveMusicSource) liveMusicSource.stop(); }catch(e){}
+  liveVoiceSource=liveAmbienceSource=liveBinauralSource=liveMusicSource=null;
+  liveVoiceGain=liveAmbienceGain=liveBinauralGain=liveMusicGain=null;
   isLivePreviewing=false;
   document.getElementById('mixPreviewBtn').textContent='▶ 试听混音效果';
 }
@@ -1420,6 +1498,7 @@ document.getElementById('mixPreviewBtn').onclick=()=>{
 function buildMixSummary(){
   const parts=[];
   if(draftAmbience.enabled) parts.push(AMBIENCE_LABELS[normAmbienceType(draftAmbience.type)]);
+  if(draftMusic.enabled) parts.push('♪'+MUSIC_LABELS[normMusicType(draftMusic.type)]);
   if(draftBinaural.enabled) parts.push(BINAURAL_PRESETS[draftBinaural.type].label);
   parts.push(VOICE_LEVEL_LABEL[draftVoiceLevel]);
   if(draftVoiceSpeed!==1) parts.push(draftVoiceSpeed+'x');
@@ -1447,6 +1526,12 @@ document.getElementById('mixSaveBtn').onclick=async ()=>{
         const aGain=offline.createGain(); aGain.gain.value=draftAmbience.volume/100;
         aSrc.connect(aGain).connect(offline.destination); aSrc.start();
       }
+      if(draftMusic.enabled){
+        const mBuf=await loadMusicBuffer(draftMusic.type);
+        const mSrc=offline.createBufferSource(); mSrc.buffer=buildSeamlessAmbience(mBuf, len, sr);
+        const mGain=offline.createGain(); mGain.gain.value=draftMusic.volume/100;
+        mSrc.connect(mGain).connect(offline.destination); mSrc.start();
+      }
       if(draftBinaural.enabled){
         const bBuf=generateBinauralBuffer(draftBinaural.type, len, sr);
         const bSrc=offline.createBufferSource(); bSrc.buffer=bBuf;
@@ -1471,6 +1556,8 @@ document.getElementById('mixSaveBtn').onclick=async ()=>{
         voiceSpeed: draftVoiceSpeed,
         ambienceType: draftAmbience.enabled ? draftAmbience.type : null,
         ambienceVolume: draftAmbience.volume,
+        musicType: draftMusic.enabled ? draftMusic.type : null,
+        musicVolume: draftMusic.volume,
         binauralType: draftBinaural.enabled ? draftBinaural.type : null,
         binauralVolume: draftBinaural.volume,
       };
