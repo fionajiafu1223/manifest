@@ -157,6 +157,9 @@ body{
 .mix-vol-row{display:flex;align-items:center;gap:10px;}
 .mix-vol-row input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(120,90,60,0.2);outline:none;}
 .mix-vol-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:linear-gradient(135deg,#436b29,#688a41);cursor:pointer;}
+.voice-db-head{display:flex;justify-content:space-between;font-size:11px;color:#688a41;letter-spacing:1px;margin:2px 0 6px;}
+#voiceDbReadout{color:#22460f;font-weight:600;}
+.voice-db-ticks{display:flex;justify-content:space-between;font-size:10px;color:rgba(104,138,65,0.7);margin:3px 44px 10px 50px;}
 .soon-note{font-size:11px;color:#688a41;}
 
 .btn{width:100%;padding:13px;border-radius:14px;border:none;cursor:pointer;
@@ -347,11 +350,13 @@ body{
 
     <div class="mix-layer">
       <div class="mix-layer-head"><span class="mix-layer-title">VOICE · 我的声音</span></div>
-      <div class="chip-row" id="voiceLevelChips">
-        <button class="chip selected" data-level="clear">清晰</button>
-        <button class="chip" data-level="soft">轻声</button>
-        <button class="chip" data-level="faint">很轻</button>
+      <div class="voice-db-head"><span>人声音量</span><span id="voiceDbReadout"></span></div>
+      <div class="mix-vol-row">
+        <span style="font-size:11px;color:#688a41;">潜意识</span>
+        <input type="range" id="voiceDbSlider" min="-60" max="6" step="1" value="-35">
+        <span style="font-size:11px;color:#688a41;">清晰</span>
       </div>
+      <div class="voice-db-ticks"><span>-60</span><span>-40</span><span>-20</span><span>0</span></div>
       <div style="font-size:11px;color:#688a41;letter-spacing:1px;margin:2px 0 6px;">语速（音调不变）</div>
       <div class="chip-row" id="voiceSpeedChips">
         <button class="chip selected" data-speed="1">1x</button>
@@ -764,18 +769,51 @@ async function loadMusicBuffer(type){
   }
   return musicCache[type];
 }
-// 把背景音铺满整段音频，结尾和开头交叉淡化，整段音频循环播放时背景音无缝衔接
-function buildSeamlessAmbience(src,len,sr){
-  const out=getCtx().createBuffer(2,len,sr);
-  const ratio=src.sampleRate/sr, sLen=src.length;
-  const X=Math.min(Math.round(sr*1.5), Math.floor(len/4));
-  for(let c=0;c<2;c++){
-    const s=src.getChannelData(Math.min(c,src.numberOfChannels-1)), o=out.getChannelData(c);
-    const at=(i)=>s[Math.floor(i*ratio)%sLen];
-    for(let i=0;i<len;i++) o[i]=at(i);
-    for(let i=0;i<X;i++){ const f=i/X; o[i]=o[i]*f+at(len+i)*(1-f); }
+const BG_XFADE_SEC=3;      // 背景音循环接缝的交叉淡化时长
+const BG_MAX_SEC=6*60;     // 导出时背景音最多铺 6 分钟（防止手机内存不够）
+// 试听用：把背景音做成首尾交叉淡化的循环单元，loop 播放时没有断点
+const loopUnitCache=new WeakMap();
+function makeLoopUnit(src){
+  if(loopUnitCache.has(src)) return loopUnitCache.get(src);
+  const sr=src.sampleRate, L=src.length;
+  const X=Math.min(Math.round(sr*BG_XFADE_SEC), Math.floor(L/4));
+  const U=L-X;
+  const out=getCtx().createBuffer(src.numberOfChannels,U,sr);
+  for(let c=0;c<src.numberOfChannels;c++){
+    const s=src.getChannelData(c), o=out.getChannelData(c);
+    o.set(s.subarray(0,U));
+    for(let i=0;i<X;i++){ const f=i/X; o[i]=s[i]*Math.sin(f*Math.PI/2)+s[U+i]*Math.cos(f*Math.PI/2); }
   }
+  loopUnitCache.set(src,out);
   return out;
+}
+// 导出用：把完整背景音按原样排进时间线；不够长就接着再放一遍，每个接缝 3 秒交叉淡化；
+// 整个文件结尾和开头也交叉淡化，聆听室循环播放时不断
+function scheduleBackground(offline, srcBuf, T, gainValue){
+  const out=offline.createGain(); out.gain.value=gainValue; out.connect(offline.destination);
+  const L=Math.min(srcBuf.duration, T);
+  const X=Math.min(BG_XFADE_SEC, L/4);
+  const N=64, fin=new Float32Array(N), fout=new Float32Array(N);
+  for(let i=0;i<N;i++){ const f=i/(N-1); fin[i]=Math.sin(f*Math.PI/2); fout[i]=Math.cos(f*Math.PI/2); }
+  const step=L-X;
+  const starts=[]; for(let t=0; t<T-0.01; t+=step) starts.push(t);
+  const play=(when, offset, dur, fadeIn, fadeOut, outLen)=>{
+    const src=offline.createBufferSource(); src.buffer=srcBuf;
+    const g=offline.createGain(); g.gain.value=fadeIn?0:1;
+    if(fadeIn) g.gain.setValueCurveAtTime(fin, when, Math.min(X,dur));
+    if(fadeOut){ const fl=Math.min(outLen||X, dur); g.gain.setValueCurveAtTime(fout, when+dur-fl, fl); }
+    src.connect(g).connect(out); src.start(when, offset, dur);
+  };
+  // 背景音比整段还长（超长的自传音乐）：从头放到结尾，最后淡出
+  if(srcBuf.duration>=T-0.01){ play(0, 0, T, false, true); return; }
+  const last=starts[starts.length-1];
+  const wrapOffset=T-last;               // 最后一遍放到文件结尾时，播到了第几秒
+  const hasWrap= wrapOffset < L-0.05;    // 还没放完 → 剩下的从文件开头接上
+  starts.forEach((t,k)=>{
+    const isLast= k===starts.length-1;
+    play(t, 0, isLast ? T-t : L, k>0 || hasWrap, !isLast);
+  });
+  if(hasWrap){ const d=Math.min(X, L-wrapOffset); play(0, wrapOffset, d, false, true, d); }
 }
 function generateAmbienceBuffer(type,lengthInSamples,sampleRate){
   const ctx=getCtx();
@@ -847,7 +885,12 @@ function concatBuffers(buffers,sampleRate,gapSec){
 }
 
 /* ══════════════════ 听室渲染 ══════════════════ */
-const VOICE_LEVEL_LABEL={clear:'清晰',soft:'轻声',faint:'很轻'};
+const VOICE_LEVEL_DB={clear:0, soft:-7, faint:-15}; // 旧版三档 → dB
+function voiceDbText(db){
+  const t= db<=-45?'几乎听不见': db<=-25?'潜意识': db<=-10?'隐约':'清晰';
+  return (db>0?'+':'')+db+' dB · '+t;
+}
+function dbToGain(db){ return Math.pow(10, db/20); }
 let allTracks=[];
 
 async function renderRoom(){
@@ -1066,7 +1109,7 @@ let editingTrackId=null;
 let draftMode='sentences'; // 'sentences' | 'freeform'
 let draftSentences=[]; // {id, text, blob}
 let draftFreeformBlob=null;
-let draftVoiceLevel='clear';
+let draftVoiceDb=-35;
 let draftVoiceSpeed=1;
 let draftAmbience={enabled:false, type:'light-rain', volume:50};
 let draftMusic={enabled:false, type:'calm-zen', volume:35};
@@ -1077,7 +1120,7 @@ function resetDraft(){
   draftMode='sentences';
   draftSentences=[];
   draftFreeformBlob=null;
-  draftVoiceLevel='clear';
+  draftVoiceDb=-35;
   draftVoiceSpeed=1;
   draftAmbience={enabled:false, type:'light-rain', volume:50};
   draftMusic={enabled:false, type:'calm-zen', volume:35};
@@ -1089,7 +1132,7 @@ async function loadTrackIntoDraft(trackId){
   draftMode=track.mode;
   draftSentences=track.sentences? track.sentences.map(s=>({...s})) : [];
   draftFreeformBlob=track.freeformBlob||null;
-  draftVoiceLevel=track.voiceLevel||'clear';
+  draftVoiceDb= (typeof track.voiceDb==='number') ? track.voiceDb : (VOICE_LEVEL_DB[track.voiceLevel] ?? -35);
   draftVoiceSpeed=track.voiceSpeed||1;
   draftAmbience={enabled:!!track.ambienceType, type:normAmbienceType(track.ambienceType||'light-rain'), volume:track.ambienceVolume??50};
   draftMusic={enabled:!!track.musicType, type:normMusicType(track.musicType||'calm-zen'), volume:track.musicVolume??35};
@@ -1314,7 +1357,8 @@ document.getElementById('mixBackBtn').onclick=()=>{
 };
 
 function refreshMixUI(){
-  document.querySelectorAll('#voiceLevelChips .chip').forEach(c=>c.classList.toggle('selected', c.dataset.level===draftVoiceLevel));
+  document.getElementById('voiceDbSlider').value=draftVoiceDb;
+  document.getElementById('voiceDbReadout').textContent=voiceDbText(draftVoiceDb);
   document.querySelectorAll('#voiceSpeedChips .chip').forEach(c=>c.classList.toggle('selected', parseFloat(c.dataset.speed)===draftVoiceSpeed));
   document.getElementById('ambienceToggle').classList.toggle('on', draftAmbience.enabled);
   document.getElementById('ambienceBody').style.display = draftAmbience.enabled?'block':'none';
@@ -1334,9 +1378,11 @@ function refreshMixUI(){
 document.querySelectorAll('#voiceSpeedChips .chip').forEach(btn=>{
   btn.onclick=()=>{ draftVoiceSpeed=parseFloat(btn.dataset.speed); refreshMixUI(); if(isLivePreviewing) startLivePreview(); };
 });
-document.querySelectorAll('#voiceLevelChips .chip').forEach(btn=>{
-  btn.onclick=()=>{ draftVoiceLevel=btn.dataset.level; refreshMixUI(); liveUpdateVoice(); };
-});
+['input','change'].forEach(ev=>document.getElementById('voiceDbSlider').addEventListener(ev,(e)=>{
+  draftVoiceDb=parseInt(e.target.value);
+  document.getElementById('voiceDbReadout').textContent=voiceDbText(draftVoiceDb);
+  liveUpdateVoice();
+}));
 document.getElementById('ambienceToggle').onclick=()=>{ draftAmbience.enabled=!draftAmbience.enabled; refreshMixUI(); liveRestartAmbience(); };
 document.querySelectorAll('#ambienceChips .chip:not(.soon)').forEach(btn=>{
   btn.onclick=()=>{ draftAmbience.type=btn.dataset.type; refreshMixUI(); liveRestartAmbience(); };
@@ -1414,7 +1460,6 @@ let liveBinauralSource=null, liveBinauralGain=null;
 let liveVoiceBuffer=null;
 let isLivePreviewing=false;
 let livePreviewGen=0; // 每次启动/停止都+1，旧的还没启动完的试听直接作废
-const VOICE_LEVEL_GAIN={clear:1.0, soft:0.45, faint:0.18};
 
 // 手机录音通常很小声，先把人声统一放大到接近满格，"清晰/轻声/很轻"和背景音的差别才听得出来
 function normalizeBuffer(buf,target){
@@ -1518,18 +1563,18 @@ async function startLivePreview(){
 
   liveVoiceSource=ctx.createBufferSource();
   liveVoiceSource.buffer=liveVoiceBuffer; liveVoiceSource.loop=true;
-  liveVoiceGain=ctx.createGain(); liveVoiceGain.gain.value=VOICE_LEVEL_GAIN[draftVoiceLevel];
+  liveVoiceGain=ctx.createGain(); liveVoiceGain.gain.value=dbToGain(draftVoiceDb);
   liveVoiceSource.connect(liveVoiceGain).connect(ctx.destination);
   liveVoiceSource.start();
 
   if(draftAmbience.enabled && ambBuf){
-    liveAmbienceSource=ctx.createBufferSource(); liveAmbienceSource.buffer=ambBuf; liveAmbienceSource.loop=true;
+    liveAmbienceSource=ctx.createBufferSource(); liveAmbienceSource.buffer=makeLoopUnit(ambBuf); liveAmbienceSource.loop=true;
     liveAmbienceGain=ctx.createGain(); liveAmbienceGain.gain.value=draftAmbience.volume/100;
     liveAmbienceSource.connect(liveAmbienceGain).connect(ctx.destination);
     liveAmbienceSource.start();
   }
   if(draftMusic.enabled && musBuf){
-    liveMusicSource=ctx.createBufferSource(); liveMusicSource.buffer=musBuf; liveMusicSource.loop=true;
+    liveMusicSource=ctx.createBufferSource(); liveMusicSource.buffer=makeLoopUnit(musBuf); liveMusicSource.loop=true;
     liveMusicGain=ctx.createGain(); liveMusicGain.gain.value=draftMusic.volume/100;
     liveMusicSource.connect(liveMusicGain).connect(ctx.destination);
     liveMusicSource.start();
@@ -1565,7 +1610,7 @@ function setGainSmooth(g,v){
     g.gain.linearRampToValueAtTime(v,t+0.08);
   }catch(e){ g.gain.value=v; }
 }
-function liveUpdateVoice(){ if(isLivePreviewing) setGainSmooth(liveVoiceGain, VOICE_LEVEL_GAIN[draftVoiceLevel]); }
+function liveUpdateVoice(){ if(isLivePreviewing) setGainSmooth(liveVoiceGain, dbToGain(draftVoiceDb)); }
 function liveUpdateAmbienceVol(){ if(isLivePreviewing) setGainSmooth(liveAmbienceGain, draftAmbience.volume/100); }
 function liveUpdateBinauralVol(){ if(isLivePreviewing) setGainSmooth(liveBinauralGain, draftBinaural.volume/100); }
 function liveRestartAmbience(){ if(isLivePreviewing) startLivePreview(); }
@@ -1581,7 +1626,7 @@ function buildMixSummary(){
   if(draftAmbience.enabled) parts.push(AMBIENCE_LABELS[normAmbienceType(draftAmbience.type)]);
   if(draftMusic.enabled) parts.push('♪'+musicLabel(normMusicType(draftMusic.type)));
   if(draftBinaural.enabled) parts.push(BINAURAL_PRESETS[draftBinaural.type].label);
-  parts.push(VOICE_LEVEL_LABEL[draftVoiceLevel]);
+  parts.push('人声 '+(draftVoiceDb>0?'+':'')+draftVoiceDb+'dB');
   if(draftVoiceSpeed!==1) parts.push(draftVoiceSpeed+'x');
   return parts.join(' · ');
 }
@@ -1591,28 +1636,20 @@ document.getElementById('mixSaveBtn').onclick=async ()=>{
   openNameModal(editingTrackId ? (allTracks.find(t=>t.id===editingTrackId)||{}).name : '', async (name)=>{
     stopLivePreview();
     try{
-      // 人声重复整数遍，让整段音频至少 60 秒：
-      // 加速后人声很短时，背景音不会被切成几秒一段反复重播，听起来仍是正常速度、连续的
+      // 导出时长：背景音按完整长度放（最多 6 分钟），至少 60 秒，再补齐到人声整数遍
       const sr=voiceBuffer.sampleRate, vLen=voiceBuffer.length;
-      const reps=Math.max(1, Math.ceil(60*sr/vLen));
-      const len=vLen*reps;
+      const aBuf= draftAmbience.enabled ? await loadAmbienceBuffer(draftAmbience.type) : null;
+      const mBuf= draftMusic.enabled ? await loadMusicBuffer(draftMusic.type) : null;
+      const bgSec=Math.min(BG_MAX_SEC, Math.max(aBuf?aBuf.duration:0, mBuf?mBuf.duration:0));
+      const reps=Math.max(1, Math.ceil(Math.max(60, bgSec)*sr/vLen));
+      const len=vLen*reps, T=len/sr;
       const offline=new OfflineAudioContext(2, len, sr);
       const vSrc=offline.createBufferSource(); vSrc.buffer=voiceBuffer; vSrc.loop=true;
-      const vGain=offline.createGain(); vGain.gain.value=VOICE_LEVEL_GAIN[draftVoiceLevel];
+      const vGain=offline.createGain(); vGain.gain.value=dbToGain(draftVoiceDb);
       vSrc.connect(vGain).connect(offline.destination); vSrc.start();
 
-      if(draftAmbience.enabled){
-        const aBuf=await loadAmbienceBuffer(draftAmbience.type);
-        const aSrc=offline.createBufferSource(); aSrc.buffer=buildSeamlessAmbience(aBuf, len, sr);
-        const aGain=offline.createGain(); aGain.gain.value=draftAmbience.volume/100;
-        aSrc.connect(aGain).connect(offline.destination); aSrc.start();
-      }
-      if(draftMusic.enabled){
-        const mBuf=await loadMusicBuffer(draftMusic.type);
-        const mSrc=offline.createBufferSource(); mSrc.buffer=buildSeamlessAmbience(mBuf, len, sr);
-        const mGain=offline.createGain(); mGain.gain.value=draftMusic.volume/100;
-        mSrc.connect(mGain).connect(offline.destination); mSrc.start();
-      }
+      if(aBuf) scheduleBackground(offline, aBuf, T, draftAmbience.volume/100);
+      if(mBuf) scheduleBackground(offline, mBuf, T, draftMusic.volume/100);
       if(draftBinaural.enabled){
         const bBuf=generateBinauralBuffer(draftBinaural.type, len, sr);
         const bSrc=offline.createBufferSource(); bSrc.buffer=bBuf;
@@ -1633,7 +1670,7 @@ document.getElementById('mixSaveBtn').onclick=async ()=>{
         mode: draftMode,
         sentences: draftMode==='sentences' ? draftSentences.map(s=>({id:s.id, text:s.text, blob:s.blob})) : null,
         freeformBlob: draftMode==='freeform' ? draftFreeformBlob : null,
-        voiceLevel: draftVoiceLevel,
+        voiceDb: draftVoiceDb,
         voiceSpeed: draftVoiceSpeed,
         ambienceType: draftAmbience.enabled ? draftAmbience.type : null,
         ambienceVolume: draftAmbience.volume,
