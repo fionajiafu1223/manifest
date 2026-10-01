@@ -160,6 +160,17 @@ body{
 .voice-db-head{display:flex;justify-content:space-between;font-size:11px;color:#688a41;letter-spacing:1px;margin:2px 0 6px;}
 #voiceDbReadout{color:#22460f;font-weight:600;}
 .voice-db-ticks{display:flex;justify-content:space-between;font-size:10px;color:rgba(104,138,65,0.7);margin:3px 44px 10px 50px;}
+.info-btn{width:18px;height:18px;border-radius:50%;border:1px solid rgba(104,138,65,0.55);background:transparent;color:#688a41;
+  font-size:11px;font-family:Georgia,serif;font-style:italic;line-height:16px;padding:0;cursor:pointer;flex-shrink:0;}
+.vol-readout{font-size:11px;color:#22460f;font-weight:600;min-width:52px;text-align:right;font-variant-numeric:tabular-nums;}
+.param-line{font-size:11px;color:#688a41;margin:-2px 0 8px;font-variant-numeric:tabular-nums;}
+.info-body{font-size:13px;line-height:1.8;color:#2f4a1f;}
+.info-body p{margin:0 0 0.8rem;}
+.info-src{font-size:11px;color:#688a41;border-top:1px solid rgba(104,138,65,0.2);padding-top:0.6rem;margin-top:0.4rem;line-height:1.7;}
+.profile-table{width:100%;border-collapse:collapse;font-size:13px;color:#22460f;font-variant-numeric:tabular-nums;}
+.profile-table td{padding:9px 2px;border-bottom:1px solid rgba(104,138,65,0.15);vertical-align:top;}
+.profile-table td:first-child{color:#688a41;width:34%;}
+.profile-section{font-size:11px;color:#436b29;font-weight:600;letter-spacing:1px;margin:1rem 0 0.2rem;}
 .soon-note{font-size:11px;color:#688a41;}
 
 .btn{width:100%;padding:13px;border-radius:14px;border:none;cursor:pointer;
@@ -349,7 +360,7 @@ body{
     </div>
 
     <div class="mix-layer">
-      <div class="mix-layer-head"><span class="mix-layer-title">VOICE · 我的声音</span></div>
+      <div class="mix-layer-head"><span class="mix-layer-title">VOICE · 我的声音 <button class="info-btn" data-info="voice">i</button></span></div>
       <div class="voice-db-head"><span>人声音量</span><span id="voiceDbReadout"></span></div>
       <div class="mix-vol-row">
         <span style="font-size:11px;color:#688a41;">潜意识</span>
@@ -357,7 +368,7 @@ body{
         <span style="font-size:11px;color:#688a41;">清晰</span>
       </div>
       <div class="voice-db-ticks"><span>-60</span><span>-40</span><span>-20</span><span>0</span></div>
-      <div style="font-size:11px;color:#688a41;letter-spacing:1px;margin:2px 0 6px;">语速（音调不变）</div>
+      <div style="font-size:11px;color:#688a41;letter-spacing:1px;margin:2px 0 6px;display:flex;align-items:center;gap:6px;">语速（音调不变）<button class="info-btn" data-info="speed">i</button></div>
       <div class="chip-row" id="voiceSpeedChips">
         <button class="chip selected" data-speed="1">1x</button>
         <button class="chip" data-speed="1.5">1.5x</button>
@@ -369,10 +380,11 @@ body{
 
     <div class="mix-layer" id="ambienceLayer">
       <div class="mix-layer-head">
-        <span class="mix-layer-title">AMBIENCE · 背景</span>
+        <span class="mix-layer-title">AMBIENCE · 背景 <button class="info-btn" data-info="ambience">i</button></span>
         <div class="toggle-switch" id="ambienceToggle"></div>
       </div>
       <div id="ambienceBody" style="display:none;">
+        <div class="param-line" id="ambienceParam"></div>
         <div id="ambienceChips" class="amb-list">
           <div class="amb-group">复合场景</div>
           <div class="chip-row">
@@ -456,16 +468,18 @@ body{
         <div class="mix-vol-row">
           <span style="font-size:11px;color:#688a41;">音量</span>
           <input type="range" id="ambienceVolSlider" min="0" max="100" value="50">
+          <span class="vol-readout" id="ambienceVolReadout"></span>
         </div>
       </div>
     </div>
 
     <div class="mix-layer" id="musicLayer">
       <div class="mix-layer-head">
-        <span class="mix-layer-title">MUSIC · 音乐</span>
+        <span class="mix-layer-title">MUSIC · 音乐 <button class="info-btn" data-info="music">i</button></span>
         <div class="toggle-switch" id="musicToggle"></div>
       </div>
       <div id="musicBody" style="display:none;">
+        <div class="param-line" id="musicParam"></div>
         <div id="musicChips" class="amb-list">
           <div class="amb-group">我的音乐</div>
           <div class="chip-row" id="userMusicChips">
@@ -506,13 +520,14 @@ body{
         <div class="mix-vol-row">
           <span style="font-size:11px;color:#688a41;">音量</span>
           <input type="range" id="musicVolSlider" min="0" max="100" value="35">
+          <span class="vol-readout" id="musicVolReadout"></span>
         </div>
       </div>
     </div>
 
     <div class="mix-layer" id="binauralLayer">
       <div class="mix-layer-head">
-        <span class="mix-layer-title">BINAURAL · 节拍</span>
+        <span class="mix-layer-title">BINAURAL · 节拍 <button class="info-btn" data-info="binaural">i</button></span>
         <div class="toggle-switch" id="binauralToggle"></div>
       </div>
       <div id="binauralBody" style="display:none;">
@@ -522,10 +537,12 @@ body{
           <button class="chip" data-type="alpha">Alpha 放松</button>
           <button class="chip" data-type="beta">Beta 行动力</button>
         </div>
+        <div class="param-line" id="binauralParam"></div>
         <div style="font-size:11px;color:#688a41;margin-bottom:8px;">需佩戴耳机才有效果</div>
         <div class="mix-vol-row">
           <span style="font-size:11px;color:#688a41;">音量</span>
           <input type="range" id="binauralVolSlider" min="0" max="100" value="35">
+          <span class="vol-readout" id="binauralVolReadout"></span>
         </div>
       </div>
     </div>
@@ -548,9 +565,17 @@ body{
 </div>
 
 <!-- 更多操作弹层 -->
+<div class="modal-overlay" id="infoModal" style="display:none;">
+  <div class="modal-card">
+    <div class="modal-header" id="infoModalTitle"></div>
+    <div class="info-body" id="infoModalBody"></div>
+    <div class="sheet-action" id="infoModalClose" style="text-align:center;">知道了</div>
+  </div>
+</div>
 <div class="modal-overlay" id="moreSheet" style="display:none;">
   <div class="modal-card">
     <div class="modal-header" id="moreSheetTitle"></div>
+    <div class="sheet-action" id="sheetProfile">音频档案</div>
     <div class="sheet-action" id="sheetRename">重命名</div>
     <div class="sheet-action" id="sheetEdit">编辑句子与录音</div>
     <div class="sheet-action" id="sheetMix">调整混音</div>
@@ -891,6 +916,54 @@ function voiceDbText(db){
   return (db>0?'+':'')+db+' dB · '+t;
 }
 function dbToGain(db){ return Math.pow(10, db/20); }
+function volToDbText(v){ return v<=0 ? '静音' : (20*Math.log10(v/100)).toFixed(1).replace('-0.0','0.0')+' dB'; }
+function binauralParamText(k){ const p=BINAURAL_PRESETS[k]; return '差频 '+p.diff+' Hz · 左耳 '+p.carrier+' Hz / 右耳 '+(p.carrier+p.diff)+' Hz'; }
+
+/* ── 原理说明 ── */
+const INFO={
+  voice:{title:'阈下音量',body:`<p>声音大小用分贝（dB）表示，是对数刻度：每降低 6 dB，声波振幅减半；-20 dB 约为原来的 1/10，-40 dB 约为 1/100。</p>
+<p>把人声压到背景音之下，耳朵很难有意识地分辨出内容，这类刺激称为“阈下刺激”。认知科学研究发现，大脑对低于意识阈限的刺激仍会进行一定程度的加工。</p>
+<p>常见做法是把人声放在 -45 到 -25 dB 之间。想先熟悉内容，可以调到 -10 dB 以上清晰地听几遍。</p>
+<div class="info-src">参考：Kouider, S. & Dehaene, S. (2007). Levels of processing during non-conscious perception. <i>Phil. Trans. R. Soc. B</i>, 362.<br>说明：阈下加工在实验室中已被观察到，但对长期信念与行为改变的效果，研究结论仍不一致。</div>`},
+  speed:{title:'变速不变调',body:`<p>采用 WSOLA（波形相似叠加）算法：把录音切成约 46 毫秒的小段，按目标语速重新排列，并在每个拼接点寻找波形最吻合的位置，所以加快语速时音调保持不变，不会变成“花栗鼠声”。</p>
+<p>加速后同样时长内肯定句重复的次数更多。</p>
+<div class="info-src">参考：Verhelst, W. & Roelands, M. (1993). An overlap-add technique based on waveform similarity (WSOLA). <i>IEEE ICASSP</i>.</div>`},
+  ambience:{title:'听觉掩蔽',body:`<p>当两种声音同时出现、且频率范围相近时，较强的声音会让较弱的声音更难被察觉，这叫“听觉掩蔽”。</p>
+<p>雨声、溪流、粉噪音这类覆盖频率较宽的声音，能有效掩蔽人声，让肯定句以更不易察觉的方式存在。背景音按完整长度铺满整段音频，需要循环时每个接缝做 3 秒交叉淡化。</p>
+<div class="info-src">参考：Fletcher, H. (1940). Auditory patterns. <i>Reviews of Modern Physics</i>, 12, 47–65.</div>`},
+  music:{title:'音乐层',body:`<p>音乐与环境音一样能对人声形成掩蔽，同时提供情绪基调，让聆听过程更放松、更容易坚持。</p>
+<p>导出时音乐按原曲完整播放；如果短于整段音频，会接着再放一遍，接缝处做 3 秒等功率交叉淡化，听不出断点。</p>
+<div class="info-src">参考：Fletcher, H. (1940). Auditory patterns. <i>Reviews of Modern Physics</i>, 12, 47–65.</div>`},
+  binaural:{title:'双耳节拍',body:`<p>左右耳分别播放频率略有差异的两个纯音（例如 250 Hz 与 256 Hz），大脑会感知到一个等于两者差值的“拍频”（6 Hz）。这一现象由 Oster 在 1973 年系统描述。</p>
+<p>四档预设对应脑电的常见频段：Delta（0.5–4 Hz，深睡）、Theta（4–8 Hz，冥想）、Alpha（8–13 Hz，放松）、Beta（13–30 Hz，专注）。两耳必须分别听到各自的频率，所以需要佩戴耳机。</p>
+<div class="info-src">参考：Oster, G. (1973). Auditory beats in the brain. <i>Scientific American</i>, 229(4).<br>Garcia-Argibay, M. et al. (2019). Efficacy of binaural auditory beats in cognition, anxiety, and pain perception: a meta-analysis. <i>Psychological Research</i>, 83.<br>说明：荟萃分析显示存在小到中等的效果，但各研究之间差异较大。</div>`},
+};
+function openInfo(key){
+  const it=INFO[key]; if(!it) return;
+  document.getElementById('infoModalTitle').textContent=it.title;
+  document.getElementById('infoModalBody').innerHTML=it.body;
+  document.getElementById('infoModal').style.display='flex';
+}
+document.addEventListener('click',(e)=>{
+  const b=e.target.closest('.info-btn'); if(!b) return;
+  e.preventDefault(); e.stopPropagation(); openInfo(b.dataset.info);
+}, true);
+document.getElementById('infoModalClose').onclick=()=>{ document.getElementById('infoModal').style.display='none'; };
+document.getElementById('infoModal').addEventListener('click',(e)=>{ if(e.target.id==='infoModal') e.target.style.display='none'; });
+
+/* ── 混音台参数行 ── */
+function refreshParamLines(){
+  document.getElementById('ambienceVolReadout').textContent=volToDbText(draftAmbience.volume);
+  document.getElementById('musicVolReadout').textContent=volToDbText(draftMusic.volume);
+  document.getElementById('binauralVolReadout').textContent=volToDbText(draftBinaural.volume);
+  document.getElementById('binauralParam').textContent=binauralParamText(draftBinaural.type);
+  const fill=(id,loader,type)=>{
+    const el=document.getElementById(id);
+    loader(type).then(b=>{ el.textContent='原始时长 '+fmtTime(b.duration)+' · '+(b.sampleRate/1000)+' kHz · 接缝交叉淡化 '+BG_XFADE_SEC+' s'; }).catch(()=>{ el.textContent=''; });
+  };
+  if(draftAmbience.enabled) fill('ambienceParam',loadAmbienceBuffer,draftAmbience.type);
+  if(draftMusic.enabled) fill('musicParam',loadMusicBuffer,draftMusic.type);
+}
 let allTracks=[];
 
 async function renderRoom(){
@@ -1053,6 +1126,46 @@ function openMoreSheet(trackId){
   document.getElementById('moreSheetTitle').textContent=track?track.name:'';
   document.getElementById('moreSheet').style.display='flex';
 }
+function renderProfile(track){
+  const pf=track.profile||{};
+  const row=(k,v)=>`<tr><td>${k}</td><td>${v}</td></tr>`;
+  const db=(x)=>(x>0?'+':'')+x+' dB';
+  let h='<div class="profile-section">人声</div><table class="profile-table">';
+  const vdb= typeof pf.voiceDb==='number' ? pf.voiceDb : (typeof track.voiceDb==='number' ? track.voiceDb : VOICE_LEVEL_DB[track.voiceLevel]);
+  if(typeof vdb==='number') h+=row('音量', db(vdb)+' · '+voiceDbText(vdb).split(' · ')[1]);
+  h+=row('语速', (pf.voiceSpeed||track.voiceSpeed||1)+'x（变速不变调）');
+  if(pf.voiceSec) h+=row('单遍时长', fmtTime(pf.voiceSec));
+  if(pf.voiceReps){
+    h+=row('人声重复', pf.voiceReps+' 遍');
+    if(pf.sentenceCount) h+=row('肯定句', pf.sentenceCount+' 句，本段共出现 '+(pf.sentenceCount*pf.voiceReps)+' 次');
+  }
+  h+='</table>';
+  const amb= pf.ambience || (track.ambienceType ? {label:AMBIENCE_LABELS[normAmbienceType(track.ambienceType)], vol:track.ambienceVolume} : null);
+  const mus= pf.music || (track.musicType ? {label:musicLabel(normMusicType(track.musicType)), vol:track.musicVolume} : null);
+  const bin= pf.binaural || (track.binauralType ? {key:track.binauralType, vol:track.binauralVolume} : null);
+  if(amb||mus||bin){
+    h+='<div class="profile-section">背景层</div><table class="profile-table">';
+    if(amb) h+=row('环境音', amb.label+' · '+volToDbText(amb.vol)+(amb.srcSec?' · 原长 '+fmtTime(amb.srcSec):''));
+    if(mus) h+=row('音乐', mus.label+' · '+volToDbText(mus.vol)+(mus.srcSec?' · 原长 '+fmtTime(mus.srcSec):''));
+    if(bin && BINAURAL_PRESETS[bin.key]) h+=row('双耳节拍', BINAURAL_PRESETS[bin.key].label+' · '+volToDbText(bin.vol)+'<br>'+binauralParamText(bin.key));
+    h+='</table>';
+  }
+  h+='<div class="profile-section">输出</div><table class="profile-table">';
+  h+=row('总时长', fmtTime(track.durationSec));
+  h+=row('格式', 'WAV 立体声'+(pf.sampleRate?' · '+(pf.sampleRate/1000)+' kHz':'')+' · 16 bit');
+  if(pf.xfadeSec) h+=row('循环接缝', pf.xfadeSec+' s 等功率交叉淡化');
+  h+=row('生成时间', new Date(track.updatedAt||track.createdAt).toLocaleString('zh-CN',{hour12:false}));
+  h+='</table>';
+  if(!track.profile) h+='<div class="info-src">这段音频生成于旧版本，部分参数未记录。重新进入“调整混音”并保存一次即可生成完整档案。</div>';
+  return h;
+}
+document.getElementById('sheetProfile').onclick=()=>{
+  document.getElementById('moreSheet').style.display='none';
+  const track=allTracks.find(t=>t.id===sheetTrackId); if(!track) return;
+  document.getElementById('infoModalTitle').textContent='音频档案 · '+track.name;
+  document.getElementById('infoModalBody').innerHTML=renderProfile(track);
+  document.getElementById('infoModal').style.display='flex';
+};
 document.getElementById('sheetCancel').onclick=()=>{ document.getElementById('moreSheet').style.display='none'; };
 document.getElementById('sheetDelete').onclick=async ()=>{
   if(!confirm('确定删除这段沟通音频吗？')) return;
@@ -1374,6 +1487,7 @@ function refreshMixUI(){
   document.getElementById('binauralBody').style.display = draftBinaural.enabled?'block':'none';
   document.querySelectorAll('#binauralChips .chip').forEach(c=>c.classList.toggle('selected', c.dataset.type===draftBinaural.type));
   document.getElementById('binauralVolSlider').value=draftBinaural.volume;
+  refreshParamLines();
 }
 document.querySelectorAll('#voiceSpeedChips .chip').forEach(btn=>{
   btn.onclick=()=>{ draftVoiceSpeed=parseFloat(btn.dataset.speed); refreshMixUI(); if(isLivePreviewing) startLivePreview(); };
@@ -1390,7 +1504,7 @@ document.querySelectorAll('#ambienceChips .chip:not(.soon)').forEach(btn=>{
 document.querySelectorAll('#ambienceChips .chip.soon').forEach(btn=>{
   btn.onclick=()=>showToast('这个环境音还在准备中，敬请期待');
 });
-['input','change'].forEach(ev=>document.getElementById('ambienceVolSlider').addEventListener(ev,(e)=>{ draftAmbience.volume=parseInt(e.target.value); liveUpdateAmbienceVol(); }));
+['input','change'].forEach(ev=>document.getElementById('ambienceVolSlider').addEventListener(ev,(e)=>{ draftAmbience.volume=parseInt(e.target.value); refreshParamLines(); liveUpdateAmbienceVol(); }));
 
 document.getElementById('musicToggle').onclick=()=>{ draftMusic.enabled=!draftMusic.enabled; refreshMixUI(); liveRestartAmbience(); };
 document.getElementById('musicChips').addEventListener('click',async (e)=>{
@@ -1444,13 +1558,13 @@ async function renderUserMusic(){
   refreshMixUI();
 }
 renderUserMusic();
-['input','change'].forEach(ev=>document.getElementById('musicVolSlider').addEventListener(ev,(e)=>{ draftMusic.volume=parseInt(e.target.value); if(isLivePreviewing) setGainSmooth(liveMusicGain, draftMusic.volume/100); }));
+['input','change'].forEach(ev=>document.getElementById('musicVolSlider').addEventListener(ev,(e)=>{ draftMusic.volume=parseInt(e.target.value); refreshParamLines(); if(isLivePreviewing) setGainSmooth(liveMusicGain, draftMusic.volume/100); }));
 
 document.getElementById('binauralToggle').onclick=()=>{ draftBinaural.enabled=!draftBinaural.enabled; refreshMixUI(); liveRestartBinaural(); };
 document.querySelectorAll('#binauralChips .chip').forEach(btn=>{
   btn.onclick=()=>{ draftBinaural.type=btn.dataset.type; refreshMixUI(); liveRestartBinaural(); };
 });
-['input','change'].forEach(ev=>document.getElementById('binauralVolSlider').addEventListener(ev,(e)=>{ draftBinaural.volume=parseInt(e.target.value); liveUpdateBinauralVol(); }));
+['input','change'].forEach(ev=>document.getElementById('binauralVolSlider').addEventListener(ev,(e)=>{ draftBinaural.volume=parseInt(e.target.value); refreshParamLines(); liveUpdateBinauralVol(); }));
 
 /* --- 实时试听：拖动滑块立刻听到变化，不需要"保存→重新生成→播放" --- */
 let liveVoiceSource=null, liveVoiceGain=null;
@@ -1671,6 +1785,15 @@ document.getElementById('mixSaveBtn').onclick=async ()=>{
         sentences: draftMode==='sentences' ? draftSentences.map(s=>({id:s.id, text:s.text, blob:s.blob})) : null,
         freeformBlob: draftMode==='freeform' ? draftFreeformBlob : null,
         voiceDb: draftVoiceDb,
+        profile: {
+          voiceDb: draftVoiceDb, voiceSpeed: draftVoiceSpeed,
+          voiceSec: vLen/sr, voiceReps: reps,
+          sentenceCount: draftMode==='sentences' ? draftSentences.filter(x=>x.blob).length : null,
+          ambience: aBuf ? {label: AMBIENCE_LABELS[normAmbienceType(draftAmbience.type)], vol: draftAmbience.volume, srcSec: aBuf.duration} : null,
+          music: mBuf ? {label: musicLabel(normMusicType(draftMusic.type)), vol: draftMusic.volume, srcSec: mBuf.duration} : null,
+          binaural: draftBinaural.enabled ? {key: draftBinaural.type, vol: draftBinaural.volume} : null,
+          sampleRate: sr, xfadeSec: BG_XFADE_SEC,
+        },
         voiceSpeed: draftVoiceSpeed,
         ambienceType: draftAmbience.enabled ? draftAmbience.type : null,
         ambienceVolume: draftAmbience.volume,
