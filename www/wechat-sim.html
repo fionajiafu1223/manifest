@@ -196,6 +196,19 @@ body{
 .typing-dots span:nth-child(2){animation-delay:0.2s;}
 .typing-dots span:nth-child(3){animation-delay:0.4s;}
 @keyframes typing{0%,60%,100%{transform:translateY(0);opacity:0.5;}30%{transform:translateY(-4px);opacity:1;}}
+/* 语音消息 */
+.voice-bubble{display:flex;align-items:center;gap:6px;min-width:80px;cursor:pointer;user-select:none;-webkit-user-select:none;}
+.voice-bubble svg{width:18px;height:18px;flex-shrink:0;}
+.voice-bubble .vw2,.voice-bubble .vw3{transition:opacity .15s;}
+.voice-bubble.playing .vw2{animation:vwave 1s infinite steps(1);}
+.voice-bubble.playing .vw3{animation:vwave 1s infinite steps(1) .33s;}
+.voice-bubble.loading{opacity:.6;}
+@keyframes vwave{0%{opacity:0;}50%{opacity:1;}}
+.voice-dur{font-size:15px;color:#181818;}
+.voice-line{display:flex;align-items:center;}
+.voice-dot{width:8px;height:8px;border-radius:50%;background:#fa5151;margin-left:8px;flex-shrink:0;}
+.voice-to-text{font-size:12px;color:#576b95;margin-top:4px;cursor:pointer;}
+.voice-text{background:#fff;border-radius:6px;padding:8px 12px;margin-top:6px;font-size:15px;line-height:1.5;color:#181818;word-break:break-word;}
 </style>
 </head>
 <body>
@@ -343,6 +356,142 @@ function addMessage(text, mine = false) {
   row.appendChild(wrap);
   chatArea.appendChild(row);
   chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+// ============================================================
+// 语音消息（只有被 world-pulse 标记 metadata.voice 的消息）
+// ============================================================
+let voiceService = null;
+let currentAudio = null;
+let currentBubble = null;
+let currentUrl = null;
+
+function getPlayedState(){
+  try{ return JSON.parse(localStorage.getItem('voicePlayedState')||'{}'); }catch(e){ return {}; }
+}
+function markPlayed(id){
+  try{
+    const s = getPlayedState();
+    s[id] = 1;
+    localStorage.setItem('voicePlayedState', JSON.stringify(s));
+  }catch(e){}
+}
+
+function stopCurrentAudio(){
+  if(currentAudio){ try{ currentAudio.pause(); }catch(e){} }
+  if(currentBubble) currentBubble.classList.remove('playing');
+  if(currentUrl){ try{ URL.revokeObjectURL(currentUrl); }catch(e){} }
+  currentAudio = null; currentBubble = null; currentUrl = null;
+}
+
+function setVoiceWidth(bubble, durEl, seconds){
+  const s = Math.max(1, Math.min(60, Math.round(seconds)));
+  durEl.textContent = s + '"';
+  bubble.style.width = Math.min(220, 80 + s * 5) + 'px';
+}
+
+function readBlobDuration(blob){
+  return new Promise((resolve) => {
+    try{
+      const url = URL.createObjectURL(blob);
+      const a = new Audio();
+      a.preload = 'metadata';
+      a.onloadedmetadata = () => { const d = a.duration; URL.revokeObjectURL(url); resolve(isFinite(d) ? d : null); };
+      a.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+      a.src = url;
+    }catch(e){ resolve(null); }
+  });
+}
+
+function addVoiceMessage(m){
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  if(contactInfo.avatarImg){
+    avatar.innerHTML = `<img src="${contactInfo.avatarImg}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
+  } else {
+    avatar.textContent = contactName[0]||'?';
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap';
+
+  const line = document.createElement('div');
+  line.className = 'voice-line';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble voice-bubble';
+  bubble.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="#181818" stroke-width="2" stroke-linecap="round">' +
+      '<circle cx="5" cy="12" r="1.6" fill="#181818" stroke="none"/>' +
+      '<path class="vw2" d="M9 8.5a5 5 0 0 1 0 7"/>' +
+      '<path class="vw3" d="M13 5.5a9 9 0 0 1 0 13"/>' +
+    '</svg><span class="voice-dur"></span>';
+  const durEl = bubble.querySelector('.voice-dur');
+  setVoiceWidth(bubble, durEl, (m.content||'').length / 4);
+
+  line.appendChild(bubble);
+  let dot = null;
+  if(!getPlayedState()[m.id]){
+    dot = document.createElement('span');
+    dot.className = 'voice-dot';
+    line.appendChild(dot);
+  }
+
+  const toText = document.createElement('div');
+  toText.className = 'voice-to-text';
+  toText.textContent = '转文字';
+  const textBox = document.createElement('div');
+  textBox.className = 'voice-text';
+  textBox.textContent = m.content || '';
+  textBox.style.display = 'none';
+  toText.addEventListener('click', () => {
+    const show = textBox.style.display === 'none';
+    textBox.style.display = show ? 'block' : 'none';
+    toText.textContent = show ? '收起' : '转文字';
+  });
+
+  bubble.addEventListener('click', async () => {
+    if(currentBubble === bubble){ stopCurrentAudio(); return; }
+    stopCurrentAudio();
+    if(!voiceService) return;
+    bubble.classList.add('loading');
+    const blob = await voiceService.getVoiceBlob(m.id);
+    bubble.classList.remove('loading');
+    if(!blob){
+      textBox.style.display = 'block';
+      toText.textContent = '收起';
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    currentAudio = audio; currentBubble = bubble; currentUrl = url;
+    bubble.classList.add('playing');
+    audio.onended = () => { if(currentBubble === bubble) stopCurrentAudio(); };
+    audio.onloadedmetadata = () => { if(isFinite(audio.duration)) setVoiceWidth(bubble, durEl, audio.duration); };
+    try{ await audio.play(); }catch(e){ console.warn('播放失败', e); stopCurrentAudio(); return; }
+    markPlayed(m.id);
+    if(dot){ dot.remove(); dot = null; }
+  });
+
+  wrap.appendChild(line);
+  wrap.appendChild(toText);
+  wrap.appendChild(textBox);
+  row.appendChild(avatar);
+  row.appendChild(wrap);
+  chatArea.appendChild(row);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  // 后台预热：本地没有就生成一次并缓存，同时拿到真实时长
+  if(voiceService){
+    voiceService.getVoiceBlob(m.id).then(async (blob) => {
+      if(!blob) return;
+      const d = await readBlobDuration(blob);
+      if(d) setVoiceWidth(bubble, durEl, d);
+    }).catch(()=>{});
+  }
 }
 
 function showTyping() {
@@ -522,7 +671,7 @@ async function init(){
 
   const { data: msgs, error: msgError } = await supabase
     .from('messages')
-    .select('id, content, direction, sent_at')
+    .select('id, content, direction, sent_at, metadata')
     .eq('user_id', user.id)
     .eq('character_id', characterId)
     .eq('channel', 'wechat')
@@ -536,8 +685,10 @@ async function init(){
   }
 
   chatArea.innerHTML = '';
+  try{ voiceService = await import('./js/services/voiceService.js'); }catch(e){ voiceService = null; }
   (msgs||[]).forEach(m => {
-    addMessage(m.content, m.direction === 'outgoing');
+    if(voiceService && voiceService.isVoiceMessage(m)) addVoiceMessage(m);
+    else addMessage(m.content, m.direction === 'outgoing');
   });
 
   if(!msgs || msgs.length === 0){

@@ -223,7 +223,7 @@ async function setupNotifications(){
       scheduled.push({
         id: (hashStr(m.id) % 1000000000) + (idOffset++),
         title: label,
-        body: bodyPrefix + (m.content || ''),
+        body: bodyPrefix + ((m.metadata && m.metadata.voice === true) ? '[语音]' : (m.content || '')),
         schedule: { at },
         extra: { page: (CHANNEL_PAGE[m.channel] || CHANNEL_PAGE.wechat)(m) },
       });

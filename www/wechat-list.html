@@ -313,7 +313,7 @@ async function init(){
 
   const { data: msgs, error: msgError } = await supabase
     .from('messages')
-    .select('id, character_id, content, sent_at, direction, sender_type')
+    .select('id, character_id, content, sent_at, direction, sender_type, metadata')
     .eq('user_id', user.id)
     .eq('channel', 'wechat')
     .lte('sent_at', new Date().toISOString())
@@ -378,7 +378,7 @@ async function init(){
       avatar: displayName[0],
       avatarImg: character.avatar_url || autoAvatarImg(displayName, character.job_title||'', character.personality||'', (() => { try { return typeof character.canon === 'string' ? JSON.parse(character.canon) : (character.canon||{}); } catch(e) { return {}; } })().gender||''),
       color: AVATAR_COLORS[i % AVATAR_COLORS.length],
-      preview: (latest.content||'').replace(/\n/g,' ').slice(0, 40),
+      preview: (latest.metadata && latest.metadata.voice === true) ? '[语音]' : (latest.content||'').replace(/\n/g,' ').slice(0, 40),
       firstMessage: latest.content,
       time: formatMsgTime(latest.sent_at),
       unread,

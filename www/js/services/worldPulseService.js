@@ -24,6 +24,15 @@ export async function triggerWorldPulse() {
         data: null
       };
     }
+    // 有语音消息就在后台提前下载到手机本地（不阻塞推送安排）
+    try {
+      const msgs = data && data.messages;
+      if (Array.isArray(msgs) && msgs.some((m) => m && m.metadata && m.metadata.voice === true)) {
+        import("./voiceService.js")
+          .then((v) => v.prefetchVoices(msgs))
+          .catch((e) => console.warn("语音预下载失败", e));
+      }
+    } catch (_) {}
     return { success: true, error: null, data };
   } catch (err) {
     return { success: false, error: err, data: null };
