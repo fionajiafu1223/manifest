@@ -616,6 +616,8 @@ async function sendAndGetReply(texts){
       sendInFlight = false;
       return;
     }
+    // 发消息后服务器会撤掉 TA 未到点的主动消息，这里立刻同步一次，取消对应的本地推送
+    import('./js/services/notificationSync.js').then(m => m.syncNotifications()).catch(() => {});
     let replies = (result.data && Array.isArray(result.data.replies) && result.data.replies.length)
       ? result.data.replies
       : String((result.data && result.data.reply) || '……').split(/\n+/).filter(t => t.trim());
