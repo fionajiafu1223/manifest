@@ -12,15 +12,18 @@ export async function listAiCharacters() {
   return data;
 }
 
-// 调用 chat-character；每次都用全新幂等键（诊断用途，不需要防重复）
+// 调用 chat-character；每次都用全新幂等键。
+// content 可以是一句（字符串），也可以是连发的几句（字符串数组）。
 export async function sendMessage(characterId, sceneId, content) {
   const idempotency_key = crypto.randomUUID();
+  const contents = Array.isArray(content) ? content : [content];
   try {
     const { data, error } = await supabase.functions.invoke("chat-character", {
       body: {
         character_id: characterId,
         scene_id: sceneId,
-        content,
+        content: contents.join("\n"),
+        contents,
         idempotency_key
       }
     });

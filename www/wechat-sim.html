@@ -579,16 +579,36 @@ msgInput.addEventListener('input', () => {
   }
 });
 
-// 发送一条消息：调用 chat-character Edge Function，AI的回复由后端生成并写入数据库
-async function sendAndGetReply(text){
-  if(sendInFlight) return;
+// ============================================================
+// 发送：像真微信一样可以连发。
+// 你发出的每句先显示在屏幕上、放进待发队列；停止输入约 2.5 秒后，
+// 把这几句一起交给对方，对方看完一起回。对方回复过程中你继续发的，
+// 等这轮回完再接着处理。对方的回复按换行拆成几条气泡依次出现。
+// ============================================================
+const BATCH_IDLE_MS = 2500;
+let pendingTexts = [];
+let batchTimer = null;
+
+function scheduleFlush(){
+  clearTimeout(batchTimer);
+  batchTimer = setTimeout(flushPending, BATCH_IDLE_MS);
+}
+
+async function flushPending(){
+  if(sendInFlight || pendingTexts.length === 0) return;
+  const batch = pendingTexts.splice(0, pendingTexts.length);
+  await sendAndGetReply(batch);
+  if(pendingTexts.length > 0) scheduleFlush();
+}
+
+async function sendAndGetReply(texts){
   sendInFlight = true;
   await sleep(readDelay());
   showTyping();
   const typingStart = Date.now();
   try{
     const { sendMessage } = await import('./js/services/chatService.js');
-    const result = await sendMessage(characterId, null, text);
+    const result = await sendMessage(characterId, null, texts);
     if(!result.success){
       hideTyping();
       const msg = (result.error && (result.error.message || (result.error.detail && result.error.detail.error))) || '未知错误';
@@ -596,22 +616,31 @@ async function sendAndGetReply(text){
       sendInFlight = false;
       return;
     }
-    let reply = (result.data && result.data.reply) || '……';
-    // 去掉 AI 回复开头的"角色名："前缀
-    if (contactName) reply = reply.replace(new RegExp('^' + contactName + '[：:]\s*'), '');
-    let remaining = estimateTypingMs(reply) - (Date.now() - typingStart);
-    if(remaining > 1800 && Math.random() < 0.5){
-      const pause = remaining * 0.4;
-      await sleep(pause);
+    let replies = (result.data && Array.isArray(result.data.replies) && result.data.replies.length)
+      ? result.data.replies
+      : String((result.data && result.data.reply) || '……').split(/\n+/).filter(t => t.trim());
+    if(replies.length === 0) replies = ['……'];
+    for(let i = 0; i < replies.length; i++){
+      let reply = replies[i];
+      if (contactName) reply = reply.replace(new RegExp('^' + contactName + '[：:]\\s*'), '');
+      let remaining = estimateTypingMs(reply) - (i === 0 ? (Date.now() - typingStart) : 0);
+      if(i === 0 && remaining > 1800 && Math.random() < 0.5){
+        const pause = remaining * 0.4;
+        await sleep(pause);
+        hideTyping();
+        await sleep(300 + Math.random()*450);
+        showTyping();
+        remaining -= pause;
+      }
+      if(remaining > 0) await sleep(remaining);
       hideTyping();
-      await sleep(300 + Math.random()*450);
-      showTyping();
-      remaining -= pause;
+      addMessage(reply);
+      noteMsgTime();
+      if(i < replies.length - 1){
+        await sleep(250 + Math.random()*400);
+        showTyping();
+      }
     }
-    if(remaining > 0) await sleep(remaining);
-    hideTyping();
-    addMessage(reply);
-    noteMsgTime();
     markRead();
   }catch(err){
     hideTyping();
@@ -622,12 +651,18 @@ async function sendAndGetReply(text){
 
 sendBtn.addEventListener('click', () => {
   const text = msgInput.value.trim();
-  if (!text || sendInFlight) return;
+  if (!text) return;
   addMessage(text, true);
   msgInput.value = '';
   sendBtn.classList.remove('visible');
   plusBtn.style.display = 'flex';
-  sendAndGetReply(text);
+  pendingTexts.push(text);
+  scheduleFlush();
+});
+
+// 还在打字时，先别把已经发出的几句交给对方
+msgInput.addEventListener('input', () => {
+  if(pendingTexts.length > 0 && msgInput.value.trim()) scheduleFlush();
 });
 
 msgInput.addEventListener('keypress', (e) => {
