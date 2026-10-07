@@ -96,6 +96,8 @@ function characterToPerson(ch, roleInScene, sceneContext) {
     culture: c.culture || "",
     speaking_style: ch ? (ch.speaking_style || "") : "",
     example_dialogues: ch ? (ch.example_dialogues || "") : "",
+    mind_sources: ch ? (ch.mind_sources || "") : "",
+    mind_notes: ch ? (ch.mind_notes || "") : "",
     avatar: ch ? (ch.avatar_url || null) : null,
     wechat: handles.wechat || "",
     phone: handles.phone || "",
@@ -232,6 +234,8 @@ export async function persistScene(sceneData, sortOrderHint) {
     // 说话方式 / 示范对话：只有前端带了这两个字段才写，避免旧数据把后台补好的内容清空
     if ("speaking_style" in p) charRow.speaking_style = p.speaking_style || null;
     if ("example_dialogues" in p) charRow.example_dialogues = p.example_dialogues || null;
+    if ("mind_sources" in p) charRow.mind_sources = p.mind_sources || null;
+    if ("mind_notes" in p) charRow.mind_notes = p.mind_notes || null;
 
     if (characterId) {
       const { error } = await supabase
