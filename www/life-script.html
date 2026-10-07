@@ -295,10 +295,11 @@ body{
     <div class="field"><div class="field-label">TA如何对待主角</div><textarea class="field-textarea" id="p_attitude" placeholder="在这个场景里，TA怎样对你说话、对你做事…"></textarea></div>
     <div class="field"><div class="field-label">说话方式</div><textarea class="field-textarea" id="p_speaking" placeholder="TA发微信什么样：话多话少、温柔还是幽默、口头禅、会不会夹英文…（可留空，编剧助理会帮你写）"></textarea></div>
     <div class="field"><div class="field-label">示范对话</div><textarea class="field-textarea" id="p_examples" style="min-height:160px;" placeholder="写几段你们的聊天，TA就会照这个口气跟你说话。例：&#10;我：睡不着&#10;Peter：咋啦 想我啦？&#10;Peter：我陪你聊到你困为止&#10;（可留空，编剧助理会帮你写）"></textarea></div>
-    <div class="field"><div class="field-label">思想来源（可选）</div><textarea class="field-textarea" id="p_mind_src" style="min-height:100px;" placeholder="希望TA的想法和谈吐受谁影响？一行一个：&#10;· 写名字，比如某位经济学家、作家&#10;· 贴 YouTube 视频链接（有字幕的才能抓到）&#10;· 或直接粘贴文章、视频文字稿（不同内容之间空一行）"></textarea></div>
-    <button type="button" class="assist-btn ghost" id="mindBtn" onclick="distillMindSources()" style="margin:-0.4rem 0 0.6rem;">✨ 提炼成思想摘要</button>
+    <div class="field"><div class="field-label">思想来源 · 追加资料（可选）</div><textarea class="field-textarea" id="p_mind_add" style="min-height:100px;" placeholder="希望TA的想法和谈吐受谁影响？可以慢慢加，一行一个：&#10;· 写名字，比如某位经济学家、作家&#10;· 贴 YouTube 视频链接（有字幕的才能抓到）&#10;· 或直接粘贴文章、视频文字稿（不同内容之间空一行）"></textarea></div>
+    <button type="button" class="assist-btn ghost" id="mindBtn" onclick="distillMindSources()" style="margin:-0.4rem 0 0.6rem;">✨ 提炼并合并进摘要</button>
     <div id="mindMsg" style="font-size:12px;color:#8a5a2b;line-height:1.6;margin-bottom:0.6rem;display:none;"></div>
     <div class="field"><div class="field-label">思想摘要</div><textarea class="field-textarea" id="p_mind_notes" style="min-height:140px;" placeholder="点上面的按钮自动生成，也可以自己写或修改"></textarea></div>
+    <div class="field"><div class="field-label">已读资料（提炼过的会自动归档到这里）</div><textarea class="field-textarea" id="p_mind_src" style="min-height:70px;font-size:12px;opacity:0.85;" placeholder="还没有"></textarea></div>
     <div class="field-half">
       <div class="field"><div class="field-label">微信号</div><input type="text" class="field-input" id="p_wechat" placeholder="可选，填了TA才能给你发微信"></div>
       <div class="field"><div class="field-label">电话</div><input type="text" class="field-input" id="p_phone" placeholder="可选，填了TA才能给你发短信"></div>
@@ -662,15 +663,15 @@ function openPersonEditor(idx){
     g('p_name').value=p.name||'';g('p_role').value=p.role||'';g('p_age').value=p.age||'';g('p_gender').value=p.gender||'';
     g('p_look').value=p.look||'';g('p_character').value=p.character||'';g('p_values').value=p.values||'';
     g('p_background').value=p.background||'';g('p_attitude').value=p.attitude||'';
-    g('p_home').value=p.home||'';g('p_culture').value=p.culture||'';g('p_speaking').value=p.speaking_style||'';g('p_examples').value=p.example_dialogues||'';g('p_mind_src').value=p.mind_sources||'';g('p_mind_notes').value=p.mind_notes||'';
+    g('p_home').value=p.home||'';g('p_culture').value=p.culture||'';g('p_speaking').value=p.speaking_style||'';g('p_examples').value=p.example_dialogues||'';g('p_mind_src').value=p.mind_sources||'';g('p_mind_notes').value=p.mind_notes||'';g('p_mind_add').value='';
     g('p_wechat').value=p.wechat||'';g('p_phone').value=p.phone||'';g('p_email').value=p.email||'';
     tempPersonAvatar = p.avatar || null;
   } else {
-    ['p_name','p_role','p_age','p_gender','p_look','p_character','p_values','p_background','p_attitude','p_home','p_culture','p_speaking','p_examples','p_mind_src','p_mind_notes','p_wechat','p_phone','p_email'].forEach(k=>g(k).value='');
+    ['p_name','p_role','p_age','p_gender','p_look','p_character','p_values','p_background','p_attitude','p_home','p_culture','p_speaking','p_examples','p_mind_src','p_mind_notes','p_mind_add','p_wechat','p_phone','p_email'].forEach(k=>g(k).value='');
     tempPersonAvatar = null;
   }
   renderCultureChips();
-  mindDirty=false; document.getElementById('mindMsg').style.display='none';
+  document.getElementById('mindMsg').style.display='none';
   if(tempPersonAvatar){ preview.src=tempPersonAvatar; preview.style.display='block'; placeholder.style.display='none'; }
   else { preview.style.display='none'; placeholder.style.display='block'; }
   g('pAvatarInput').value = '';
@@ -719,12 +720,18 @@ async function savePerson(){
   const g=id=>document.getElementById(id).value;
   const name=g('p_name').trim();
   if(!name){ shake(document.getElementById('p_name')); return; }
+  if(g('p_mind_add').trim()){
+    if(confirm('"追加资料"还没提炼，现在提炼并合并进思想摘要吗？\n\n点"取消"会直接保存，追加的资料不会生效')){
+      const ok = await distillMindSources();
+      if(!ok) return;
+    }
+  }
   if(tempPersonAvatarUpload){ await tempPersonAvatarUpload; tempPersonAvatarUpload=null; }
   if(!tempPersonAvatar){
     const skip = confirm('"'+name+'"还没有上传头像，要不要先传一张？\n\n点"取消"回去传照片，点"确定"先不传');
     if(skip===false) return; // 用户选"取消" -> 留在编辑器里传照片
   }
-  const person={ name, role:g('p_role'), age:g('p_age'), gender:g('p_gender'), look:g('p_look'), character:g('p_character'), values:g('p_values'), background:g('p_background'), attitude:g('p_attitude'), home:g('p_home'), culture:g('p_culture'), speaking_style:g('p_speaking'), example_dialogues:g('p_examples'), mind_sources:g('p_mind_src'), mind_notes:(mindDirty?'':g('p_mind_notes')), avatar: tempPersonAvatar, wechat:g('p_wechat'), phone:g('p_phone'), email:g('p_email') };
+  const person={ name, role:g('p_role'), age:g('p_age'), gender:g('p_gender'), look:g('p_look'), character:g('p_character'), values:g('p_values'), background:g('p_background'), attitude:g('p_attitude'), home:g('p_home'), culture:g('p_culture'), speaking_style:g('p_speaking'), example_dialogues:g('p_examples'), mind_sources:g('p_mind_src'), mind_notes:g('p_mind_notes'), avatar: tempPersonAvatar, wechat:g('p_wechat'), phone:g('p_phone'), email:g('p_email') };
   // 编辑已有人物时保留数据库 id，否则保存场景时会被当成新人物再建一个（之前出现 7 个 Peter 的原因）
   if(editingPersonIdx>=0){
     const old=tempPersons[editingPersonIdx]||{};
@@ -751,32 +758,35 @@ function renderCultureChips(){
 document.getElementById('p_culture').addEventListener('input',renderCultureChips);
 
 // ================= 思想来源 =================
-let mindDirty=false;
-document.getElementById('p_mind_src').addEventListener('input',()=>{ mindDirty=true; });
-document.getElementById('p_mind_notes').addEventListener('input',()=>{ mindDirty=false; });
 async function distillMindSources(){
-  const src=document.getElementById('p_mind_src').value.trim();
+  const addEl=document.getElementById('p_mind_add'); const add=addEl.value.trim();
   const btn=document.getElementById('mindBtn'); const msg=document.getElementById('mindMsg');
-  if(!src){ shake(document.getElementById('p_mind_src')); return; }
+  const notes=document.getElementById('p_mind_notes'); const archive=document.getElementById('p_mind_src');
+  if(!add){ shake(addEl); return false; }
   btn.disabled=true; btn.textContent='正在搜索和提炼…（约 1 分钟）'; msg.style.display='none';
   try{
-    const { data, error } = await supabase.functions.invoke('script-assistant',{ body:{ mode:'mind', sources:src, person:currentPersonDraft() } });
+    const { data, error } = await supabase.functions.invoke('script-assistant',{ body:{ mode:'mind', sources:add, existing_notes:notes.value.trim(), person:currentPersonDraft() } });
     if(error) throw error;
     if(data && data.error) throw new Error(data.error);
-    const notes=document.getElementById('p_mind_notes');
-    if(data.mind_notes){
-      notes.value=data.mind_notes; mindDirty=false;
-      notes.classList.remove('field-filled'); void notes.offsetWidth; notes.classList.add('field-filled');
-    }
     const failed=(data.failed||[]);
+    if(data.mind_notes){
+      notes.value=data.mind_notes;
+      notes.classList.remove('field-filled'); void notes.offsetWidth; notes.classList.add('field-filled');
+      // 处理成功的资料归档，没抓到字幕的链接留在追加框里
+      const done=add.split('\n').filter(l=>!failed.includes(l.trim())).join('\n').replace(/\n{3,}/g,'\n\n').trim();
+      if(done) archive.value=(archive.value.trim()?archive.value.trim()+'\n\n':'')+done;
+      addEl.value=failed.join('\n');
+    }
     if(failed.length || !data.mind_notes){
-      msg.innerHTML=(data.mind_notes?'':'没有提炼出内容。')+(failed.length?'这些链接没抓到字幕，可以把文字稿直接粘贴进来：<br>'+failed.map(escHtml).join('<br>'):'');
+      msg.innerHTML=(data.mind_notes?'':'没有提炼出内容。')+(failed.length?'这些链接没抓到字幕，还留在追加框里，可以换成文字稿再提炼：<br>'+failed.map(escHtml).join('<br>'):'');
       msg.style.display='block';
     }
+    return !!data.mind_notes;
   }catch(e){
     console.error(e); msg.textContent='提炼失败了，稍后再试试'; msg.style.display='block';
+    return false;
   }finally{
-    btn.disabled=false; btn.textContent='✨ 提炼成思想摘要';
+    btn.disabled=false; btn.textContent='✨ 提炼并合并进摘要';
   }
 }
 
