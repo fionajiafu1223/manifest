@@ -14,7 +14,8 @@ export async function listAiCharacters() {
 
 // 调用 chat-character；每次都用全新幂等键。
 // content 可以是一句（字符串），也可以是连发的几句（字符串数组）。
-export async function sendMessage(characterId, sceneId, content) {
+// voiceMeta（可选）：与 contents 对齐的数组，语音消息那一项是 {path, duration}，文字消息是 null。
+export async function sendMessage(characterId, sceneId, content, voiceMeta) {
   const idempotency_key = crypto.randomUUID();
   const contents = Array.isArray(content) ? content : [content];
   try {
@@ -24,6 +25,7 @@ export async function sendMessage(characterId, sceneId, content) {
         scene_id: sceneId,
         content: contents.join("\n"),
         contents,
+        ...(Array.isArray(voiceMeta) && voiceMeta.some(Boolean) ? { voice_meta: voiceMeta } : {}),
         idempotency_key
       }
     });
