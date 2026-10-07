@@ -92,6 +92,10 @@ function characterToPerson(ch, roleInScene, sceneContext) {
     values: c.values || "",
     background: ch ? (ch.background_story || "") : "",
     attitude: sceneContext || "",
+    home: c.home || "",
+    culture: c.culture || "",
+    speaking_style: ch ? (ch.speaking_style || "") : "",
+    example_dialogues: ch ? (ch.example_dialogues || "") : "",
     avatar: ch ? (ch.avatar_url || null) : null,
     wechat: handles.wechat || "",
     phone: handles.phone || "",
@@ -220,9 +224,14 @@ export async function persistScene(sceneData, sortOrderHint) {
         age: p.age || null,
         gender: p.gender || null,
         look: p.look || null,
-        values: p.values || null
+        values: p.values || null,
+        home: p.home || null,
+        culture: p.culture || null
       }
     };
+    // 说话方式 / 示范对话：只有前端带了这两个字段才写，避免旧数据把后台补好的内容清空
+    if ("speaking_style" in p) charRow.speaking_style = p.speaking_style || null;
+    if ("example_dialogues" in p) charRow.example_dialogues = p.example_dialogues || null;
 
     if (characterId) {
       const { error } = await supabase

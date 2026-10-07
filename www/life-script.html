@@ -84,6 +84,25 @@ body{
 .field-input:focus,.field-textarea:focus{border-color:rgba(104,138,65,0.7);}
 .field-input::placeholder,.field-textarea::placeholder{color:#a1ba76;}
 .field-textarea{min-height:80px;resize:none;line-height:1.7;}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;margin:-0.4rem 0 1rem;}
+.chip{font-size:12px;padding:5px 10px;border-radius:14px;border:1px solid rgba(104,138,65,0.4);background:rgba(255,255,255,0.6);color:#436b29;cursor:pointer;}
+.chip.on{background:#688a41;color:#fff;border-color:#688a41;}
+.assist-card{margin:0 0 1.2rem;padding:0.9rem 1rem;border-radius:14px;background:linear-gradient(135deg,rgba(104,138,65,0.16),rgba(161,186,118,0.22));border:1px solid rgba(104,138,65,0.35);cursor:pointer;}
+.assist-title{font-size:15px;color:#22460f;margin-bottom:4px;}
+.assist-sub{font-size:12px;color:#557a37;line-height:1.6;}
+.assist-mask{position:fixed;inset:0;background:rgba(20,35,10,0.35);z-index:999;display:none;align-items:flex-end;justify-content:center;}
+.assist-mask.open{display:flex;}
+.assist-panel{width:100%;max-width:560px;max-height:85vh;background:#f6f8ef;border-radius:20px 20px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);}
+.assist-head{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.2rem;color:#22460f;font-size:16px;border-bottom:1px solid rgba(104,138,65,0.2);}
+.assist-close{cursor:pointer;color:#688a41;padding:4px 8px;}
+.assist-body{overflow-y:auto;padding:1rem 1.2rem 1.4rem;color:#22460f;font-size:14px;line-height:1.7;}
+.assist-q{margin-bottom:1.1rem;}
+.assist-q-text{margin-bottom:0.5rem;}
+.assist-btn{width:100%;margin-top:0.6rem;padding:0.85rem;border:none;border-radius:12px;background:#688a41;color:#fff;font-size:15px;font-family:inherit;cursor:pointer;}
+.assist-btn.ghost{background:transparent;color:#688a41;border:1px solid rgba(104,138,65,0.5);}
+.assist-loading{text-align:center;color:#557a37;padding:2rem 0;}
+.field-filled{animation:fillGlow 2.4s ease;}
+@keyframes fillGlow{0%{border-color:#688a41;box-shadow:0 0 0 3px rgba(104,138,65,0.25);}100%{box-shadow:none;}}
 .field-half{display:flex;gap:10px;}
 .field-half .field{flex:1;}
 
@@ -254,6 +273,10 @@ body{
       <div class="avatar-upload-hint">建议上传一张头像，让TA更真实</div>
       <input type="file" id="pAvatarInput" accept="image/*" style="display:none;">
     </div>
+    <div class="assist-card" onclick="openAssistant()">
+      <div class="assist-title">✨ 编剧助理</div>
+      <div class="assist-sub">随便写几句，比如"我男朋友Peter，对我很好"。剩下的我问你几个问题，帮你写成完整的人</div>
+    </div>
     <div class="field"><div class="field-label">姓名 / 称呼 <span class="req">*</span></div><input type="text" class="field-input" id="p_name" placeholder="这个人叫什么"></div>
     <div class="field"><div class="field-label">与主角的关系 / 戏份</div><input type="text" class="field-input" id="p_role" placeholder="例：男朋友、客户经理、老友…"></div>
     <div class="field-half">
@@ -264,12 +287,26 @@ body{
     <div class="field"><div class="field-label">性格</div><textarea class="field-textarea" id="p_character" placeholder="TA是怎样的性格…"></textarea></div>
     <div class="field"><div class="field-label">价值观</div><textarea class="field-textarea" id="p_values" placeholder="TA看重什么…"></textarea></div>
     <div class="field"><div class="field-label">背景</div><textarea class="field-textarea" id="p_background" placeholder="TA的身份、经历、故事…"></textarea></div>
+    <div class="field-half">
+      <div class="field"><div class="field-label">生活在哪</div><input type="text" class="field-input" id="p_home" placeholder="例：渥太华、上海"></div>
+      <div class="field"><div class="field-label">文化背景</div><input type="text" class="field-input" id="p_culture" placeholder="例：国内长大的中国人"></div>
+    </div>
+    <div class="chip-row" id="cultureChips"></div>
     <div class="field"><div class="field-label">TA如何对待主角</div><textarea class="field-textarea" id="p_attitude" placeholder="在这个场景里，TA怎样对你说话、对你做事…"></textarea></div>
+    <div class="field"><div class="field-label">说话方式</div><textarea class="field-textarea" id="p_speaking" placeholder="TA发微信什么样：话多话少、温柔还是幽默、口头禅、会不会夹英文…（可留空，编剧助理会帮你写）"></textarea></div>
+    <div class="field"><div class="field-label">示范对话</div><textarea class="field-textarea" id="p_examples" style="min-height:160px;" placeholder="写几段你们的聊天，TA就会照这个口气跟你说话。例：&#10;我：睡不着&#10;Peter：咋啦 想我啦？&#10;Peter：我陪你聊到你困为止&#10;（可留空，编剧助理会帮你写）"></textarea></div>
     <div class="field-half">
       <div class="field"><div class="field-label">微信号</div><input type="text" class="field-input" id="p_wechat" placeholder="可选，填了TA才能给你发微信"></div>
       <div class="field"><div class="field-label">电话</div><input type="text" class="field-input" id="p_phone" placeholder="可选，填了TA才能给你发短信"></div>
     </div>
     <div class="field"><div class="field-label">邮箱</div><input type="text" class="field-input" id="p_email" placeholder="可选，填了TA才能给你发邮件"></div>
+  </div>
+</div>
+
+<div class="assist-mask" id="assistMask">
+  <div class="assist-panel">
+    <div class="assist-head"><span>✨ 编剧助理</span><span class="assist-close" onclick="closeAssistant()">✕</span></div>
+    <div class="assist-body" id="assistBody"></div>
   </div>
 </div>
 
@@ -621,12 +658,14 @@ function openPersonEditor(idx){
     g('p_name').value=p.name||'';g('p_role').value=p.role||'';g('p_age').value=p.age||'';g('p_gender').value=p.gender||'';
     g('p_look').value=p.look||'';g('p_character').value=p.character||'';g('p_values').value=p.values||'';
     g('p_background').value=p.background||'';g('p_attitude').value=p.attitude||'';
+    g('p_home').value=p.home||'';g('p_culture').value=p.culture||'';g('p_speaking').value=p.speaking_style||'';g('p_examples').value=p.example_dialogues||'';
     g('p_wechat').value=p.wechat||'';g('p_phone').value=p.phone||'';g('p_email').value=p.email||'';
     tempPersonAvatar = p.avatar || null;
   } else {
-    ['p_name','p_role','p_age','p_gender','p_look','p_character','p_values','p_background','p_attitude','p_wechat','p_phone','p_email'].forEach(k=>g(k).value='');
+    ['p_name','p_role','p_age','p_gender','p_look','p_character','p_values','p_background','p_attitude','p_home','p_culture','p_speaking','p_examples','p_wechat','p_phone','p_email'].forEach(k=>g(k).value='');
     tempPersonAvatar = null;
   }
+  renderCultureChips();
   if(tempPersonAvatar){ preview.src=tempPersonAvatar; preview.style.display='block'; placeholder.style.display='none'; }
   else { preview.style.display='none'; placeholder.style.display='block'; }
   g('pAvatarInput').value = '';
@@ -680,7 +719,7 @@ async function savePerson(){
     const skip = confirm('"'+name+'"还没有上传头像，要不要先传一张？\n\n点"取消"回去传照片，点"确定"先不传');
     if(skip===false) return; // 用户选"取消" -> 留在编辑器里传照片
   }
-  const person={ name, role:g('p_role'), age:g('p_age'), gender:g('p_gender'), look:g('p_look'), character:g('p_character'), values:g('p_values'), background:g('p_background'), attitude:g('p_attitude'), avatar: tempPersonAvatar, wechat:g('p_wechat'), phone:g('p_phone'), email:g('p_email') };
+  const person={ name, role:g('p_role'), age:g('p_age'), gender:g('p_gender'), look:g('p_look'), character:g('p_character'), values:g('p_values'), background:g('p_background'), attitude:g('p_attitude'), home:g('p_home'), culture:g('p_culture'), speaking_style:g('p_speaking'), example_dialogues:g('p_examples'), avatar: tempPersonAvatar, wechat:g('p_wechat'), phone:g('p_phone'), email:g('p_email') };
   // 编辑已有人物时保留数据库 id，否则保存场景时会被当成新人物再建一个（之前出现 7 个 Peter 的原因）
   if(editingPersonIdx>=0){
     const old=tempPersons[editingPersonIdx]||{};
@@ -691,6 +730,91 @@ async function savePerson(){
   else tempPersons.push(person);
   renderPersons();
   closePersonEditor();
+}
+
+// ================= 文化背景快捷选项 =================
+const CULTURE_CHIPS=['国内长大的中国人','海外长大的华人','本地加拿大人','美国人','欧洲人'];
+function renderCultureChips(){
+  const box=document.getElementById('cultureChips'); const inp=document.getElementById('p_culture');
+  box.innerHTML='';
+  CULTURE_CHIPS.forEach(c=>{
+    const b=document.createElement('span'); b.className='chip'+(inp.value===c?' on':''); b.textContent=c;
+    b.onclick=()=>{ inp.value=c; renderCultureChips(); };
+    box.appendChild(b);
+  });
+}
+document.getElementById('p_culture').addEventListener('input',renderCultureChips);
+
+// ================= 编剧助理 =================
+const ASSIST_FIELDS={character:'p_character',background:'p_background',home:'p_home',culture:'p_culture',speaking_style:'p_speaking',example_dialogues:'p_examples'};
+let assistQuestions=[]; let assistBackup=null;
+function currentPersonDraft(){
+  const g=id=>document.getElementById(id).value.trim();
+  return { name:g('p_name'), role:g('p_role'), age:g('p_age'), gender:g('p_gender'), look:g('p_look'), character:g('p_character'),
+    values:g('p_values'), background:g('p_background'), attitude:g('p_attitude'), home:g('p_home'), culture:g('p_culture'),
+    speaking_style:g('p_speaking'), example_dialogues:g('p_examples') };
+}
+function assistSet(html){ document.getElementById('assistBody').innerHTML=html; }
+function closeAssistant(){ document.getElementById('assistMask').classList.remove('open'); }
+function escHtml(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+async function callAssistant(payload){
+  const { data, error } = await supabase.functions.invoke('script-assistant',{ body: payload });
+  if(error) throw error;
+  if(data && data.error) throw new Error(data.error);
+  return data;
+}
+async function openAssistant(){
+  const draft=currentPersonDraft();
+  if(!draft.name && !draft.role && !draft.character && !draft.background){
+    shake(document.getElementById('p_name')); return;
+  }
+  document.getElementById('assistMask').classList.add('open');
+  assistSet('<div class="assist-loading">正在读你写的人物…</div>');
+  try{
+    const res=await callAssistant({ mode:'ask', person:draft });
+    assistQuestions=(res && res.questions)||[];
+    if(assistQuestions.length===0){ return composeAssist([]); }
+    let html='<div style="margin-bottom:1rem;color:#557a37;">问你几个小问题，选一个或者自己写都行：</div>';
+    assistQuestions.forEach((q,i)=>{
+      html+='<div class="assist-q"><div class="assist-q-text">'+escHtml(q.question)+'</div><div class="chip-row" style="margin:0 0 0.5rem;">';
+      (q.options||[]).forEach((o,j)=>{ html+='<span class="chip" data-q="'+i+'" data-o="'+j+'" onclick="pickAssistOption('+i+','+j+')">'+escHtml(o)+'</span>'; });
+      html+='</div><input class="field-input" id="aq_'+i+'" placeholder="或者自己写…" style="font-size:14px;padding:0.6rem 0.8rem;"></div>';
+    });
+    html+='<button class="assist-btn" onclick="submitAssistAnswers()">帮我整理成完整的人</button>';
+    assistSet(html);
+  }catch(e){
+    console.error(e); assistSet('<div class="assist-loading">编剧助理暂时连不上，稍后再试试</div><button class="assist-btn ghost" onclick="closeAssistant()">关闭</button>');
+  }
+}
+function pickAssistOption(i,j){
+  document.getElementById('aq_'+i).value=assistQuestions[i].options[j];
+  document.querySelectorAll('.chip[data-q="'+i+'"]').forEach(c=>c.classList.toggle('on', c.dataset.o==String(j)));
+}
+function submitAssistAnswers(){
+  const answers=assistQuestions.map((q,i)=>({ question:q.question, answer:document.getElementById('aq_'+i).value.trim() })).filter(a=>a.answer);
+  composeAssist(answers);
+}
+async function composeAssist(answers){
+  assistSet('<div class="assist-loading">正在把TA写成一个完整的人…<br>大概需要半分钟</div>');
+  try{
+    const res=await callAssistant({ mode:'compose', person:currentPersonDraft(), answers });
+    assistBackup={};
+    Object.entries(ASSIST_FIELDS).forEach(([k,id])=>{
+      const el=document.getElementById(id); assistBackup[id]=el.value;
+      if(res[k]){ el.value=res[k]; el.classList.remove('field-filled'); void el.offsetWidth; el.classList.add('field-filled'); }
+    });
+    renderCultureChips();
+    assistSet('<div style="margin-bottom:0.8rem;">'+escHtml(res.summary||'我把TA整理好了。')+'</div>'
+      +'<div style="color:#557a37;font-size:13px;margin-bottom:0.6rem;">性格、背景、说话方式和示范对话都填好了，你可以直接在表单里改，满意了再点保存。</div>'
+      +'<button class="assist-btn" onclick="closeAssistant()">对，就是TA</button>'
+      +'<button class="assist-btn ghost" onclick="undoAssist()">不对，撤销</button>');
+  }catch(e){
+    console.error(e); assistSet('<div class="assist-loading">整理失败了，稍后再试试</div><button class="assist-btn ghost" onclick="closeAssistant()">关闭</button>');
+  }
+}
+function undoAssist(){
+  if(assistBackup){ Object.entries(assistBackup).forEach(([id,v])=>{ document.getElementById(id).value=v; }); }
+  renderCultureChips(); closeAssistant();
 }
 
 const st=document.createElement('style');
