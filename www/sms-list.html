@@ -160,13 +160,16 @@ async function initThreads(){
   const user = await requireUser();
   if(!user) return;
 
-  const { data: msgs, error } = await supabase
+  const nowIso = new Date().toISOString();
+  const { fetchAllRows } = await import('./js/services/messageFetch.js');
+  const { data: msgs, error } = await fetchAllRows(() => supabase
     .from('messages')
     .select('id, character_id, content, sent_at, direction')
     .eq('user_id', user.id)
     .eq('channel', 'sms')
-    .lte('sent_at', new Date().toISOString())
-    .order('sent_at', { ascending: true }); // 按角色分组后需要正序还原对话
+    .lte('sent_at', nowIso)
+    .order('sent_at', { ascending: true })); // 按角色分组后需要正序还原对话
+  import('./js/services/notificationSync.js').then(m => m.syncNotifications()).catch(() => {});
 
   if(error){
     console.error(error);

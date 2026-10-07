@@ -216,8 +216,8 @@ body{
 <!-- 顶部导航 -->
 <div class="nav">
   <div class="nav-inner">
-    <div class="nav-back" onclick="location.href='wechat-list.html'" style="cursor:pointer;">
-      <span class="unread-badge" id="unreadBadge">5</span>
+    <div class="nav-back" onclick="markRead(); location.href='wechat-list.html'" style="cursor:pointer;">
+      <span class="unread-badge" id="unreadBadge" style="display:none"></span>
     </div>
     <div class="nav-title" id="contactName">阿哲</div>
     <div class="nav-more" id="navMoreBtn" style="cursor:pointer;">
@@ -321,14 +321,49 @@ function autoAvatarImg(name, roleText, characterText){
   return avatarUrlFor(type, name);
 }
 
-// 已读状态：进来就把这个联系人标记为已读（数据库没有已读字段，纯本地UI状态）
+// 已读状态（数据库没有已读字段，纯本地UI状态）。
+// 进来、收到回复、点返回、切出App时都标记，按"现在"和"最后一条消息时间"取较晚的，
+// 避免手机时间和服务器时间有细微差异时留下红点。
+let lastMsgTime = 0;
+function noteMsgTime(t){
+  const ms = t ? new Date(t).getTime() : Date.now();
+  if(!isNaN(ms) && ms > lastMsgTime) lastMsgTime = ms;
+}
 function markRead(){
   if(!characterId) return;
   try{
     const state = JSON.parse(localStorage.getItem('wechatReadState')||'{}');
-    state[characterId] = new Date().toISOString();
+    const ms = Math.max(Date.now(), lastMsgTime) + 1000;
+    state[characterId] = new Date(ms).toISOString();
     localStorage.setItem('wechatReadState', JSON.stringify(state));
+    const counts = JSON.parse(localStorage.getItem('wechatUnreadCounts')||'{}');
+    counts[characterId] = 0;
+    localStorage.setItem('wechatUnreadCounts', JSON.stringify(counts));
   }catch(e){}
+}
+function renderOtherUnread(){
+  try{
+    const counts = JSON.parse(localStorage.getItem('wechatUnreadCounts')||'{}');
+    let total = 0;
+    Object.keys(counts).forEach(k => { if(k !== characterId) total += (counts[k]||0); });
+    const el = document.getElementById('unreadBadge');
+    if(!el) return;
+    el.textContent = total > 99 ? '99+' : String(total);
+    el.style.display = total > 0 ? '' : 'none';
+  }catch(e){}
+}
+window.addEventListener('pagehide', markRead);
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden') markRead(); });
+
+// 插入一行消息：默认追加到底部；加载更早记录时插到顶部指定位置
+let prependAnchor = null;
+function insertRow(row){
+  if(prependAnchor){
+    chatArea.insertBefore(row, prependAnchor);
+  } else {
+    chatArea.appendChild(row);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
 }
 
 function addMessage(text, mine = false) {
@@ -354,8 +389,7 @@ function addMessage(text, mine = false) {
 
   row.appendChild(avatar);
   row.appendChild(wrap);
-  chatArea.appendChild(row);
-  chatArea.scrollTop = chatArea.scrollHeight;
+  insertRow(row);
 }
 
 // ============================================================
@@ -481,8 +515,7 @@ function addVoiceMessage(m){
   wrap.appendChild(textBox);
   row.appendChild(avatar);
   row.appendChild(wrap);
-  chatArea.appendChild(row);
-  chatArea.scrollTop = chatArea.scrollHeight;
+  insertRow(row);
 
   // 后台预热：本地没有就生成一次并缓存，同时拿到真实时长
   if(voiceService){
@@ -578,6 +611,8 @@ async function sendAndGetReply(text){
     if(remaining > 0) await sleep(remaining);
     hideTyping();
     addMessage(reply);
+    noteMsgTime();
+    markRead();
   }catch(err){
     hideTyping();
     addMessage('……（网络好像有点问题）');
@@ -667,17 +702,13 @@ async function init(){
     attitude: character.initial_relationship || '友善、主动',
   };
   document.getElementById('contactName').textContent = contactName;
-  markRead();
+  renderOtherUnread();
 
-  const { data: msgs, error: msgError } = await supabase
-    .from('messages')
-    .select('id, content, direction, sent_at, metadata')
-    .eq('user_id', user.id)
-    .eq('character_id', characterId)
-    .eq('channel', 'wechat')
-    .lte('sent_at', new Date().toISOString())
-    .order('sent_at', { ascending: true });
+  _supabase = supabase;
+  _userId = user.id;
+  _loadUntil = new Date().toISOString();
 
+  const { data: msgs, error: msgError } = await fetchPage(null);
   if(msgError){
     console.error(msgError);
     chatArea.innerHTML = '<div class="time-stamp">加载聊天记录失败</div>';
@@ -686,14 +717,82 @@ async function init(){
 
   chatArea.innerHTML = '';
   try{ voiceService = await import('./js/services/voiceService.js'); }catch(e){ voiceService = null; }
+  renderMessages(msgs);
+  updateLoadMore(msgs.length === PAGE_SIZE);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  if(msgs.length === 0){
+    chatArea.innerHTML = '<div class="time-stamp">还没有消息</div>';
+  }
+  markRead();
+  import('./js/services/notificationSync.js').then(m => m.syncNotifications()).catch(() => {});
+}
+
+// ============================================================
+// 分页加载：先显示最近 PAGE_SIZE 条，顶部"查看更早的消息"再往前加载
+// （数据库一次最多返回 1000 条，消息多了以后不分页会看不到新消息）
+// ============================================================
+const PAGE_SIZE = 200;
+let _supabase = null, _userId = null, _loadUntil = null, _oldestSentAt = null, _loadingMore = false;
+
+async function fetchPage(beforeIso){
+  let q = _supabase
+    .from('messages')
+    .select('id, content, direction, sent_at, metadata')
+    .eq('user_id', _userId)
+    .eq('character_id', characterId)
+    .eq('channel', 'wechat')
+    .lte('sent_at', _loadUntil);
+  if(beforeIso) q = q.lt('sent_at', beforeIso);
+  const { data, error } = await q.order('sent_at', { ascending: false }).limit(PAGE_SIZE);
+  if(error) return { data: [], error };
+  const rows = (data || []).slice().reverse();
+  if(rows.length) _oldestSentAt = rows[0].sent_at;
+  return { data: rows, error: null };
+}
+
+function renderMessages(msgs){
   (msgs||[]).forEach(m => {
     if(voiceService && voiceService.isVoiceMessage(m)) addVoiceMessage(m);
     else addMessage(m.content, m.direction === 'outgoing');
+    noteMsgTime(m.sent_at);
   });
+}
 
-  if(!msgs || msgs.length === 0){
-    chatArea.innerHTML = '<div class="time-stamp">还没有消息</div>';
+function updateLoadMore(hasMore){
+  let btn = document.getElementById('loadMoreBtn');
+  if(!hasMore){ if(btn) btn.remove(); return; }
+  if(!btn){
+    btn = document.createElement('div');
+    btn.id = 'loadMoreBtn';
+    btn.className = 'time-stamp';
+    btn.style.cursor = 'pointer';
+    btn.textContent = '查看更早的消息';
+    btn.onclick = loadOlder;
   }
+  chatArea.insertBefore(btn, chatArea.firstChild);
+}
+
+async function loadOlder(){
+  if(_loadingMore || !_oldestSentAt) return;
+  _loadingMore = true;
+  const btn = document.getElementById('loadMoreBtn');
+  if(btn) btn.textContent = '加载中…';
+  const { data: older, error } = await fetchPage(_oldestSentAt);
+  if(error){
+    if(btn) btn.textContent = '加载失败，点击重试';
+    _loadingMore = false;
+    return;
+  }
+  const prevHeight = chatArea.scrollHeight;
+  const prevTop = chatArea.scrollTop;
+  prependAnchor = btn ? btn.nextSibling : chatArea.firstChild;
+  renderMessages(older);
+  prependAnchor = null;
+  if(btn) btn.textContent = '查看更早的消息';
+  updateLoadMore(older.length === PAGE_SIZE);
+  chatArea.scrollTop = chatArea.scrollHeight - prevHeight + prevTop;
+  _loadingMore = false;
 }
 
 init();

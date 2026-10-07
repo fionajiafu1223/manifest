@@ -179,86 +179,23 @@ function showToast(text){
 // 内容和频率完全由服务器端决定（依据relationships表里的真实关系、
 // 用户自己写的性格设定），这里只负责把结果排成本地推送。
 
-function hashStr(s){
-  let h = 0;
-  for(let i=0; i<s.length; i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
-  return h;
-}
-
-const CHANNEL_LABEL = { wechat: '微信', email: '邮件', sms: '短信' };
-const CHANNEL_PAGE = {
-  wechat: (m) => 'wechat-sim.html?id=' + encodeURIComponent(m.character_id),
-  email: () => 'email-list.html',
-  sms: () => 'sms-list.html',
-};
-
 async function setupNotifications(){
-  // 只在真正打包的App里才有这个原生能力，网页预览环境里没有，直接跳过
+  // 只在真正打包的App里才有这个原生能力，网页预览环境里直接跳过
   if(!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.LocalNotifications) return;
-  const { LocalNotifications } = window.Capacitor.Plugins;
-
   try{
-    const { requireUser } = await import('./js/services/authService.js');
-    const user = await requireUser();
-    if(!user) return;
-
-    const perm = await LocalNotifications.requestPermissions();
-    if(perm.display !== 'granted') return;
-
+    const { syncNotifications } = await import('./js/services/notificationSync.js');
+    // 先把已有的未到点消息排上（不等 world-pulse）
+    await syncNotifications({ requestPermission: true });
     const { triggerWorldPulse } = await import('./js/services/worldPulseService.js');
     const result = await triggerWorldPulse();
-    if(!result.success || !result.data) return;
-
-    const { messages = [], windfall, too_soon, no_roster } = result.data;
-    if(too_soon || no_roster) return;
-
-    const scheduled = [];
-    let idOffset = 0;
-
-    messages.forEach((m) => {
-      const at = new Date(m.sent_at);
-      if(isNaN(at.getTime()) || at.getTime() <= Date.now()) return;
-      const label = CHANNEL_LABEL[m.channel] || '消息';
-      const bodyPrefix = m.character_name ? `${m.character_name}：` : '';
-      scheduled.push({
-        id: (hashStr(m.id) % 1000000000) + (idOffset++),
-        title: label,
-        body: bodyPrefix + ((m.metadata && m.metadata.voice === true) ? '[语音]' : (m.content || '')),
-        schedule: { at },
-        extra: { page: (CHANNEL_PAGE[m.channel] || CHANNEL_PAGE.wechat)(m) },
-      });
-    });
-
-    if(windfall){
-      const at = new Date(windfall.occurred_at);
-      if(!isNaN(at.getTime()) && at.getTime() > Date.now()){
-        scheduled.push({
-          id: (hashStr(windfall.id || windfall.title) % 1000000000) + (idOffset++),
-          title: windfall.title || '意外之喜',
-          body: windfall.description || '',
-          schedule: { at },
-          extra: { page: 'desktop.html' },
-        });
-      }
-    }
-
-    if(scheduled.length > 0){
-      await LocalNotifications.schedule({ notifications: scheduled });
+    if(result.success && result.data && !result.data.too_soon && !result.data.no_roster){
+      // world-pulse 生成了新消息，再同步一次
+      await syncNotifications();
     }
   }catch(e){
     console.error('推送安排失败', e);
   }
 }
-
-// 监听：点击通知后，跳转到对应页面
-try{
-  if(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications){
-    window.Capacitor.Plugins.LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
-      const page = action?.notification?.extra?.page;
-      if(page) location.href = page;
-    });
-  }
-}catch(e){}
 
 setupNotifications();
 </script>

@@ -292,6 +292,8 @@ function renderList() {
   });
 
   const totalUnread = contacts.reduce((sum, c) => sum + (c.unread||0), 0);
+  // 存一份各联系人未读数，聊天页左上角显示"其他人的未读总数"用
+  try{ const counts = {}; contacts.forEach(c => counts[c.id] = c.unread||0); localStorage.setItem('wechatUnreadCounts', JSON.stringify(counts)); }catch(e){}
   document.getElementById('tabBadge').textContent = totalUnread;
   document.getElementById('tabBadge').style.display = totalUnread > 0 ? 'flex' : 'none';
 }
@@ -311,13 +313,16 @@ async function init(){
   const user = await requireUser();
   if(!user) return;
 
-  const { data: msgs, error: msgError } = await supabase
+  const nowIso = new Date().toISOString();
+  const { fetchAllRows } = await import('./js/services/messageFetch.js');
+  const { data: msgs, error: msgError } = await fetchAllRows(() => supabase
     .from('messages')
     .select('id, character_id, content, sent_at, direction, sender_type, metadata')
     .eq('user_id', user.id)
     .eq('channel', 'wechat')
-    .lte('sent_at', new Date().toISOString())
-    .order('sent_at', { ascending: false });
+    .lte('sent_at', nowIso)
+    .order('sent_at', { ascending: false }));
+  import('./js/services/notificationSync.js').then(m => m.syncNotifications()).catch(() => {});
 
   if(msgError){
     console.error(msgError);
@@ -371,7 +376,8 @@ async function init(){
     const latest = list[0];
     const displayName = character.display_name || character.name || '未知联系人';
     const lastRead = readState[cid] || null;
-    const unread = list.filter(m => m.direction === 'incoming' && (!lastRead || m.sent_at > lastRead)).length;
+    const lastReadMs = lastRead ? new Date(lastRead).getTime() : 0;
+    const unread = list.filter(m => m.direction === 'incoming' && new Date(m.sent_at).getTime() > lastReadMs).length;
     return {
       id: cid,
       name: displayName,
