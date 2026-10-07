@@ -352,6 +352,36 @@ function renderOtherUnread(){
     el.style.display = total > 0 ? '' : 'none';
   }catch(e){}
 }
+// 实时从数据库算"其他人的未读数"，不再只依赖列表页上次存的数字
+async function refreshOtherUnread(){
+  try{
+    if(!_supabase || !_userId) return;
+    const now = new Date();
+    const since = new Date(now.getTime() - 30*24*3600*1000).toISOString();
+    const { data, error } = await _supabase
+      .from('messages')
+      .select('character_id, sent_at')
+      .eq('user_id', _userId)
+      .eq('channel', 'wechat')
+      .eq('direction', 'incoming')
+      .gte('sent_at', since)
+      .lte('sent_at', now.toISOString())
+      .order('sent_at', { ascending: false })
+      .limit(1000);
+    if(error) return;
+    const state = JSON.parse(localStorage.getItem('wechatReadState')||'{}');
+    const counts = {};
+    (data||[]).forEach(m => {
+      const lastRead = state[m.character_id] ? new Date(state[m.character_id]).getTime() : 0;
+      if(new Date(m.sent_at).getTime() > lastRead) counts[m.character_id] = (counts[m.character_id]||0) + 1;
+    });
+    if(characterId) counts[characterId] = 0;
+    localStorage.setItem('wechatUnreadCounts', JSON.stringify(counts));
+    renderOtherUnread();
+  }catch(e){}
+}
+setInterval(refreshOtherUnread, 20000);
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') refreshOtherUnread(); });
 window.addEventListener('pagehide', markRead);
 document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden') markRead(); });
 
@@ -743,6 +773,7 @@ async function init(){
 
   _supabase = supabase;
   _userId = user.id;
+  refreshOtherUnread();
   _loadUntil = new Date().toISOString();
 
   const { data: msgs, error: msgError } = await fetchPage(null);
