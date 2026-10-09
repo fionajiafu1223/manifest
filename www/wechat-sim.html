@@ -236,7 +236,7 @@ body{
 <!-- 顶部导航 -->
 <div class="nav">
   <div class="nav-inner">
-    <div class="nav-back" onclick="markRead(); location.href='wechat-list.html'" style="cursor:pointer;">
+    <div class="nav-back" onclick="leaveChat()" style="cursor:pointer;">
       <span class="unread-badge" id="unreadBadge" style="display:none"></span>
     </div>
     <div class="nav-title" id="contactName">阿哲</div>
@@ -356,6 +356,28 @@ let lastMsgTime = 0;
 function noteMsgTime(t){
   const ms = t ? new Date(t).getTime() : Date.now();
   if(!isNaN(ms) && ms > lastMsgTime) lastMsgTime = ms;
+  armIdleDetect();
+}
+
+// 一段对话结束后，让后台记录大事、更新备忘：点左上角返回时，或在聊天页 10 分钟没动静时
+const IDLE_DETECT_MS = 10 * 60 * 1000;
+let idleDetectTimer = null;
+function armIdleDetect(){
+  clearTimeout(idleDetectTimer);
+  idleDetectTimer = setTimeout(() => {
+    if(document.visibilityState === 'visible') requestDetect();
+  }, IDLE_DETECT_MS);
+}
+function requestDetect(){
+  if(!characterId || !_supabase) return Promise.resolve();
+  return _supabase.functions.invoke('chat-character', { body: { action: 'detect', character_id: characterId } })
+    .catch(() => {});
+}
+async function leaveChat(){
+  markRead();
+  clearTimeout(idleDetectTimer);
+  try{ await Promise.race([requestDetect(), new Promise(r => setTimeout(r, 1500))]); }catch(e){}
+  location.href = 'wechat-list.html';
 }
 function markRead(){
   if(!characterId) return;
