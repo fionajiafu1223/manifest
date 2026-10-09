@@ -295,6 +295,11 @@ const chatArea = document.getElementById('chatArea');
 const msgInput = document.getElementById('msgInput');
 const sendBtn = document.getElementById('sendBtn');
 const plusBtn = document.getElementById('plusBtn');
+const photoInput = document.createElement('input');
+photoInput.type = 'file'; photoInput.accept = 'image/*'; photoInput.style.display = 'none';
+document.body.appendChild(photoInput);
+plusBtn.addEventListener('click', () => { photoInput.value = ''; photoInput.click(); });
+photoInput.addEventListener('change', () => { const f = photoInput.files && photoInput.files[0]; if(f) handleMyPhoto(f); });
 
 // 从URL读取联系人id —— 现在是Supabase characters表里的真实UUID
 const urlParams = new URLSearchParams(window.location.search);
@@ -479,6 +484,66 @@ function addImageMessage(url, mine = false){
   row.appendChild(avatar);
   row.appendChild(wrap);
   insertRow(row);
+  return img;
+}
+
+// 我发的照片：私有存储，打开时临时签名链接
+async function addMyPhotoFromPath(path){
+  const img = addImageMessage('data:image/gif;base64,R0lGODlhAQABAAAAACw=', true);
+  if(!path || !_supabase) return;
+  try{
+    const { data } = await _supabase.storage.from('user-photos').createSignedUrl(path, 3600);
+    if(data && data.signedUrl){
+      img.src = data.signedUrl;
+      img.onclick = () => openImageViewer(data.signedUrl);
+    }
+  }catch(e){}
+}
+
+// 把相册里的照片压缩成 jpeg（最长边 1600），省流量也让看图更快
+function compressImage(file){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const im = new Image();
+    im.onload = () => {
+      const max = 1600;
+      let w = im.naturalWidth, h = im.naturalHeight;
+      if(Math.max(w,h) > max){ const k = max / Math.max(w,h); w = Math.round(w*k); h = Math.round(h*k); }
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(im, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => b ? resolve(b) : reject(new Error('compress failed')), 'image/jpeg', 0.85);
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); reject(new Error('无法读取这张图片')); };
+    im.src = url;
+  });
+}
+
+async function handleMyPhoto(file){
+  if(!file || !_supabase || !_userId) return;
+  let blob;
+  try{ blob = await compressImage(file); }catch(e){ flashTip('这张图片打不开，换一张试试'); return; }
+  const localUrl = URL.createObjectURL(blob);
+  const img = addImageMessage(localUrl, true);
+  img.style.opacity = '0.6';
+  noteMsgTime();
+  try{
+    const path = `${_userId}/${characterId}/${Date.now()}.jpg`;
+    const up = await _supabase.storage.from('user-photos').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+    if(up.error) throw up.error;
+    let description = '';
+    try{
+      const { data } = await _supabase.functions.invoke('vision-describe', { body: { photo_path: path } });
+      description = (data && data.description) || '';
+    }catch(e){ console.warn('describe failed', e); }
+    img.style.opacity = '1';
+    pendingTexts.push({ text: '[照片]', photo: { photo_path: path, description } });
+    scheduleFlush();
+  }catch(e){
+    console.error('photo send failed', e);
+    img.style.opacity = '0.35';
+    flashTip('照片发送失败');
+  }
 }
 
 // ============================================================
@@ -890,7 +955,7 @@ async function flushPending(){
 
 async function sendAndGetReply(items){
   const texts = items.map(x => typeof x === 'string' ? x : x.text);
-  const voiceMeta = items.map(x => (x && typeof x === 'object' && x.voice) ? x.voice : null);
+  const voiceMeta = items.map(x => (x && typeof x === 'object') ? (x.voice || x.photo || null) : null);
   sendInFlight = true;
   await sleep(readDelay());
   showTyping();
@@ -1080,7 +1145,10 @@ async function fetchPage(beforeIso){
 
 function renderMessages(msgs){
   (msgs||[]).forEach(m => {
-    if(m.direction === 'outgoing' && m.metadata && m.metadata.user_voice){
+    if(m.direction === 'outgoing' && m.metadata && m.metadata.user_photo){
+      addMyPhotoFromPath(m.metadata.photo_path);
+    }
+    else if(m.direction === 'outgoing' && m.metadata && m.metadata.user_voice){
       addMyVoiceMessage({ duration: m.metadata.duration, path: m.metadata.audio_path, transcript: m.content });
     }
     else if(voiceService && voiceService.isVoiceMessage(m)) addVoiceMessage(m);

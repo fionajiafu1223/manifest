@@ -251,6 +251,20 @@ function render(){
   `).join('');
 }
 
+// AI 看图：新加的图立刻解读；打开页面时把以前没解读过的补上（后台静默，失败不影响使用）
+async function visionInvoke(body){
+  try{
+    const { supabase } = await import('./js/supabaseClient.js');
+    await supabase.functions.invoke('vision-describe', { body });
+  }catch(e){ console.warn('vision-describe failed', e); }
+}
+function describeAsset(id){ if(id) visionInvoke({ asset_id: id }); }
+let _backfilled = false;
+function backfillDescriptions(){
+  if(_backfilled) return; _backfilled = true;
+  visionInvoke({ backfill: true });
+}
+
 window.init = async function init(){
   document.getElementById('loading').style.display = 'block';
   document.getElementById('errbox').style.display = 'none';
@@ -270,6 +284,7 @@ window.init = async function init(){
       document.getElementById('detailScene').style.display = 'block';
     }
     render();
+    backfillDescriptions();
   }catch(e){
     document.getElementById('loading').style.display = 'none';
     document.getElementById('errbox').style.display = 'block';
@@ -336,6 +351,7 @@ window.confirmAdd = async function(){
     });
     assets.unshift(row);
     render();
+    describeAsset(row.id);
     document.getElementById('addSheetMask').classList.remove('active');
     pendingUpload = null;
     showToast('已添加');
