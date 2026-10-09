@@ -193,7 +193,7 @@ const today=new Date();
 
 function key(y,m,d){return`gj_${y}_${m}_${d}`;}
 function getEntry(y,m,d){try{return JSON.parse(localStorage.getItem(key(y,m,d))||'null');}catch{return null;}}
-function saveEntry(y,m,d,mood,text){localStorage.setItem(key(y,m,d),JSON.stringify({mood,text}));}
+function saveEntry(y,m,d,mood,text){localStorage.setItem(key(y,m,d),JSON.stringify({mood,text}));if(window.__gjSync)window.__gjSync(y,m,d,{mood,text});}
 
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
@@ -281,6 +281,11 @@ document.getElementById('prevMonth').onclick=()=>{curM--;if(curM<0){curM=11;curY
 document.getElementById('nextMonth').onclick=()=>{curM++;if(curM>11){curM=0;curY++;}renderCalendar();};
 
 curY=today.getFullYear();curM=today.getMonth();
+</script>
+<script type="module">
+import { syncGratitudeEntry, syncAllLocalGratitude } from "./js/services/gratitudeService.js";
+window.__gjSync = syncGratitudeEntry;
+syncAllLocalGratitude();
 </script>
 </body>
 </html>

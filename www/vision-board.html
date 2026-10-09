@@ -45,6 +45,12 @@ body{
 }
 @keyframes popIn{from{opacity:0;transform:scale(0.9);}to{opacity:1;transform:scale(1);}}
 .collage-item img{width:100%;display:block;}
+.fulfilled-badge{
+  position:absolute;top:8px;right:8px;padding:3px 9px;border-radius:999px;
+  font-size:11px;letter-spacing:1px;color:#fff;background:rgba(214,160,40,0.92);
+  box-shadow:0 2px 8px rgba(0,0,0,0.25);
+}
+.detail-fulfilled{font-size:13px;color:#b07d10;margin:8px 0 4px;letter-spacing:1px;}
 .collage-item .cap{
   padding:8px 10px 10px;font-size:12px;line-height:1.5;color:#22460f;
   background:rgba(255,255,255,0.55);
@@ -239,6 +245,7 @@ function render(){
   collage.innerHTML = assets.map(a => `
     <div class="collage-item" onclick="openDetail('${a.id}')">
       <img src="${esc(a.image_url)}" loading="lazy">
+      ${a.status === 'fulfilled' ? '<div class="fulfilled-badge">✨ 已实现</div>' : ''}
       ${a.description ? `<div class="cap">${esc(a.description)}</div>` : ''}
     </div>
   `).join('');
@@ -347,6 +354,20 @@ window.openDetail = function(id){
   if(!a) return;
   activeDetailId = id;
   document.getElementById('detailImg').src = a.image_url;
+  let ful = document.getElementById('detailFulfilled');
+  if(!ful){
+    ful = document.createElement('div');
+    ful.id = 'detailFulfilled';
+    ful.className = 'detail-fulfilled';
+    document.getElementById('detailImg').after(ful);
+  }
+  if(a.status === 'fulfilled'){
+    const d = a.fulfilled_at ? new Date(a.fulfilled_at) : null;
+    ful.textContent = '✨ 已实现' + (d ? ' · ' + (d.getMonth()+1) + '月' + d.getDate() + '日' : '');
+    ful.style.display = 'block';
+  } else {
+    ful.style.display = 'none';
+  }
   document.getElementById('detailDesc').value = a.description || '';
   fillSceneSelect(document.getElementById('detailScene'), a.scene_id || '');
   setDetailIntent(a.intent_type === 'script' ? 'script' : 'future');

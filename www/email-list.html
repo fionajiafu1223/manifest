@@ -84,6 +84,11 @@ body{font-family:'Roboto','Google Sans',-apple-system,BlinkMacSystemFont,'PingFa
 .detail-sender-name{font-size:15px;color:#1f1f1f;font-weight:500;}
 .detail-sender-email{font-size:13px;color:#5f6368;}
 .detail-content{font-size:15.5px;color:#1f1f1f;line-height:1.75;white-space:pre-wrap;}
+#detailAttachment{padding:0 20px 24px;}
+.mail-att-label{font-size:13px;color:#888;margin:12px 0 8px;}
+.mail-att-img{max-width:100%;border-radius:8px;display:block;cursor:pointer;border:1px solid #eee;}
+.img-viewer{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.img-viewer img{max-width:100%;max-height:100%;object-fit:contain;}
 </style>
 </head>
 <body>
@@ -202,7 +207,7 @@ async function initEmails(){
   const { fetchAllRows } = await import('./js/services/messageFetch.js');
   const { data: msgs, error } = await fetchAllRows(() => supabase
     .from('messages')
-    .select('id, character_id, subject, sender_address, content, sent_at, direction')
+    .select('id, character_id, subject, sender_address, content, sent_at, direction, metadata')
     .eq('user_id', user.id)
     .eq('channel', 'email')
     .lte('sent_at', nowIso)
@@ -246,6 +251,7 @@ async function initEmails(){
       subject: m.subject || '(无主题)',
       snippet: (m.content||'').replace(/\n/g,' ').slice(0, 60),
       content: m.content || '',
+      img: (m.metadata && m.metadata.image_url) || null,
       time: formatMailTime(m.sent_at),
       unread: i < 3, // 数据库暂无已读字段，先按最近3封默认未读展示
       starred: false,
@@ -302,6 +308,20 @@ function openMailByIndex(i){
   document.getElementById('detailEmail').textContent=m.email;
 
   document.getElementById('detailContent').textContent = m.content;
+  let att = document.getElementById('detailAttachment');
+  if(!att){
+    att = document.createElement('div');
+    att.id = 'detailAttachment';
+    document.getElementById('detailContent').after(att);
+  }
+  att.innerHTML = '';
+  if(m.img){
+    att.innerHTML = '<div class="mail-att-label">📎 1 个附件</div>';
+    const im = document.createElement('img');
+    im.src = m.img; im.className = 'mail-att-img';
+    im.addEventListener('click',()=>{const v=document.createElement('div');v.className='img-viewer';const b=document.createElement('img');b.src=m.img;v.appendChild(b);v.addEventListener('click',()=>v.remove());document.body.appendChild(v);});
+    att.appendChild(im);
+  }
 
   document.getElementById('mailDetail').classList.add('open');
   allEmailItems[i].unread=false;

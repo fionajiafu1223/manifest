@@ -11,7 +11,7 @@ import { supabase } from "../supabaseClient.js";
 export async function getVisionAssets() {
   const { data, error } = await supabase
     .from("vision_board_assets")
-    .select("id, image_url, description, scene_id, intent_type, created_at")
+    .select("id, image_url, description, scene_id, intent_type, created_at, status, fulfilled_at")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data || [];
