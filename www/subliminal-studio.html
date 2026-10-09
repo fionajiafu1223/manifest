@@ -103,6 +103,13 @@ body{
 .mini-btn.rec{background:rgba(200,60,60,0.14);color:#b05050;}
 .mini-btn.ok{background:rgba(90,144,96,0.18);color:#436b29;}
 /* 声音台逐句录音 */
+.ai-chips{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.ai-chip{flex:1;min-width:80px;padding:9px 6px;border-radius:12px;border:1px solid rgba(104,138,65,0.35);background:#fff;color:#436b29;font-size:12px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;}
+.ai-chip.active{background:linear-gradient(135deg,#5a9060,#3a7048);color:#fff;border-color:transparent;}
+.ai-row{display:flex;gap:8px;align-items:center;}
+.ai-row .mini-btn{padding:10px 12px;font-size:12px;white-space:nowrap;}
+.ai-gen{padding:10px;font-size:13px;}
+.ai-status{font-size:12px;color:#436b29;margin-top:8px;min-height:1em;}
 .voice-guide{font-size:12px;color:#436b29;line-height:1.7;background:rgba(104,138,65,0.1);border-radius:10px;padding:10px 12px;margin-bottom:10px;}
 .vrow{display:flex;align-items:center;gap:12px;padding:12px 10px;margin:0 -10px;border-radius:12px;border-bottom:1px solid rgba(104,138,65,0.15);transition:background 0.2s;}
 .vrow:last-child{border-bottom:none;}
@@ -321,10 +328,18 @@ body{
       <div class="voice-progress" id="voiceProgress"></div>
       <div id="voiceSentenceList"></div>
     </div>
-    <div class="card" style="opacity:0.55;">
-      <div class="sentence-row" style="border:none;padding:0;">
-        <div class="sentence-text">系统声音<span class="entry-badge">敬请期待</span></div>
+    <div class="card" id="aiVoiceCard">
+      <div class="voice-guide">不想自己录？选一个声音，<b>AI 帮你把每句读出来</b>。<br>生成后和录音一样可以单句试听，也可以再点 🎙 换成自己的声音。</div>
+      <div class="ai-chips">
+        <button class="ai-chip active" data-v="female_warm">温柔女声</button>
+        <button class="ai-chip" data-v="male_calm">沉稳男声</button>
+        <button class="ai-chip" data-v="female_whisper">轻柔耳语</button>
       </div>
+      <div class="ai-row">
+        <button class="mini-btn ok" id="aiVoicePreviewBtn">▶ 试听这个声音</button>
+        <button class="btn btn-secondary ai-gen" id="aiVoiceGenBtn">用 AI 声音朗读全部</button>
+      </div>
+      <div class="ai-status" id="aiVoiceStatus"></div>
     </div>
     <button class="btn btn-primary" id="toMixFromVoiceBtn" disabled>下一步：混音 →</button>
   </div>
@@ -1813,6 +1828,59 @@ document.getElementById('mixSaveBtn').onclick=async ()=>{
       showToast('保存出错：'+err.message);
     }
   });
+};
+
+
+/* ══════════ AI 配音（Azure） ══════════ */
+let aiVoice='female_warm', aiBusy=false, _sb=null;
+const aiPreviewCache={};
+const AI_SAMPLE='我值得被温柔地爱着，美好的事情正在来到我身边。';
+async function getSb(){ if(!_sb){ const m=await import('./js/supabaseClient.js'); _sb=m.supabase; } return _sb; }
+async function aiSpeak(text, voice){
+  const sb=await getSb();
+  const { data, error }=await sb.functions.invoke('affirmation-tts',{ body:{ text, voice } });
+  if(error || !data) throw new Error((error && error.message) || '生成失败');
+  const raw=data instanceof Blob ? data : new Blob([data]);
+  const blob=new Blob([raw],{type:'audio/mpeg'});
+  if(blob.size<1000) throw new Error('生成失败');
+  return blob;
+}
+document.querySelectorAll('.ai-chip').forEach(ch=>{
+  ch.onclick=()=>{
+    if(aiBusy) return;
+    document.querySelectorAll('.ai-chip').forEach(x=>x.classList.remove('active'));
+    ch.classList.add('active'); aiVoice=ch.dataset.v;
+  };
+});
+document.getElementById('aiVoicePreviewBtn').onclick=async()=>{
+  const btn=document.getElementById('aiVoicePreviewBtn');
+  if(aiBusy) return;
+  try{
+    if(!aiPreviewCache[aiVoice]){
+      btn.textContent='生成中…';
+      aiPreviewCache[aiVoice]=await aiSpeak(AI_SAMPLE, aiVoice);
+      btn.textContent='▶ 试听这个声音';
+    }
+    playPreviewBlob(aiPreviewCache[aiVoice], btn);
+  }catch(e){ btn.textContent='▶ 试听这个声音'; showToast('试听失败，请稍后再试'); }
+};
+document.getElementById('aiVoiceGenBtn').onclick=async()=>{
+  if(aiBusy || !draftSentences.length) return;
+  if(activeRecorder && activeRecorder.state==='recording') return;
+  if(draftSentences.some(s=>s.blob) && !confirm('已经录好的句子也会换成 AI 声音，继续吗？')) return;
+  aiBusy=true;
+  const genBtn=document.getElementById('aiVoiceGenBtn');
+  const st=document.getElementById('aiVoiceStatus');
+  genBtn.disabled=true;
+  let ok=0, fail=0;
+  for(let i=0;i<draftSentences.length;i++){
+    st.textContent=`正在朗读 ${i+1}/${draftSentences.length}…`;
+    try{ draftSentences[i].blob=await aiSpeak(draftSentences[i].text, aiVoice); ok++; }
+    catch(e){ fail++; }
+    renderVoiceList();
+  }
+  aiBusy=false; genBtn.disabled=false;
+  st.textContent = fail ? `完成 ${ok} 句，${fail} 句失败，可以再点一次重试` : `✓ 已用 AI 声音读好 ${ok} 句`;
 };
 
 /* ══════════════════ 初始化 ══════════════════ */
