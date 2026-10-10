@@ -162,11 +162,6 @@ body{
     <textarea id="addDesc" placeholder="例如：这是我想要的车"></textarea>
     <label id="addSceneLabel" style="display:none;">关联到我的生活场景（可选）</label>
     <select id="addScene" style="display:none;"></select>
-    <label>这张图，你想……</label>
-    <div class="intent-toggle">
-      <div class="intent-btn active" id="addIntentFuture" onclick="setAddIntent('future')">放进未来</div>
-      <div class="intent-btn" id="addIntentScript" onclick="setAddIntent('script')">写进我的人生</div>
-    </div>
     <div class="sheet-actions">
       <button class="btn-cancel" onclick="cancelAdd()">取消</button>
       <button class="btn-save" onclick="confirmAdd()">保存</button>
@@ -182,11 +177,6 @@ body{
     <textarea id="detailDesc" placeholder="例如：这是我想要的车"></textarea>
     <label id="detailSceneLabel" style="display:none;">关联到我的生活场景（可选）</label>
     <select id="detailScene" style="display:none;"></select>
-    <label>这张图，你想……</label>
-    <div class="intent-toggle">
-      <div class="intent-btn" id="detailIntentFuture" onclick="setDetailIntent('future')">放进未来</div>
-      <div class="intent-btn" id="detailIntentScript" onclick="setDetailIntent('script')">写进我的人生</div>
-    </div>
     <div class="sheet-actions">
       <button class="btn-cancel" onclick="closeDetail()">关闭</button>
       <button class="btn-save" onclick="saveDetail()">保存修改</button>
@@ -325,8 +315,8 @@ function openAddSheet(url){
 
 window.setAddIntent = function(v){
   addIntent = v;
-  document.getElementById('addIntentFuture').classList.toggle('active', v==='future');
-  document.getElementById('addIntentScript').classList.toggle('active', v==='script');
+  document.getElementById('addIntentFuture')?.classList.toggle('active', v==='future');
+  document.getElementById('addIntentScript')?.classList.toggle('active', v==='script');
 };
 
 window.cancelAdd = async function(){
@@ -392,8 +382,8 @@ window.openDetail = function(id){
 
 window.setDetailIntent = function(v){
   detailIntent = v;
-  document.getElementById('detailIntentFuture').classList.toggle('active', v==='future');
-  document.getElementById('detailIntentScript').classList.toggle('active', v==='script');
+  document.getElementById('detailIntentFuture')?.classList.toggle('active', v==='future');
+  document.getElementById('detailIntentScript')?.classList.toggle('active', v==='script');
 };
 
 window.closeDetail = function(){
@@ -407,7 +397,7 @@ window.saveDetail = async function(){
   const sceneSel = document.getElementById('detailScene');
   const scene_id = sceneSel.style.display !== 'none' ? (sceneSel.value || null) : null;
   try{
-    const updated = await updateVisionAsset(activeDetailId, { description, scene_id, intent_type: detailIntent });
+    const updated = await updateVisionAsset(activeDetailId, { description, scene_id });
     const idx = assets.findIndex(x => x.id === activeDetailId);
     if(idx >= 0) assets[idx] = updated;
     render();
